@@ -3,6 +3,36 @@
         <!-- TAB 1: LISTADO -->
         <x-tab name="listado">
             <livewire:proveedor-table />
+
+            <script>
+                function contextMenu() {
+                    return {
+                        x: 0,
+                        y: 0,
+                        openMenu: false,
+                        rowId: null,
+                        open(event, id) {
+                            this.x = event.pageX;
+                            this.y = event.pageY;
+                            this.rowId = id;
+                            this.openMenu = true;
+                        },
+                        close() {
+                            this.openMenu = false;
+                        },
+                        accion(name) {
+                            if (name === 'editar') {
+                                Livewire.emit('edit', this.rowId);
+                            } else if (name === 'toggleEstado') {
+                                Livewire.emit('toggleEstado', this.rowId);
+                            } else if (name === 'eliminar') {
+                                Livewire.emit('delete', this.rowId);
+                            }
+                            this.close();
+                        }
+                    }
+                }
+            </script>
         </x-tab>
         <!-- TAB 2: REGISTRO -->
         <x-tab name="registro">
@@ -118,7 +148,7 @@
                         <div class="grid grid-cols-3 gap-4 mt-2">
                             <div class="flex flex-col">
                                 <label for="departamento" class="font-bold mb-1">Departamento</label>
-                                <select wire:model.live="departamentoSeleccionado">
+                                <select wire:model.live="departamentoSeleccionado" class="border rounded px-2 py-1">
                                     <option value="">-- Seleccione --</option>
                                     @foreach ($departamentos as $dep)
                                         <option value="{{ $dep }}">{{ $dep }}</option>
@@ -128,7 +158,7 @@
                             <!-- PROVINCIA -->
                             <div class="flex flex-col">
                                 <label for="provincia" class="font-bold mb-1">Provincia</label>
-                                <select wire:model.live="provinciaSeleccionada">
+                                <select wire:model.live="provinciaSeleccionada" class="border rounded px-2 py-1">
                                     <option value="">-- Seleccione --</option>
                                     @foreach ($provincias as $prov)
                                         <option value="{{ $prov }}">{{ $prov }}</option>
@@ -139,7 +169,7 @@
                             <!-- DISTRITO -->
                             <div class="flex flex-col">
                                 <label for="distrito" class="font-bold mb-1">Distrito</label>
-                                <select wire:model.live="direccion.codigo_ubigeo">
+                                <select wire:model.live="direccion.codigo_ubigeo" class="border rounded px-2 py-1">
                                     <option value="">-- Seleccione --</option>
                                     @foreach ($distritos as $dis)
                                         <option value="{{ $dis->codigo_ubigeo }}">{{ $dis->distrito }}</option>

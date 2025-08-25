@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('telefono')->nullable();
             $table->string('correo')->nullable();
             $table->string('pais')->nullable();
-
+            $table->enum('estado', ['activo', 'inactivo'])->default('activo');
             $table->unsignedBigInteger("id_direccion")->nullable();
             $table->foreign('id_direccion')->references('id')->on('direcciones');
 

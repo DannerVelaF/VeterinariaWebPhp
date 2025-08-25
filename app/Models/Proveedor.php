@@ -13,6 +13,7 @@ class Proveedor extends Model
         'telefono',
         'correo',
         'pais',
+        'estado',
     ];
 
     public function direccion()
