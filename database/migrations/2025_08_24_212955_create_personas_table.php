@@ -18,9 +18,17 @@ return new class extends Migration
             $table->string("apellido_paterno");
             $table->string("apellido_materno");
             $table->date("fecha_nacimiento");
-            $table->enum("sexo", ["masculino", "femenino"]);
+            $table->enum("sexo", ["M", "F", "Otro"]);
             $table->string("nacionalidad");
-            $table->string("correo")->unique();
+            $table->string("correo_electronico_personal")->unique();
+            $table->string("correo_electronico_secundario")->nullable();
+            $table->string("numero_telefono_personal");
+            $table->string("numero_telefono_secundario")->nullable();
+
+
+            $table->unsignedBigInteger('id_direccion');
+            $table->foreign('id_direccion')->references('id')->on('direcciones');
+
             $table->unsignedBigInteger("id_tipo_documento")->nullable();
             $table->foreign("id_tipo_documento")->references("id")->on("tipo_documentos")->onDelete("set null");
 

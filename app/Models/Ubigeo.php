@@ -10,7 +10,7 @@ class Ubigeo extends Model
     protected $primaryKey = 'codigo_ubigeo';
     public $incrementing = false;
     protected $keyType = 'string';
-
+    public $timestamps = false;
     protected $fillable = [
         'codigo_ubigeo',
         'departamento',

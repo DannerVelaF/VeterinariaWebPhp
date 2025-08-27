@@ -14,10 +14,20 @@ class Proveedor extends Model
         'correo',
         'pais',
         'estado',
+        'id_direccion',
+        'telefono_contacto',
+        'telefono_secundario',
+        'correo_electronico_encargado',
+        'correo_electronico_empresa',
     ];
 
     public function direccion()
     {
         return $this->belongsTo(Direccion::class);
+    }
+
+    public function productos()
+    {
+        return $this->hasMany(Producto::class);
     }
 }

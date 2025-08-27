@@ -16,9 +16,13 @@ return new class extends Migration
             $table->string('nombre');
             $table->string('ruc')->unique();
             $table->string('telefono')->nullable();
-            $table->string('correo')->nullable();
+            $table->string('correo_electronico_empresa')->nullable();
+            $table->string("telefono_contacto")->nullable();
             $table->string('pais')->nullable();
             $table->enum('estado', ['activo', 'inactivo'])->default('activo');
+            $table->string("telefono_secundario")->nullable();
+            $table->string("correo_electronico_encargado")->nullable();
+
             $table->unsignedBigInteger("id_direccion")->nullable();
             $table->foreign('id_direccion')->references('id')->on('direcciones');
 

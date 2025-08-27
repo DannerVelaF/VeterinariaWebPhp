@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Auth;
 
+use App\Mail\TwoFactorCodeMail;
 use App\Models\User;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Session;
@@ -33,11 +34,10 @@ class TwoFactorAuthentication extends Component
         Session::put('two_factor_user_id', $this->user->id);
 
         // Enviar correo
-        Mail::raw("Tu código de verificación es: {$this->code}", function ($message) {
-            $message->to($this->user->persona->correo)
-                ->subject("Código de verificación");
-        });
+        Mail::to($this->user->persona->correo_electronico_personal)
+            ->send(new TwoFactorCodeMail($this->code));
     }
+
 
     public function verifyCode()
     {

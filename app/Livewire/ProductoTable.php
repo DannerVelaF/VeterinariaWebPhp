@@ -2,23 +2,21 @@
 
 namespace App\Livewire;
 
-use App\Models\Proveedor;
+use App\Models\Producto;
 use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use PowerComponents\LivewirePowerGrid\Button;
 use PowerComponents\LivewirePowerGrid\Column;
-use PowerComponents\LivewirePowerGrid\Components\SetUp\Exportable;
 use PowerComponents\LivewirePowerGrid\Facades\Filter;
 use PowerComponents\LivewirePowerGrid\Facades\PowerGrid;
 use PowerComponents\LivewirePowerGrid\PowerGridFields;
 use PowerComponents\LivewirePowerGrid\PowerGridComponent;
-use PowerComponents\LivewirePowerGrid\Traits\WithExport;
+use Illuminate\Support\Str;
 
-final class ProveedorTable extends PowerGridComponent
+final class ProductoTable extends PowerGridComponent
 {
-    public string $tableName = 'proveedor-table-dedggx-table';
-    use WithExport;
-    protected $listeners = ['proveedorRegistrado' => '$refresh'];
+    public string $tableName = 'producto-table-ghu6nb-table';
+    protected $listeners = ['productoRegistrado' => '$refresh'];
 
     public function setUp(): array
     {
@@ -27,18 +25,16 @@ final class ProveedorTable extends PowerGridComponent
         return [
             PowerGrid::header()
                 ->showSearchInput(),
-
             PowerGrid::footer()
                 ->showPerPage()
                 ->showRecordCount(),
-            PowerGrid::exportable(fileName: 'DetalleProveedores')
-                ->type(Exportable::TYPE_XLS, Exportable::TYPE_CSV)
         ];
     }
 
     public function datasource(): Builder
     {
-        return Proveedor::query();
+        return Producto::query()
+            ->with(['categoria_producto', 'proveedor']);
     }
 
     public function relationSearch(): array
@@ -50,45 +46,39 @@ final class ProveedorTable extends PowerGridComponent
     {
         return PowerGrid::fields()
             ->add('id')
-            ->add('nombre')
-            ->add('ruc')
-            ->add('telefono')
-            ->add('correo')
-            ->add('pais')
+            ->add('nombre_producto')
+            ->add('descripcion_resumen', fn($producto) => Str::limit($producto->descripcion, 50))
+            ->add('descripcion_completa', fn($producto) => $producto->descripcion)
+            ->add('precio_unitario')
+            ->add('stock')
             ->add("estado")
             ->add('estado_boolean', function ($row) {
                 return $row->estado === 'activo';
-            });
+            })
+            ->add('codigo_barras')
+            ->add('created_at_formatted', fn($producto) => Carbon::parse($producto->created_at)->format('d/m/Y H:i'))
+            ->add('categoria_nombre', fn($producto) => $producto->categoria_producto?->nombre)
+            ->add('proveedor_nombre', fn($producto) => $producto->proveedor?->nombre);
     }
+
 
     public function columns(): array
     {
         return [
             Column::make('Id', 'id'),
-            Column::make('Nombre', 'nombre')
+            Column::make('Nombre producto', 'nombre_producto')
                 ->sortable()
                 ->searchable()
                 ->editOnClick(),
-
-            Column::make('Ruc', 'ruc')
-                ->sortable()
-                ->searchable()
-                ->editOnClick(),
-
-            Column::make('Telefono', 'telefono')
-                ->sortable()
-                ->searchable()
-                ->editOnClick(),
-
-            Column::make('Correo', 'correo')
-                ->sortable()
-                ->searchable()
-                ->editOnClick(),
-
-            Column::make('Pais', 'pais')
+            Column::make('Descripcion', 'descripcion_resumen')
                 ->sortable()
                 ->searchable(),
-
+            Column::make('Precio unitario', 'precio_unitario')->sortable()->searchable()->editOnClick(),
+            Column::make('Stock', 'stock')->sortable()->searchable(),
+            Column::make('Codigo barras', 'codigo_barras')->sortable()->searchable(),
+            Column::make('Categoría', 'categoria_nombre', 'categoria_producto.nombre'),
+            Column::make('Proveedor', 'proveedor_nombre', 'proveedor.nombre'),
+            Column::make('Fecha creación', 'created_at_formatted', 'created_at')->sortable(),
             Column::make('Estado', 'estado_boolean')
                 ->sortable()
                 ->searchable()
@@ -96,7 +86,6 @@ final class ProveedorTable extends PowerGridComponent
                     trueLabel: 'activo',
                     falseLabel: 'inactivo'
                 ),
-
             Column::action('Action')
         ];
     }
@@ -112,21 +101,22 @@ final class ProveedorTable extends PowerGridComponent
         $this->js('alert(' . $rowId . ')');
     }
 
-    public function actions(Proveedor $row): array
+    public function actions(Producto $row): array
     {
         return [
-            Button::add('edit')
-                ->slot('Edit: ' . $row->id)
+            Button::add('verDescripcion')
+                ->slot('Ver Detalle')
                 ->id()
-                ->class('pg-btn-white dark:ring-pg-primary-600 dark:border-pg-primary-600 dark:hover:bg-pg-primary-700 dark:ring-offset-pg-primary-800 dark:text-pg-primary-300 dark:bg-pg-primary-700')
-                ->dispatch('edit', ['rowId' => $row->id])
+                ->class('bg-blue-500 text-white px-2 py-1 rounded')
+                ->dispatch('mostrarDescripcion', [
+                    'id' => $row->id,
+                    'descripcion' => $row->descripcion,
+                ])
         ];
     }
-
-
     public function onUpdatedEditable(string|int $id, string $field, string $value): void
     {
-        Proveedor::find($id)->update([
+        Producto::find($id)->update([
             $field => $value
         ]);
     }
@@ -139,7 +129,7 @@ final class ProveedorTable extends PowerGridComponent
             $nuevoEstado = $value ? 'activo' : 'inactivo';
 
             // Actualizar el campo real 'estado' en la base de datos
-            Proveedor::find($id)->update([
+            Producto::find($id)->update([
                 'estado' => $nuevoEstado
             ]);
         }
@@ -147,4 +137,16 @@ final class ProveedorTable extends PowerGridComponent
         // Evitar que Livewire vuelva a renderizar el componente
         $this->skipRender();
     }
+
+    /*
+    public function actionRules($row): array
+    {
+       return [
+            // Hide button edit for ID 1
+            Rule::button('edit')
+                ->when(fn($row) => $row->id === 1)
+                ->hide(),
+        ];
+    }
+    */
 }
