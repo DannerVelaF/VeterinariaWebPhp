@@ -1,7 +1,7 @@
 # VeterinariaWebPhp
 # Proyecto Laravel Livewire Starter Kit
 
-Este proyecto utiliza Laravel 12, Livewire y PowerGrid para la gestión de proveedores.
+Este proyecto utiliza Laravel 12, Livewire.
 
 ---
 
