@@ -101,7 +101,6 @@ class Proveedores extends Component
             // Validaciones del proveedor
             'proveedor.nombre' => 'required|string|max:255',
             'proveedor.ruc' => 'required|digits:11|unique:proveedores,ruc',
-            'proveedor.telefono' => 'nullable|string|max:15',
             'proveedor.correo_electronico_empresa' => 'nullable|unique:proveedores,correo_electronico_empresa|email|max:255',
             'proveedor.telefono_contacto' => 'nullable|string|max:15',
             'proveedor.telefono_secundario' => 'nullable|string|max:15',
@@ -146,12 +145,11 @@ class Proveedores extends Component
     }
 
     // Método para resetear el formulario
-    private function resetForm()
+    public function resetForm()
     {
         $this->proveedor = [
             'nombre' => '',
             'ruc' => '',
-            'telefono' => '',
             'correo_electronico_empresa' => '',
             'telefono_contacto' => '',
             'telefono_secundario' => '',

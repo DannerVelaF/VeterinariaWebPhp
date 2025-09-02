@@ -3,8 +3,8 @@
 
     <head>
         <meta charset="UTF-8">
-        <title>{{ $title ?? "Mi App" }}</title>
-        @vite("resources/css/app.css") <!-- si usas Vite -->
+        <title>Inicio de sesión</title>
+        @vite('resources/css/app.css') <!-- si usas Vite -->
         @livewireStyles
         <script src="//unpkg.com/alpinejs" defer></script>
     </head>

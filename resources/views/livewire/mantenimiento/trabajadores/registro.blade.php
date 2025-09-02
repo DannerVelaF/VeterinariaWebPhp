@@ -1,6 +1,4 @@
 <div>
-    {{-- In work, do what you enjoy. --}}
-    <span>{{ $userId ?? 'No hay usuario' }}</span>
     <p>Mantenimiento de tablas</p>
     <x-tabs :tabs="['trabajadores' => 'Trabajadores', 'puestos' => 'Puestos']" default="trabajadores">
         <!-- TAB 1: TRABAJAOORES -->

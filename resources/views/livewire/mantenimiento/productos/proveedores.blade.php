@@ -54,11 +54,11 @@
                     </div>
 
                     <div class="flex flex-col">
-                        <label for="telefono" class="font-bold mb-1">Teléfono Principal</label>
-                        <input type="text" id="telefono" name="telefono" maxlength="15"
+                        <label for="telefono_contacto" class="font-bold mb-1">Teléfono Principal</label>
+                        <input type="text" id="telefono_contacto" name="telefono_contacto" maxlength="15"
                             class="border rounded px-2 py-1 focus:outline-none focus:ring focus:ring-blue-300 @error('proveedor.telefono') border-red-500 @enderror"
-                            placeholder="Teléfono principal" wire:model="proveedor.telefono">
-                        @error('proveedor.telefono')
+                            placeholder="Teléfono principal" wire:model="proveedor.telefono_contacto">
+                        @error('proveedor.telefono_contacto')
                             <p class="text-red-500 text-xs italic mt-1">
                                 {{ $message }}
                             </p>
@@ -76,19 +76,6 @@
                             </p>
                         @enderror
                     </div>
-
-                    <div class="flex flex-col">
-                        <label for="telefono_contacto" class="font-bold mb-1">Teléfono Contacto</label>
-                        <input type="text" id="telefono_contacto" maxlength="15"
-                            class="border rounded px-2 py-1 focus:outline-none focus:ring focus:ring-blue-300 @error('proveedor.telefono_contacto') border-red-500 @enderror"
-                            placeholder="Teléfono contacto" wire:model="proveedor.telefono_contacto">
-                        @error('proveedor.telefono_contacto')
-                            <p class="text-red-500 text-xs italic mt-1">
-                                {{ $message }}
-                            </p>
-                        @enderror
-                    </div>
-
                     <div class="flex flex-col">
                         <label for="telefono_secundario" class="font-bold mb-1">Teléfono Secundario</label>
                         <input type="text" id="telefono_secundario" maxlength="15"

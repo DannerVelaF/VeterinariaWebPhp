@@ -68,6 +68,8 @@ class Login extends Component
 
         // Autenticación exitosa
         Session::put('user', $user);
+        $user->ultimo_login = now();
+        $user->save();
         return redirect()->route('two.factor');
     }
 }

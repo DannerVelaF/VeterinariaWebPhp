@@ -2,23 +2,19 @@
 
 namespace App\Livewire;
 
-use App\Models\Proveedor;
+use App\Models\User;
 use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use PowerComponents\LivewirePowerGrid\Button;
 use PowerComponents\LivewirePowerGrid\Column;
-use PowerComponents\LivewirePowerGrid\Components\SetUp\Exportable;
 use PowerComponents\LivewirePowerGrid\Facades\Filter;
 use PowerComponents\LivewirePowerGrid\Facades\PowerGrid;
 use PowerComponents\LivewirePowerGrid\PowerGridFields;
 use PowerComponents\LivewirePowerGrid\PowerGridComponent;
-use PowerComponents\LivewirePowerGrid\Traits\WithExport;
 
-final class ProveedorTable extends PowerGridComponent
+final class UserTable extends PowerGridComponent
 {
-    public string $tableName = 'proveedor-table-dedggx-table';
-    use WithExport;
-    protected $listeners = ['proveedorRegistrado' => '$refresh'];
+    public string $tableName = 'user-table-hkfcya-table';
 
     public function setUp(): array
     {
@@ -27,18 +23,15 @@ final class ProveedorTable extends PowerGridComponent
         return [
             PowerGrid::header()
                 ->showSearchInput(),
-
             PowerGrid::footer()
                 ->showPerPage()
                 ->showRecordCount(),
-            PowerGrid::exportable(fileName: 'DetalleProveedores')
-                ->type(Exportable::TYPE_XLS, Exportable::TYPE_CSV)
         ];
     }
 
     public function datasource(): Builder
     {
-        return Proveedor::query();
+        return User::query()->with(['persona.trabajador.puestoTrabajo']);
     }
 
     public function relationSearch(): array
@@ -50,45 +43,38 @@ final class ProveedorTable extends PowerGridComponent
     {
         return PowerGrid::fields()
             ->add('id')
-            ->add('nombre')
-            ->add('ruc')
-            ->add('telefono_contacto')
-            ->add('correo_electronico_empresa')
-            ->add('pais')
-            ->add("estado")
+            ->add('username', fn($user) => $user->username)
+            ->add('trabajador', fn($user) => $user->persona?->nombre)
+            ->add('puesto', fn($user) => $user->persona?->trabajador?->puestoTrabajo?->nombre)
+            ->add('ultimo_login', fn($user) => $user->ultimo_login ? Carbon::parse($user->ultimo_login)->format('d/m/Y H:i') : '-')
+            ->add('estado')
+            ->add('created_at')
             ->add('estado_boolean', function ($row) {
                 return $row->estado === 'activo';
             });
     }
 
+
     public function columns(): array
     {
         return [
             Column::make('Id', 'id'),
-            Column::make('Nombre', 'nombre')
-                ->sortable()
-                ->searchable()
-                ->editOnClick(),
-
-            Column::make('Ruc', 'ruc')
-                ->sortable()
-                ->searchable()
-                ->editOnClick(),
-
-            Column::make('Telefono', 'telefono_contacto')
-                ->sortable()
-                ->searchable()
-                ->editOnClick(),
-
-            Column::make('Correo', 'correo_electronico_empresa')
-                ->sortable()
-                ->searchable()
-                ->editOnClick(),
-
-            Column::make('Pais', 'pais')
+            Column::make('Username', 'username')
                 ->sortable()
                 ->searchable(),
 
+            Column::make('Estado', 'estado')
+                ->sortable()
+                ->searchable(),
+
+            Column::make('Trabajador', 'trabajador'),
+            COlumn::make('Puesto', 'puesto'),
+
+            Column::make('Ultimo login', 'ultimo_login'),
+
+            Column::make('Fecha creaciòn', 'created_at')
+                ->sortable()
+                ->searchable(),
             Column::make('Estado', 'estado_boolean')
                 ->sortable()
                 ->searchable()
@@ -97,8 +83,31 @@ final class ProveedorTable extends PowerGridComponent
                     falseLabel: 'inactivo'
                 ),
 
-            Column::action('Action')
         ];
+    }
+
+    public function onUpdatedEditable(string|int $id, string $field, string $value): void
+    {
+        User::find($id)->update([
+            $field => $value
+        ]);
+    }
+
+    public function onUpdatedToggleable(string|int $id, string $field, string $value): void
+    {
+        // Solo procesar si el campo es estado_boolean
+        if ($field === 'estado_boolean') {
+            // Convertir el valor boolean a string
+            $nuevoEstado = $value ? 'activo' : 'inactivo';
+
+            // Actualizar el campo real 'estado' en la base de datos
+            User::find($id)->update([
+                'estado' => $nuevoEstado
+            ]);
+        }
+
+        // Evitar que Livewire vuelva a renderizar el componente
+        $this->skipRender();
     }
 
     public function filters(): array
@@ -112,7 +121,7 @@ final class ProveedorTable extends PowerGridComponent
         $this->js('alert(' . $rowId . ')');
     }
 
-    public function actions(Proveedor $row): array
+    /*public function actions(User $row): array
     {
         return [
             Button::add('edit')
@@ -121,30 +130,17 @@ final class ProveedorTable extends PowerGridComponent
                 ->class('pg-btn-white dark:ring-pg-primary-600 dark:border-pg-primary-600 dark:hover:bg-pg-primary-700 dark:ring-offset-pg-primary-800 dark:text-pg-primary-300 dark:bg-pg-primary-700')
                 ->dispatch('edit', ['rowId' => $row->id])
         ];
-    }
+    }*/
 
-
-    public function onUpdatedEditable(string|int $id, string $field, string $value): void
+    /*
+    public function actionRules($row): array
     {
-        Proveedor::find($id)->update([
-            $field => $value
-        ]);
+       return [
+            // Hide button edit for ID 1
+            Rule::button('edit')
+                ->when(fn($row) => $row->id === 1)
+                ->hide(),
+        ];
     }
-
-    public function onUpdatedToggleable(string|int $id, string $field, string $value): void
-    {
-        // Solo procesar si el campo es estado_boolean
-        if ($field === 'estado_boolean') {
-            // Convertir el valor boolean a string
-            $nuevoEstado = $value ? 'activo' : 'inactivo';
-
-            // Actualizar el campo real 'estado' en la base de datos
-            Proveedor::find($id)->update([
-                'estado' => $nuevoEstado
-            ]);
-        }
-
-        // Evitar que Livewire vuelva a renderizar el componente
-        $this->skipRender();
-    }
+    */
 }

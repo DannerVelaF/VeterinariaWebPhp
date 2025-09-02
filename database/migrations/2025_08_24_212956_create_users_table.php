@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('username');
             $table->string('password_hash');
             $table->enum("estado", ["activo", "inactivo"]);
-            
+            $table->dateTime("ultimo_login")->nullable();
             $table->unsignedBigInteger("id_persona")->nullable();
             $table->foreign("id_persona")->references("id")->on("personas")->onDelete("set null");
 

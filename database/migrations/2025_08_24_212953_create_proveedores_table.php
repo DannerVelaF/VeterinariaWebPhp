@@ -15,7 +15,6 @@ return new class extends Migration
             $table->id();
             $table->string('nombre');
             $table->string('ruc')->unique();
-            $table->string('telefono')->nullable();
             $table->string('correo_electronico_empresa')->nullable();
             $table->string("telefono_contacto")->nullable();
             $table->string('pais')->nullable();
