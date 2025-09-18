@@ -34,7 +34,7 @@ final class ProductoTable extends PowerGridComponent
     public function datasource(): Builder
     {
         return Producto::query()
-            ->with(['categoria_producto', 'proveedor']);
+            ->with(['categoria_producto', 'proveedor', 'unidad']);
     }
 
     public function relationSearch(): array
@@ -47,10 +47,7 @@ final class ProductoTable extends PowerGridComponent
         return PowerGrid::fields()
             ->add('id')
             ->add('nombre_producto')
-            ->add('descripcion_resumen', fn($producto) => Str::limit($producto->descripcion, 50))
-            ->add('descripcion_completa', fn($producto) => $producto->descripcion)
-            ->add('precio_unitario')
-            ->add('stock')
+            ->add('unidad_nombre', fn($producto) => $producto->unidad?->nombre ?? '-')
             ->add("estado")
             ->add('estado_boolean', function ($row) {
                 return $row->estado === 'activo';
@@ -70,11 +67,8 @@ final class ProductoTable extends PowerGridComponent
                 ->sortable()
                 ->searchable()
                 ->editOnClick(),
-            Column::make('Descripcion', 'descripcion_resumen')
-                ->sortable()
-                ->searchable(),
-            Column::make('Precio unitario', 'precio_unitario')->sortable()->searchable()->editOnClick(),
-            Column::make('Stock', 'stock')->sortable()->searchable(),
+
+            Column::make('Unidad', 'unidad_nombre')->sortable()->searchable(),
             Column::make('Codigo barras', 'codigo_barras')->sortable()->searchable(),
             Column::make('Categoría', 'categoria_nombre', 'categoria_producto.nombre'),
             Column::make('Proveedor', 'proveedor_nombre', 'proveedor.nombre'),

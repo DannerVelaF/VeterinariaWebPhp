@@ -29,4 +29,9 @@ class Proveedor extends Model
     {
         return $this->hasMany(Producto::class);
     }
+
+    public function compras()
+    {
+        return $this->hasMany(Compra::class);
+    }
 }

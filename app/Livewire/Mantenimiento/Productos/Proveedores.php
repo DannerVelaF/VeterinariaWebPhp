@@ -5,6 +5,7 @@ namespace App\Livewire\Mantenimiento\Productos;
 use App\Models\Direccion;
 use App\Models\Proveedor;
 use App\Models\Ubigeo;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Livewire\Component;
 
@@ -96,9 +97,7 @@ class Proveedores extends Component
 
     public function guardar()
     {
-        // Validaciones completas
         $validatedData = $this->validate([
-            // Validaciones del proveedor
             'proveedor.nombre' => 'required|string|max:255',
             'proveedor.ruc' => 'required|digits:11|unique:proveedores,ruc',
             'proveedor.correo_electronico_empresa' => 'nullable|unique:proveedores,correo_electronico_empresa|email|max:255',
@@ -106,8 +105,6 @@ class Proveedores extends Component
             'proveedor.telefono_secundario' => 'nullable|string|max:15',
             'proveedor.correo_electronico_encargado' => 'nullable|email|max:255',
             'proveedor.pais' => 'required|string|in:peru,colombia',
-
-            // Validaciones de la dirección
             'direccion.codigo_ubigeo' => 'required|exists:ubigeos,codigo_ubigeo',
             'direccion.tipo_calle' => 'nullable|string|max:50',
             'direccion.nombre_calle' => 'nullable|string|max:255',
@@ -118,29 +115,20 @@ class Proveedores extends Component
         ]);
 
         try {
-            Log::info('Registrando proveedor', ['data' => $validatedData]);
+            DB::transaction(function () use ($validatedData, &$proveedor) {
+                $direccion = Direccion::create($validatedData['direccion']);
 
-            // Crear dirección
-            $direccion = Direccion::create($this->direccion);
+                $proveedor = Proveedor::create(array_merge($validatedData['proveedor'], [
+                    'id_direccion' => $direccion->id
+                ]));
+            });
 
-            // Crear proveedor
-            $proveedor = Proveedor::create(array_merge($this->proveedor, [
-                'id_direccion' => $direccion->id
-            ]));
-
-            if ($proveedor) {
-                $this->dispatch('proveedorRegistrado');
-
-                session()->flash('success', 'Proveedor registrado con éxito');
-                $this->resetForm();
-                Log::info('Proveedor registrado con éxito', ['proveedor_id' => $proveedor->id]);
-            }
+            // Si llegamos aquí, todo se guardó correctamente
+            session()->flash('success', 'Proveedor registrado con éxito');
+            $this->resetForm();
         } catch (\Exception $e) {
             session()->flash('error', 'Error al registrar el proveedor: ' . $e->getMessage());
-            Log::error('Error al registrar el proveedor', [
-                'error' => $e->getMessage(),
-                'data' => $this->proveedor
-            ]);
+            Log::error('Error al registrar proveedor', ['error' => $e->getMessage()]);
         }
     }
 

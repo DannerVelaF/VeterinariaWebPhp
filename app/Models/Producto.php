@@ -9,12 +9,11 @@ class Producto extends Model
     protected $fillable = [
         'nombre_producto',
         'descripcion',
-        'precio_unitario',
-        'stock',
         'estado',
         'codigo_barras',
         'id_categoria_producto',
         'id_proveedor',
+        'id_unidad',
         "created_at",
         "updated_at",
     ];
@@ -27,5 +26,10 @@ class Producto extends Model
     public function proveedor()
     {
         return $this->belongsTo(Proveedor::class, 'id_proveedor', 'id');
+    }
+
+    public function unidad()
+    {
+        return $this->belongsTo(Unidades::class, 'id_unidad', 'id');
     }
 }

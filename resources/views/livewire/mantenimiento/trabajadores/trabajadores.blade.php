@@ -61,8 +61,9 @@
                     </div>
                     <div class="flex flex-col">
                         <label>Numero documento <span class="text-red-500">*</span></label>
-                        <input type="text" wire:model="persona.numero_documento" class="border rounded px-2 py-1"
-                            @disabled(!$persona['id_tipo_documento'])>
+                        <input type="text" wire:model="persona.numero_documento"
+                            maxlength="{{ $persona['id_tipo_documento'] == 1 ? 8 : 11 }}"
+                            class="border rounded px-2 py-1" @disabled(!$persona['id_tipo_documento'])>
                         @error('persona.numero_documento')
                             <p class="text-red-500 text-xs">{{ $message }}</p>
                         @enderror

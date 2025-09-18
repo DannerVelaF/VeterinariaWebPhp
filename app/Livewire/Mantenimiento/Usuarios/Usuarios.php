@@ -4,7 +4,9 @@ namespace App\Livewire\Mantenimiento\Usuarios;
 
 use App\Models\Trabajador;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Livewire\Component;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -46,34 +48,39 @@ class Usuarios extends Component
             'rolSeleccionado' => 'required|exists:roles,name',
         ]);
 
-        // Validar si el trabajador ya tiene usuario
         $trabajador = Trabajador::find($this->trabajadorSeleccionado);
 
-        $existeUsuario = User::where('id_persona', $trabajador->id_persona)->exists();
-
-        if ($existeUsuario) {
+        // Validar si el trabajador ya tiene usuario
+        if (User::where('id_persona', $trabajador->id_persona)->exists()) {
             session()->flash('error', 'Este trabajador ya tiene un usuario asignado.');
             return;
         }
 
-        // Crear usuario
-        $user = User::create([
-            'username' => $this->username,
-            'password_hash' => Hash::make($this->password),
-            'estado' => 'activo',
-            'id_persona' => Trabajador::find($this->trabajadorSeleccionado)->id_persona,
-        ]);
+        try {
+            DB::transaction(function () use ($trabajador) {
+                // Crear usuario
+                $user = User::create([
+                    'username' => $this->username,
+                    'password_hash' => Hash::make($this->password),
+                    'estado' => 'activo',
+                    'id_persona' => $trabajador->id_persona,
+                ]);
 
-        // Asignar rol
-        $user->assignRole($this->rolSeleccionado);
+                // Asignar rol
+                $user->assignRole($this->rolSeleccionado);
 
-        // Asignar permisos adicionales (opcional)
-        if (!empty($this->permisosSeleccionados)) {
-            $user->givePermissionTo($this->permisosSeleccionados);
+                // Asignar permisos adicionales (opcional)
+                if (!empty($this->permisosSeleccionados)) {
+                    $user->givePermissionTo($this->permisosSeleccionados);
+                }
+
+                session()->flash('success', 'Usuario registrado correctamente.');
+                $this->reset(['trabajadorSeleccionado', 'username', 'password', 'rolSeleccionado', 'permisosSeleccionados']);
+            });
+        } catch (\Exception $e) {
+            session()->flash('error', 'Error al registrar el usuario: ' . $e->getMessage());
+            Log::error('Error al crear usuario', ['error' => $e->getMessage()]);
         }
-
-        session()->flash('success', 'Usuario registrado correctamente.');
-        $this->reset(['trabajadorSeleccionado', 'username', 'password', 'rolSeleccionado', 'permisosSeleccionados']);
     }
 
     public function render()

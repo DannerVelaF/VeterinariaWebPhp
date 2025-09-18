@@ -25,13 +25,26 @@
         <x-tab name="registro">
             <!-- Mensajes de éxito y error -->
             @if (session()->has('success'))
-                <div class="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded">
+                <div class="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded"
+                    x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 4000)"
+                    x-transition:enter="transition ease-out duration-500"
+                    x-transition:enter-start="opacity-0 transform translate-y-2"
+                    x-transition:enter-end="opacity-100 transform translate-y-0"
+                    x-transition:leave="transition ease-in duration-500"
+                    x-transition:leave-start="opacity-100 transform translate-y-0"
+                    x-transition:leave-end="opacity-0 transform translate-y-2">
                     {{ session('success') }}
                 </div>
             @endif
 
             @if (session()->has('error'))
-                <div class="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+                <div class="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded" x-data="{ show: true }"
+                    x-show="show" x-init="setTimeout(() => show = false, 4000)" x-transition:enter="transition ease-out duration-500"
+                    x-transition:enter-start="opacity-0 transform translate-y-2"
+                    x-transition:enter-end="opacity-100 transform translate-y-0"
+                    x-transition:leave="transition ease-in duration-500"
+                    x-transition:leave-start="opacity-100 transform translate-y-0"
+                    x-transition:leave-end="opacity-0 transform translate-y-2">
                     {{ session('error') }}
                 </div>
             @endif
@@ -57,32 +70,18 @@
                     </div>
 
                     <div class="flex  justify-between">
-                        <div class="flex flex-col">
-                            <label for="precio_unitario" class="font-bold mb-1">Precio Unitario <span
-                                    class="text-red-500">*</span></label>
-                            <div class="relative">
-                                <span class="absolute left-2 top-1 text-gray-500">S/</span>
-                                <input type="number" id="precio_unitario" name="precio_unitario" step="0.01"
-                                    min="0.01" max="999999999.99"
-                                    class="border rounded px-7 py-1 focus:outline-none focus:ring focus:ring-blue-300 @error('producto.precio_unitario') border-red-500 @enderror"
-                                    placeholder="0.00" wire:model="producto.precio_unitario">
-                            </div>
-                            @error('producto.precio_unitario')
-                                <p class="text-red-500 text-xs italic mt-1">
-                                    {{ $message }}
-                                </p>
-                            @enderror
-                        </div>
 
                         <div class="flex flex-col">
-                            <label for="stock" class="font-bold mb-1">Stock inicial</label>
-                            <div class="relative">
-                                <span class="absolute right-2 top-1 text-gray-500">unidades</span>
-                                <input type="text" id="stock" name="stock" min="0" max="9999"
-                                    class="border rounded px-4 py-1 focus:outline-none focus:ring focus:ring-blue-300 @error('producto.stock') border-red-500 @enderror"
-                                    placeholder="0" wire:model.live="producto.stock">
-                            </div>
-                            @error('producto.stock')
+                            <label for="unidad" class="font-bold mb-1">Unidad <span
+                                    class="text-red-500">*</span></label>
+                            <select wire:model="producto.id_unidad" id="unidad"
+                                class="border rounded px-2 py-1 focus:outline-none focus:ring focus:ring-blue-300 @error('producto.id_unidad') border-red-500 @enderror">
+                                <option value="">-- Seleccione una unidad --</option>
+                                @foreach ($unidades as $unidad)
+                                    <option value="{{ $unidad->id }}">{{ $unidad->nombre }}</option>
+                                @endforeach
+                            </select>
+                            @error('producto.id_unidad')
                                 <p class="text-red-500 text-xs italic mt-1">
                                     {{ $message }}
                                 </p>
@@ -144,10 +143,7 @@
                         <div class="bg-blue-50 border border-blue-200 rounded p-3">
                             <p class="font-bold text-blue-800 text-xs mb-2">ℹ️ Información Adicional</p>
                             <div class="grid grid-cols-2 gap-4 text-xs">
-                                <div>
-                                    <span class="font-semibold">Stock inicial:</span> {{ $producto['stock'] ?? 0 }}
-                                    unidades
-                                </div>
+
                                 <div>
                                     <span class="font-semibold">Código de barras: </span>Se generarà automáticamente
                                 </div>

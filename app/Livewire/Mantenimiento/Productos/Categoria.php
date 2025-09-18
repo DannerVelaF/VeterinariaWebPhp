@@ -3,6 +3,8 @@
 namespace App\Livewire\Mantenimiento\Productos;
 
 use App\Models\CategoriaProducto;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Livewire\Component;
 
 class Categoria extends Component
@@ -20,27 +22,27 @@ class Categoria extends Component
 
     public function guardar()
     {
-        $validate = $this->validate([
+        // Validación
+        $validatedData = $this->validate([
             'categoria.nombre' => 'required|string|max:255',
-            'categoria.descripcion' => 'string|max:1000',
+            'categoria.descripcion' => 'nullable|string|max:1000',
         ]);
 
         try {
-            if ($validate) {
+            DB::transaction(function () use ($validatedData, &$categoria) {
                 $categoria = CategoriaProducto::create([
-                    'nombre' => $this->categoria['nombre'],
-                    'descripcion' => $this->categoria['descripcion'],
+                    'nombre' => $validatedData['categoria']['nombre'],
+                    'descripcion' => $validatedData['categoria']['descripcion'] ?? null,
                 ]);
+            });
 
-                if ($categoria) {
-                    $this->dispatch('categoriaRegistrado');
-
-                    session()->flash('success', 'Categoria registrada con éxito');
-                    $this->resetForm();
-                }
-            }
+            // Si llegamos aquí, todo se guardó correctamente
+            $this->dispatch('categoriaRegistrado');
+            session()->flash('success', 'Categoria registrada con éxito');
+            $this->resetForm();
         } catch (\Exception $e) {
             session()->flash('error', 'Error al registrar la categoria: ' . $e->getMessage());
+            Log::error('Error al registrar categoria', ['error' => $e->getMessage()]);
         }
     }
 

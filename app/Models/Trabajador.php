@@ -11,6 +11,7 @@ class Trabajador extends Model
 
 
     protected $fillable = [
+        "id",
         'fecha_ingreso',
         'fecha_salida',
         'salario',
@@ -32,5 +33,10 @@ class Trabajador extends Model
     public function persona()
     {
         return $this->belongsTo(Persona::class, "id_persona", "id");
+    }
+
+    public function compras()
+    {
+        return $this->hasMany(Compra::class);
     }
 }

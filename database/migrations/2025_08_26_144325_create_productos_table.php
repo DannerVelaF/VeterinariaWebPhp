@@ -15,8 +15,6 @@ return new class extends Migration
             $table->id();
             $table->string("nombre_producto");
             $table->text("descripcion");
-            $table->decimal("precio_unitario", 12, 2);
-            $table->integer("stock")->default(0);
             $table->enum('estado', ['activo', 'inactivo'])->default('activo');
             $table->string("codigo_barras");
 
@@ -26,6 +24,9 @@ return new class extends Migration
 
             $table->unsignedBigInteger("id_proveedor");
             $table->foreign('id_proveedor')->references('id')->on('proveedores');
+
+            $table->unsignedBigInteger("id_unidad");
+            $table->foreign('id_unidad')->references('id')->on('unidades');
 
             $table->timestamps();
         });

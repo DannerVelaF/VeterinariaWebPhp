@@ -51,4 +51,9 @@ class User extends Authenticatable
     {
         return $this->belongsTo(Persona::class, "id_persona", "id");
     }
+
+    public function comprasAprobadas()
+    {
+        return $this->hasMany(Compra::class, 'id_usuario_aprobador', 'id');
+    }
 }
