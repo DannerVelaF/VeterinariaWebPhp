@@ -20,8 +20,7 @@ return new class extends Migration
 
             $table->unsignedBigInteger("id_categoria_producto");
             $table->foreign('id_categoria_producto')->references('id')->on('categoria__productos');
-
-
+            $table->string("ruta_imagen")->nullable();
             $table->unsignedBigInteger("id_proveedor");
             $table->foreign('id_proveedor')->references('id')->on('proveedores');
 
