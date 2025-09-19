@@ -30,7 +30,7 @@ class Login extends Component
 
     public function mount()
     {
-        if (Session::has('user')) {
+        if (Auth::check()) {
             return redirect()->route('ventas');
         }
     }
@@ -60,16 +60,14 @@ class Login extends Component
         }
 
         // Verificación de contraseña usando hash
-        if (!Hash::check($this->password, $user->password_hash)) {
-            $this->alertMessage = 'Contraseña incorrecta.';
+        if (Auth::attempt(['username' => $this->username, 'password' => $this->password])) {
+            $user = Auth::user();
+            $user->ultimo_login = now();
+            $user->save();
+            return redirect()->route('two.factor');
+        } else {
+            $this->alertMessage = 'Credenciales incorrectas.';
             $this->alertType = 'error';
-            return;
         }
-
-        // Autenticación exitosa
-        Session::put('user', $user);
-        $user->ultimo_login = now();
-        $user->save();
-        return redirect()->route('two.factor');
     }
 }

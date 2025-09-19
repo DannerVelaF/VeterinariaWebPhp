@@ -19,11 +19,8 @@ Route::get("/logout", function () {
     return redirect()->route('login');
 })->name("logout");
 
-Route::get("/", function () {
-    if (Session::has("user")) {
-        return redirect()->route('ventas');
-    }
-    return redirect()->route("login");
+Route::get('/', function () {
+    return redirect()->route(auth()->check() ? 'ventas' : 'login');
 });
 
 Route::middleware('auth')->group(function () {

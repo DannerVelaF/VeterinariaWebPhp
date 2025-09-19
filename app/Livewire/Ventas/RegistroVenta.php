@@ -2,15 +2,19 @@
 
 namespace App\Livewire\Ventas;
 
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 use Livewire\Component;
 
 class RegistroVenta extends Component
 {
-
+    public $user;
     public function mount()
     {
-        if (!Session::has('user')) {
+
+        $this->user = Auth::user();
+
+        if (!$this->user) {
             return redirect()->route('login');
         }
     }

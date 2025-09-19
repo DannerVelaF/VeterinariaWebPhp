@@ -43,8 +43,13 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
-            'password' => 'hashed',
+            'password_hash' => 'hashed',
         ];
+    }
+
+    public function getAuthPassword()
+    {
+        return $this->password_hash;
     }
 
     public function persona()

@@ -4,6 +4,7 @@ namespace App\Livewire\Auth;
 
 use App\Mail\TwoFactorCodeMail;
 use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Session;
 use Livewire\Component;
@@ -21,12 +22,12 @@ class TwoFactorAuthentication extends Component
     public function mount()
     {
 
-        $userId = Session::get('user')->id;
-        $this->user = User::find($userId);
+        $this->user = Auth::user();
 
         if (!$this->user) {
             abort(404, 'Usuario no encontrado');
         }
+
 
         // Generar código de 2FA
         $this->code = rand(100000, 999999);

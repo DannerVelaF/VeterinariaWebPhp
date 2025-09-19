@@ -10,6 +10,7 @@ use App\Models\Tipo_documento;
 use App\Models\User;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
@@ -80,7 +81,7 @@ class DatabaseSeeder extends Seeder
         // Crear usuario vinculado a persona
         User::create([
             'username' => 'user',
-            'password_hash' => bcrypt('user'),
+            'password_hash' =>  Hash::make('user'),
             "estado" => "activo",
             "id_persona" => $persona->id,
         ]);
