@@ -2,15 +2,19 @@
 
 namespace App\Livewire\Mantenimiento\Productos;
 
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 use Livewire\Component;
 
 class Registro extends Component
 {
+    public $user;
     public function mount()
     {
-        if (!Session::has('user')) {
-            return redirect()->route('login');
+        $this->user = Auth::user();
+
+        if (!$this->user) {
+            abort(404, 'Usuario no encontrado');
         }
     }
 

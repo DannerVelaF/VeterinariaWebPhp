@@ -52,22 +52,23 @@ class Login extends Component
             return;
         }
 
-        // Validación de usuario activo
         if ($user->estado !== "activo") {
             $this->alertMessage = 'Usuario inactivo. Contacta al administrador.';
             $this->alertType = 'error';
             return;
         }
 
-        // Verificación de contraseña usando hash
-        if (Auth::attempt(['username' => $this->username, 'password' => $this->password])) {
-            $user = Auth::user();
-            $user->ultimo_login = now();
-            $user->save();
-            return redirect()->route('two.factor');
-        } else {
+        // Validar contraseña sin autenticar aún
+        if (!Hash::check($this->password, $user->password_hash)) {
             $this->alertMessage = 'Credenciales incorrectas.';
             $this->alertType = 'error';
+            return;
         }
+
+        // Guardamos temporalmente el ID del usuario en sesión para 2FA
+        Session::put('two_factor_user_id', $user->id);
+
+        // Redirigimos a 2FA
+        return redirect()->route('two.factor');
     }
 }

@@ -6,6 +6,7 @@ use App\Models\Persona;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 
 class UserSeeder extends Seeder
 {
@@ -32,7 +33,7 @@ class UserSeeder extends Seeder
 
         User::create([
             'username' => 'eberth',
-            'password_hash' => bcrypt('eberth'),
+            'password_hash' => Hash::make('eberth'),
             'estado' => 'activo',
             'id_persona' => $p->id,
         ]);

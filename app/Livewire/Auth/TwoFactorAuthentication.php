@@ -21,34 +21,40 @@ class TwoFactorAuthentication extends Component
 
     public function mount()
     {
+        $userId = Session::get('two_factor_user_id');
 
-        $this->user = Auth::user();
+        if (!$userId) {
+            return redirect()->route('login'); // no hay usuario en 2FA
+        }
+
+        $this->user = User::find($userId);
 
         if (!$this->user) {
             abort(404, 'Usuario no encontrado');
         }
 
-
-        // Generar código de 2FA
+        // Generar código 2FA y enviarlo
         $this->code = rand(100000, 999999);
         Session::put('two_factor_code', $this->code);
-        Session::put('two_factor_user_id', $this->user->id);
 
-        // Enviar correo
         Mail::to($this->user->persona->correo_electronico_personal)
             ->send(new TwoFactorCodeMail($this->code));
     }
 
-
     public function verifyCode()
     {
         if ($this->inputCode == Session::get('two_factor_code')) {
-            // Autenticar al usuario
+
+            // ✅ Autenticar al usuario solo después de verificar 2FA
             auth()->loginUsingId(Session::get('two_factor_user_id'));
 
-            // Limpiar sesión
+            // Limpiar sesión temporal
             Session::forget('two_factor_code');
             Session::forget('two_factor_user_id');
+
+            // Registrar último login
+            $this->user->ultimo_login = now();
+            $this->user->save();
 
             return redirect()->route('ventas');
         } else {
