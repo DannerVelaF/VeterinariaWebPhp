@@ -259,56 +259,62 @@
             </x-card>
         </div>
     </div>
-    <div x-data x-init="$watch('$wire.showModal', value => {
-        if (value) { document.body.classList.add('overflow-hidden') } else { document.body.classList.remove('overflow-hidden') }
-    })">
-        <div>
-            @if ($showModal && $selectedSalida)
-                <div class="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
-                    <div class="bg-white rounded-xl shadow-xl w-1/2 p-6">
-                        <h2 class="text-xl font-bold mb-4">
-                            Detalles de salida #{{ $selectedSalida->id }}
-                        </h2>
 
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <p><strong>Producto:</strong></p>
-                                <p class="text-gray-700">{{ $selectedSalida->lote->producto->nombre_producto }}</p>
-                            </div>
-                            <div>
-                                <p><strong>Cantidad:</strong></p>
-                                <p class="text-red-600 font-medium">-{{ $selectedSalida->cantidad_movimiento }}</p>
-                            </div>
-                            <div>
-                                <p><strong>Ubicación:</strong></p>
-                                <p class="capitalize">{{ $selectedSalida->ubicacion }}</p>
-                            </div>
-                            <div>
-                                <p><strong>Usuario:</strong></p>
-                                <p>{{ $selectedSalida->trabajador->persona->user->username }}</p>
-                            </div>
-                            <div class="col-span-2">
-                                <p><strong>Fecha:</strong></p>
-                                <p>{{ $selectedSalida->fecha_movimiento->format('d/m/Y H:i') }}</p>
-                            </div>
-                            <div class="col-span-2">
-                                <p><strong>Lote:</strong></p>
-                                <p>{{ $selectedSalida->lote->codigo_lote }}</p>
-                            </div>
-                            <div class="col-span-2">
-                                <p><strong>Motivo:</strong></p>
-                                <p class="text-gray-700">{{ $selectedSalida->motivo }}</p>
-                            </div>
+   <div x-data x-init="$watch('$wire.showModal', value => {
+    if (value) { document.body.classList.add('overflow-hidden') } else { document.body.classList.remove('overflow-hidden') }
+})">
+    <div>
+        @if ($showModal && $selectedSalida)
+            <div class="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
+                <div class="bg-white rounded-xl shadow-xl w-1/2 p-6 max-h-[90vh] overflow-y-auto">
+                    <h2 class="text-xl font-bold mb-4">
+                        Detalles de salida #{{ $selectedSalida->id }}
+                    </h2>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <p><strong>Producto:</strong></p>
+                            <p class="text-gray-700">{{ $selectedSalida->lote->producto->nombre_producto }}</p>
                         </div>
-                        <div class="flex justify-end mt-4">
-                            <button wire:click="$set('showModal', false)"
-                                class="bg-gray-500 hover:bg-gray-700 text-white px-4 py-2 rounded-md">
-                                Cerrar
-                            </button>
+                        <div>
+                            <p><strong>Cantidad:</strong></p>
+                            <p class="text-red-600 font-medium">-{{ $selectedSalida->cantidad_movimiento }}</p>
+                        </div>
+                        <div>
+                            <p><strong>Ubicación:</strong></p>
+                            <p class="capitalize">{{ $selectedSalida->ubicacion }}</p>
+                        </div>
+                        <div>
+                            <p><strong>Usuario:</strong></p>
+                            <p>{{ $selectedSalida->trabajador->persona->user->username }}</p>
+                        </div>
+                        <div class="col-span-2">
+                            <p><strong>Fecha:</strong></p>
+                            <p>{{ $selectedSalida->fecha_movimiento->format('d/m/Y H:i') }}</p>
+                        </div>
+                        <div class="col-span-2">
+                            <p><strong>Lote:</strong></p>
+                            <p>{{ $selectedSalida->lote->codigo_lote }}</p>
+                        </div>
+                        <div class="col-span-2">
+                            <p><strong>Motivo:</strong></p>
+                            <p class="text-gray-700 bg-gray-50 p-3 rounded-md mt-1">
+                                @if(!empty($selectedSalida->motivo))
+                                    {{ $selectedSalida->motivo }}
+                                @else
+                                    <span class="text-gray-400 italic">Sin motivo especificado</span>
+                                @endif
+                            </p>
                         </div>
                     </div>
+                    <div class="flex justify-end mt-4">
+                        <button wire:click="$set('showModal', false)"
+                            class="bg-gray-500 hover:bg-gray-700 text-white px-4 py-2 rounded-md">
+                            Cerrar
+                        </button>
+                    </div>
                 </div>
-            @endif
-        </div>
+            </div>
+        @endif
     </div>
 </div>

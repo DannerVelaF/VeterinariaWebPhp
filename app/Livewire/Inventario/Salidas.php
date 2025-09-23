@@ -260,6 +260,13 @@ private function consumirDeUbicacion($lotes, $ubicacion, $cantidadRestante, $tra
                 return (float)$lote->cantidad_almacenada + (float)$lote->cantidad_mostrada;
             });
 
+        // DEBUG: Verificar qué motivo se está guardando
+        \Log::info('Creando movimiento con motivo:', [
+            'motivoFinal' => $motivoFinal,
+            'cantidad' => $cantidadAUsar,
+            'ubicacion' => $ubicacion
+        ]);
+
         // Registrar movimiento
         InventarioMovimiento::create([
             "tipo_movimiento" => "salida",
@@ -270,7 +277,7 @@ private function consumirDeUbicacion($lotes, $ubicacion, $cantidadRestante, $tra
             "id_lote" => $lote->id,
             "id_trabajador" => $trabajador->id,
             "ubicacion" => $ubicacion,
-            "motivo" => $motivoFinal,
+            "motivo" => $motivoFinal ?? 'Sin motivo especificado :c',
             "movimentable_type" => 'App\Models\Lotes',
             "movimentable_id" => $lote->id,
         ]);
@@ -296,7 +303,8 @@ private function consumirDeUbicacion($lotes, $ubicacion, $cantidadRestante, $tra
             ->paginate(10);
 
         return view('livewire.inventario.salidas', [
-            'salidas' => $salidas
+            'salidas' => $salidas,
+            'motivosPredefinidos' => $this->motivosPredefinidos
         ]);
     }
 
