@@ -22,6 +22,10 @@ class InventarioMovimiento extends Model
         "movimentable_id",
     ];
 
+    protected $casts = [
+    'fecha_movimiento' => 'datetime',
+    'fecha_registro' => 'datetime',
+    ];
 
     public function trabajador()
     {

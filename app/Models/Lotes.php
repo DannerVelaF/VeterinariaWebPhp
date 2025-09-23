@@ -9,10 +9,11 @@ class Lotes extends Model
 
     protected $fillable = [
         "producto_id",
+        "codigo_lote",
         "cantidad_mostrada",
         "cantidad_almacenada",
         "cantidad_vendida",
-        "codigo_lote",
+        "cantidad_total",
         "precio_compra",
         "fecha_recepcion",
         "fecha_vencimiento",
