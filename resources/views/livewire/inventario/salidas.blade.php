@@ -132,20 +132,41 @@
                     </div>
 
                     <div class="flex flex-col gap-2">
-                        <label for="motivo" class="font-medium">Motivo de salida <span class="text-red-500">*</span></label>
-                        <textarea name="motivo" id="motivo" rows="4" maxlength="1000"
-                            class="border rounded px-2 py-1 focus:outline-none focus:ring focus:ring-red-300 border-gray-200 resize-none"
-                            placeholder="Ej: Venta directa, Traslado interno, Producto defectuoso, Ajuste de inventario, Donación..."
-                            wire:model.lazy="motivo"></textarea>
-                        @error('motivo')
-                            <p class="text-red-500 text-xs italic mt-1">
-                                {{ $message }}
-                            </p>
-                        @enderror
-                        <div class="text-right text-xs text-gray-500 mt-1">
-                            {{ strlen($motivo) }}/1000 caracteres
-                        </div>
-                    </div>
+    <label for="motivo" class="font-medium">Motivo de salida <span class="text-red-500">*</span></label>
+    
+    <select wire:model.live="motivo" id="motivo"
+        class="border rounded px-2 py-1 focus:outline-none focus:ring focus:ring-red-300 border-gray-200">
+        <option value="">Seleccione un motivo...</option>
+        @foreach ($motivosPredefinidos as $motivoOption)
+            <option value="{{ $motivoOption }}">{{ $motivoOption }}</option>
+        @endforeach
+    </select>
+    
+    @error('motivo')
+        <p class="text-red-500 text-xs italic mt-1">
+            {{ $message }}
+        </p>
+    @enderror
+
+    {{-- Campo para motivo personalizado --}}
+    @if ($motivo === 'Otro')
+        <div class="mt-2">
+            <label for="motivo_personalizado" class="font-medium">Especifique el motivo <span class="text-red-500">*</span></label>
+            <textarea wire:model.lazy="motivo_personalizado" id="motivo_personalizado" rows="3" maxlength="1000"
+                class="w-full border rounded px-2 py-1 focus:outline-none focus:ring focus:ring-red-300 border-gray-200 resize-none"
+                placeholder="Describa el motivo de la salida..."></textarea>
+            @error('motivo_personalizado')
+                <p class="text-red-500 text-xs italic mt-1">
+                    {{ $message }}
+                </p>
+            @enderror
+            <div class="text-right text-xs text-gray-500 mt-1">
+                {{ strlen($motivo_personalizado) }}/1000 caracteres
+            </div>
+        </div>
+    @endif
+</div>
+
                     <button type="submit"
                         class="w-full p-2 text-white rounded-md transition bg-red-500 hover:bg-red-600 ease-linear">
                         Registrar salida

@@ -21,8 +21,23 @@ class Salidas extends Component
     public $productoSeleccionado = null;
     public $ubicacion = "mostrador";
     public $motivo = "";
+    public $motivo_personalizado = "";
     public $cantidad = "";
     public $top10salidas = [];
+
+    // Motivos predefinidos
+    public $motivosPredefinidos = [
+        'Venta',
+        'Producto defectuoso', 
+        'Cambio',
+        'Devolución',
+        'Merma',
+        'Ajuste de inventario',
+        'Donación',
+        'Uso interno',
+        'Promoción',
+        'Otro' // Este permitirá texto personalizado
+    ];
 
     public bool $showModal = false;
     public ?InventarioMovimiento $selectedSalida = null;
@@ -53,122 +68,144 @@ class Salidas extends Component
         }
     }
 
-    public function registrarSalida()
-{
-    // Normalizar cantidad
-    $this->cantidad = is_string($this->cantidad) ? floatval(str_replace(',', '.', $this->cantidad)) : (float)$this->cantidad;
-
-    $this->validate([
-        "producto_id" => "required|exists:productos,id",
-        'cantidad' => 'required|numeric|min:0.01|max:999999999.99',
-        'ubicacion' => 'required|in:almacen,mostrador',
-        "motivo" => "required|max:1000",
-    ]);
-
-    // Variables para tracking del consumo
-    $consumoInfo = [
-        'primaria' => 0,
-        'secundaria' => 0,
-        'ubicacion_primaria' => $this->ubicacion,
-        'ubicacion_secundaria' => ($this->ubicacion === 'almacen') ? 'mostrador' : 'almacen',
-        'stock_primaria' => 0,
-        'stock_secundaria' => 0
-    ];
-
-    try {
-        DB::transaction(function () use (&$consumoInfo) {
-            // 1) Lock del producto
-            $producto = Producto::where('id', $this->producto_id)->lockForUpdate()->first();
-            if (!$producto) {
-                throw new Exception("Producto no encontrado.");
-            }
-
-            // 2) Calcular stock total disponible (ambas ubicaciones)
-            $lotesTotales = Lotes::where('producto_id', $this->producto_id)
-                ->where('estado', 'activo')
-                ->lockForUpdate()
-                ->get();
-
-            // Calcular stocks disponibles
-            $consumoInfo['stock_primaria'] = $lotesTotales->sum(
-                $consumoInfo['ubicacion_primaria'] === 'almacen' ? 'cantidad_almacenada' : 'cantidad_mostrada'
-            );
-            
-            $consumoInfo['stock_secundaria'] = $lotesTotales->sum(
-                $consumoInfo['ubicacion_secundaria'] === 'almacen' ? 'cantidad_almacenada' : 'cantidad_mostrada'
-            );
-            
-            $stockTotal = $consumoInfo['stock_primaria'] + $consumoInfo['stock_secundaria'];
-
-            if ($stockTotal < $this->cantidad) {
-                throw new Exception("Stock total insuficiente. Stock disponible: {$stockTotal}");
-            }
-
-            // 3) Obtener trabajador
-            $trabajador = auth()->user()->persona->trabajador;
-            if (!$trabajador) {
-                throw new Exception("El usuario autenticado no tiene un trabajador asociado.");
-            }
-
-            // 4) Determinar estrategia de consumo
-            $cantidadRestante = (float) $this->cantidad;
-
-            // 5) Consumir primero de la ubicación primaria
-            $cantidadRestante = $this->consumirDeUbicacion($lotesTotales, $consumoInfo['ubicacion_primaria'], $cantidadRestante, $trabajador, $consumoInfo);
-
-            // 6) Si aún queda cantidad, consumir de la ubicación secundaria
-            if ($cantidadRestante > 0) {
-                $cantidadRestante = $this->consumirDeUbicacion($lotesTotales, $consumoInfo['ubicacion_secundaria'], $cantidadRestante, $trabajador, $consumoInfo);
-            }
-
-            if ($cantidadRestante > 0) {
-                throw new Exception('Error inesperado: No se pudo consumir toda la cantidad solicitada.');
-            }
-
-            // 7) Actualizar stock_actual del producto
-            if (Schema::hasColumn('productos', 'stock_actual')) {
-                $stockActualReal = (float) Lotes::where('producto_id', $this->producto_id)
-                    ->where('estado', 'activo')
-                    ->get()
-                    ->sum(function($lote) {
-                        return (float)$lote->cantidad_almacenada + (float)$lote->cantidad_mostrada;
-                    });
-
-                $producto->stock_actual = $stockActualReal;
-                $producto->save();
-            }
-        });
-
-        // Mensaje personalizado según el consumo
-        $mensaje = '✅ Salida registrada con éxito';
-        
-        if ($consumoInfo['secundaria'] > 0) {
-            // Se consumió de ambas ubicaciones
-            $mensaje .= " ({$consumoInfo['primaria']} de {$consumoInfo['ubicacion_primaria']} + {$consumoInfo['secundaria']} de {$consumoInfo['ubicacion_secundaria']})";
+    public function updatedMotivo($value)
+    {
+        // Si selecciona "Otro", limpiar el motivo personalizado para que pueda escribir
+        if ($value === 'Otro') {
+            $this->motivo_personalizado = '';
         } else {
-            // Solo se consumió de la ubicación primaria
-            $mensaje .= " ({$consumoInfo['primaria']} de {$consumoInfo['ubicacion_primaria']})";
+            // Si selecciona cualquier otro motivo, limpiar el personalizado
+            $this->motivo_personalizado = '';
         }
-
-        session()->flash('success', $mensaje);
-        $this->resetForm();
-        $this->dispatch('salidaRegistrada');
-        
-    } catch (Exception $e) {
-        session()->flash('error', 'Error al registrar la salida: ' . $e->getMessage());
-        Log::error('Error al registrar salida', [
-            'error' => $e->getMessage(),
-            'producto_id' => $this->producto_id,
-            'cantidad' => $this->cantidad,
-            'ubicacion' => $this->ubicacion
-        ]);
     }
-}
+
+    public function registrarSalida()
+    {
+        // Normalizar cantidad
+        $this->cantidad = is_string($this->cantidad) ? floatval(str_replace(',', '.', $this->cantidad)) : (float)$this->cantidad;
+
+         // Determinar el motivo final
+        $motivoFinal = $this->motivo;
+        if ($this->motivo === 'Otro' && !empty($this->motivo_personalizado)) {
+            $motivoFinal = $this->motivo_personalizado;
+        }
+        
+        $this->validate([
+            "producto_id" => "required|exists:productos,id",
+            'cantidad' => 'required|numeric|min:0.01|max:999999999.99',
+            'ubicacion' => 'required|in:almacen,mostrador',
+            "motivo" => "required|in:" . implode(',', $this->motivosPredefinidos),
+            "motivo_personalizado" => $this->motivo === 'Otro' ? 'required|max:1000' : 'nullable',
+        ], [
+            'motivo.required' => 'Seleccione un motivo de salida.',
+            'motivo_personalizado.required' => 'Cuando selecciona "Otro", debe especificar el motivo.',
+        ]);
+
+        // Variables para tracking del consumo
+        $consumoInfo = [
+            'primaria' => 0,
+            'secundaria' => 0,
+            'ubicacion_primaria' => $this->ubicacion,
+            'ubicacion_secundaria' => ($this->ubicacion === 'almacen') ? 'mostrador' : 'almacen',
+            'stock_primaria' => 0,
+            'stock_secundaria' => 0
+        ];
+
+        try {
+            DB::transaction(function () use (&$consumoInfo, $motivoFinal) {
+                // 1) Lock del producto
+                $producto = Producto::where('id', $this->producto_id)->lockForUpdate()->first();
+                if (!$producto) {
+                    throw new Exception("Producto no encontrado.");
+                }
+
+                // 2) Calcular stock total disponible (ambas ubicaciones)
+                $lotesTotales = Lotes::where('producto_id', $this->producto_id)
+                    ->where('estado', 'activo')
+                    ->lockForUpdate()
+                    ->get();
+
+                // Calcular stocks disponibles
+                $consumoInfo['stock_primaria'] = $lotesTotales->sum(
+                    $consumoInfo['ubicacion_primaria'] === 'almacen' ? 'cantidad_almacenada' : 'cantidad_mostrada'
+                );
+                
+                $consumoInfo['stock_secundaria'] = $lotesTotales->sum(
+                    $consumoInfo['ubicacion_secundaria'] === 'almacen' ? 'cantidad_almacenada' : 'cantidad_mostrada'
+                );
+                
+                $stockTotal = $consumoInfo['stock_primaria'] + $consumoInfo['stock_secundaria'];
+
+                if ($stockTotal < $this->cantidad) {
+                    throw new Exception("Stock total insuficiente. Stock disponible: {$stockTotal}");
+                }
+
+                // 3) Obtener trabajador
+                $trabajador = auth()->user()->persona->trabajador;
+                if (!$trabajador) {
+                    throw new Exception("El usuario autenticado no tiene un trabajador asociado.");
+                }
+
+                // 4) Determinar estrategia de consumo
+                $cantidadRestante = (float) $this->cantidad;
+
+                // 5) Consumir primero de la ubicación primaria
+                $cantidadRestante = $this->consumirDeUbicacion($lotesTotales, $consumoInfo['ubicacion_primaria'], $cantidadRestante, $trabajador, $consumoInfo, $motivoFinal);
+
+                // 6) Si aún queda cantidad, consumir de la ubicación secundaria
+                if ($cantidadRestante > 0) {
+                    $cantidadRestante = $this->consumirDeUbicacion($lotesTotales, $consumoInfo['ubicacion_secundaria'], $cantidadRestante, $trabajador, $consumoInfo, $motivoFinal);
+                }
+
+                if ($cantidadRestante > 0) {
+                    throw new Exception('Error inesperado: No se pudo consumir toda la cantidad solicitada.');
+                }
+
+                // 7) Actualizar stock_actual del producto
+                if (Schema::hasColumn('productos', 'stock_actual')) {
+                    $stockActualReal = (float) Lotes::where('producto_id', $this->producto_id)
+                        ->where('estado', 'activo')
+                        ->get()
+                        ->sum(function($lote) {
+                            return (float)$lote->cantidad_almacenada + (float)$lote->cantidad_mostrada;
+                        });
+
+                    $producto->stock_actual = $stockActualReal;
+                    $producto->save();
+                }
+            });
+
+            // Mensaje personalizado según el consumo
+            $mensaje = '✅ Salida registrada con éxito';
+            
+            if ($consumoInfo['secundaria'] > 0) {
+                // Se consumió de ambas ubicaciones
+                $mensaje .= " ({$consumoInfo['primaria']} de {$consumoInfo['ubicacion_primaria']} + {$consumoInfo['secundaria']} de {$consumoInfo['ubicacion_secundaria']})";
+            } else {
+                // Solo se consumió de la ubicación primaria
+                $mensaje .= " ({$consumoInfo['primaria']} de {$consumoInfo['ubicacion_primaria']})";
+            }
+
+            session()->flash('success', $mensaje);
+            $this->resetForm();
+            $this->dispatch('salidaRegistrada');
+            
+        } catch (Exception $e) {
+            session()->flash('error', 'Error al registrar la salida: ' . $e->getMessage());
+            Log::error('Error al registrar salida', [
+                'error' => $e->getMessage(),
+                'producto_id' => $this->producto_id,
+                'cantidad' => $this->cantidad,
+                'ubicacion' => $this->ubicacion,
+                'motivo' => $motivoFinal
+            ]);
+        }
+    }
 
 /**
  * Consume cantidad de una ubicación específica usando lotes FIFO
  */
-private function consumirDeUbicacion($lotes, $ubicacion, $cantidadRestante, $trabajador, &$consumoInfo)
+private function consumirDeUbicacion($lotes, $ubicacion, $cantidadRestante, $trabajador, &$consumoInfo, $motivoFinal)
 {
     // Filtrar lotes que tienen stock en la ubicación específica
     $lotesUbicacion = $lotes->filter(function($lote) use ($ubicacion) {
@@ -233,7 +270,7 @@ private function consumirDeUbicacion($lotes, $ubicacion, $cantidadRestante, $tra
             "id_lote" => $lote->id,
             "id_trabajador" => $trabajador->id,
             "ubicacion" => $ubicacion,
-            "motivo" => $this->motivo,
+            "motivo" => $motivoFinal,
             "movimentable_type" => 'App\Models\Lotes',
             "movimentable_id" => $lote->id,
         ]);
@@ -270,6 +307,7 @@ private function consumirDeUbicacion($lotes, $ubicacion, $cantidadRestante, $tra
         $this->ubicacion = "mostrador";
         $this->cantidad = "";
         $this->motivo = "";
+        $this->motivo_personalizado = "";
         $this->cargarSalidasRecientes();
     }
 

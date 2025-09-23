@@ -95,26 +95,47 @@ final class SalidasTable extends PowerGridComponent
     }
 
     public function filters(): array
-    {
-        return [
-            Filter::select('ubicacion')
-                ->dataSource([
-                    ['id' => 'almacen', 'name' => 'Almacén'],
-                    ['id' => 'mostrador', 'name' => 'Mostrador'],
-                ])
-                ->optionValue('id')
-                ->optionLabel('name'),
-            Filter::select('producto', 'Producto')
-                ->dataSource(
-                    Producto::query()
-                        ->select('id as id', 'nombre_producto as name')
-                        ->get()
-                        ->toArray()
-                )
-                ->optionValue('id')
-                ->optionLabel('name'),
-        ];
-    }
+{
+    $motivosPredefinidos = [
+        'Venta',
+        'Producto defectuoso', 
+        'Cambio',
+        'Devolución',
+        'Merma',
+        'Ajuste de inventario',
+        'Donación',
+        'Uso interno',
+        'Promoción',
+        'Otro'
+    ];
+
+    return [
+        Filter::select('ubicacion')
+            ->dataSource([
+                ['id' => 'almacen', 'name' => 'Almacén'],
+                ['id' => 'mostrador', 'name' => 'Mostrador'],
+            ])
+            ->optionValue('id')
+            ->optionLabel('name'),
+        
+        Filter::select('motivo', 'Motivo')
+            ->dataSource(collect($motivosPredefinidos)->map(function($motivo) {
+                return ['id' => $motivo, 'name' => $motivo];
+            })->toArray())
+            ->optionValue('id')
+            ->optionLabel('name'),
+            
+        Filter::select('producto', 'Producto')
+            ->dataSource(
+                Producto::query()
+                    ->select('id as id', 'nombre_producto as name')
+                    ->get()
+                    ->toArray()
+            )
+            ->optionValue('id')
+            ->optionLabel('name'),
+    ];
+}
 
     public function actions(InventarioMovimiento $row): array
     {
