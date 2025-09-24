@@ -7,8 +7,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Trabajador extends Model
 {
-    protected $table = 'trabajadores';
 
+    public $timestamps = true;
+
+    const CREATED_AT = 'fecha_registro';
+    const UPDATED_AT = 'fecha_actualizacion';
+
+    protected $table = 'trabajadores';
 
     protected $fillable = [
         "id",
@@ -18,6 +23,9 @@ class Trabajador extends Model
         'numero_seguro_social',
         'id_puesto_trabajo',
         'id_estado_trabajador',
+        "id_persona",
+        'fecha_registro',
+        'fecha_actualizacion',
     ];
 
 

@@ -6,6 +6,12 @@ use Illuminate\Database\Eloquent\Model;
 
 class Proveedor extends Model
 {
+
+    public $timestamps = true;
+
+    const CREATED_AT = 'fecha_registro';
+    const UPDATED_AT = 'fecha_actualizacion';
+
     protected $table = 'proveedores';
     protected $fillable = [
         'nombre',
@@ -18,6 +24,8 @@ class Proveedor extends Model
         'telefono_secundario',
         'correo_electronico_encargado',
         'correo_electronico_empresa',
+        'fecha_registro',
+        'fecha_actualizacion',
     ];
 
     public function direccion()

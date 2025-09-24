@@ -10,11 +10,13 @@
     "license": "MIT",
     "require": {
         "php": "^8.2",
+        "dompdf/dompdf": "^3.1",
         "laravel/framework": "^12.0",
         "laravel/tinker": "^2.10.1",
         "livewire/flux": "^2.1.1",
         "livewire/volt": "^1.7.0",
         "maatwebsite/excel": "^3.1",
+        "mpdf/mpdf": "^8.2",
         "openspout/openspout": "^4.0",
         "power-components/livewire-powergrid": "^6.5",
         "spatie/laravel-permission": "^6.21"

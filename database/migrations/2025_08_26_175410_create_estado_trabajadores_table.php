@@ -14,7 +14,8 @@ return new class extends Migration
         Schema::create('estado_trabajadores', function (Blueprint $table) {
             $table->id();
             $table->string("nombre");
-            $table->timestamps();
+            $table->timestamp("fecha_registro");
+            $table->timestamp("fecha_actualizacion")->nullable();
         });
     }
 

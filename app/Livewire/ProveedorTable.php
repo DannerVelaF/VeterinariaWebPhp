@@ -13,6 +13,7 @@ use PowerComponents\LivewirePowerGrid\Facades\PowerGrid;
 use PowerComponents\LivewirePowerGrid\PowerGridFields;
 use PowerComponents\LivewirePowerGrid\PowerGridComponent;
 use PowerComponents\LivewirePowerGrid\Traits\WithExport;
+use Illuminate\Support\Str;
 
 final class ProveedorTable extends PowerGridComponent
 {
@@ -54,7 +55,8 @@ final class ProveedorTable extends PowerGridComponent
             ->add('ruc')
             ->add('telefono_contacto')
             ->add('correo_electronico_empresa')
-            ->add('pais')
+            ->add('pais', fn($proveedor) => Str::ucfirst(Str::lower($proveedor->pais)))
+            ->add('fecha_registro')
             ->add("estado")
             ->add('estado_boolean', function ($row) {
                 return $row->estado === 'activo';
@@ -67,8 +69,7 @@ final class ProveedorTable extends PowerGridComponent
             Column::make('Id', 'id'),
             Column::make('Nombre', 'nombre')
                 ->sortable()
-                ->searchable()
-                ->editOnClick(),
+                ->searchable(),
 
             Column::make('Ruc', 'ruc')
                 ->sortable()
@@ -88,7 +89,8 @@ final class ProveedorTable extends PowerGridComponent
             Column::make('Pais', 'pais')
                 ->sortable()
                 ->searchable(),
-
+            Column::make('Fecha Registro', 'fecha_registro')
+                ->sortable(),
             Column::make('Estado', 'estado_boolean')
                 ->sortable()
                 ->searchable()

@@ -6,6 +6,10 @@ use Illuminate\Database\Eloquent\Model;
 
 class Persona extends Model
 {
+    public $timestamps = true;
+
+    const CREATED_AT = 'fecha_registro';
+    const UPDATED_AT = 'fecha_actualizacion';
 
     protected $table = 'personas';
 
@@ -23,6 +27,8 @@ class Persona extends Model
         "numero_telefono_secundario",
         "id_tipo_documento",
         "id_direccion",
+        "fecha_registro",
+        "fecha_actualizacion",
     ];
 
 

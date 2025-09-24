@@ -7,6 +7,11 @@ use Illuminate\Database\Eloquent\Model;
 class Lotes extends Model
 {
 
+    public $timestamps = true;
+
+    const CREATED_AT = 'fecha_registro';
+    const UPDATED_AT = 'fecha_actualizacion';
+
     protected $fillable = [
         "producto_id",
         "cantidad_mostrada",
@@ -18,18 +23,13 @@ class Lotes extends Model
         "fecha_vencimiento",
         "estado",
         "observacion",
-        "created_at",
-        "updated_at",
+        "fecha_registro",
+        "fecha_actualizacion",
     ];
 
     public function producto()
     {
         return $this->belongsTo(Producto::class, 'producto_id', 'id');
-    }
-
-    public function proveedor()
-    {
-        return $this->belongsTo(Proveedor::class, 'proveedor_id', 'id');
     }
 
     public function inventarios()

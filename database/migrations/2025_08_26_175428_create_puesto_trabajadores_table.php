@@ -16,7 +16,8 @@ return new class extends Migration
             $table->string("nombre");
             $table->string("descripcion")->nullable();
             $table->enum('estado', ['activo', 'inactivo'])->default('activo');
-            $table->timestamps();
+            $table->timestamp("fecha_registro");
+            $table->timestamp("fecha_actualizacion")->nullable();
         });
     }
 

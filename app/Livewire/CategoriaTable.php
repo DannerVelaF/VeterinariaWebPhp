@@ -51,7 +51,7 @@ final class CategoriaTable extends PowerGridComponent
             ->add('estado_boolean', function ($row) {
                 return $row->estado === 'activo';
             })
-            ->add('created_at');
+            ->add('fecha_registro');
     }
 
     public function columns(): array
@@ -73,10 +73,7 @@ final class CategoriaTable extends PowerGridComponent
                 ->searchable()
                 ->editOnClick(),
 
-            Column::make('Created at', 'created_at_formatted', 'created_at')
-                ->sortable(),
-
-            Column::make('Created at', 'created_at')
+            Column::make('Fecha de registro', 'fecha_registro')
                 ->sortable()
                 ->searchable(),
 

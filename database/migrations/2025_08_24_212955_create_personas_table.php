@@ -32,7 +32,8 @@ return new class extends Migration
             $table->unsignedBigInteger("id_tipo_documento")->nullable();
             $table->foreign("id_tipo_documento")->references("id")->on("tipo_documentos")->onDelete("set null");
 
-            $table->timestamps();
+            $table->timestamp("fecha_registro");
+            $table->timestamp("fecha_actualizacion")->nullable();
         });
     }
 

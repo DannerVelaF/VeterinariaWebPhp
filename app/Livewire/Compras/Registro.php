@@ -17,7 +17,10 @@ class Registro extends Component
     public $productos = [];
     public $proveedores = [];
     public $proveedorSeleccionado = '';
-
+    public $cantOrdenesPendientes = 0;
+    public $cantOrdenesAprobadas = 0;
+    public $cantOrdenesRecibidas = 0;
+    public $precioCompraTotal = 0;
     public $detalleCompra = [];
     public $compra = [
         'numero_factura' => '',
@@ -41,6 +44,10 @@ class Registro extends Component
             'fecha_compra' => now()->format('Y-m-d'),
             'observacion' => ''
         ];
+        $this->cantOrdenesPendientes = Compra::where('estado', 'pendiente')->count();
+        $this->cantOrdenesAprobadas = Compra::where('estado', 'aprobado')->count();
+        $this->cantOrdenesRecibidas = Compra::where('estado', 'recibido')->count();
+        $this->precioCompraTotal = Compra::where("estado", "recibido")->sum('total');
     }
 
     public function generarCodigoOrden()
@@ -49,8 +56,8 @@ class Registro extends Component
         $mes = Carbon::now()->format('m');
 
         // Buscar el último correlativo del mes
-        $ultimo = Compra::whereYear('created_at', $año)
-            ->whereMonth('created_at', $mes)
+        $ultimo = Compra::whereYear('fecha_registro', $año)
+            ->whereMonth('fecha_registro', $mes)
             ->orderBy('id', 'desc')
             ->first();
 
@@ -126,8 +133,7 @@ class Registro extends Component
                     "estado" => "pendiente",
                     'total' => $total,
                     "observacion" => $this->compra['observacion'],
-                    "created_at" => now(),
-                    "updated_at" => now(),
+                    "fecha_registro" => now(),
                 ]);
 
                 foreach ($this->detalleCompra as $index => $detalle) {
@@ -146,6 +152,7 @@ class Registro extends Component
                 ];
                 $this->closeModal();
             });
+            $this->mount();
             session()->flash('success', 'Orden de compra registrada correctamente ✅');
         } catch (\Exception $e) {
             session()->flash('error', 'Error al registrar el proveedor: ' . $e->getMessage());

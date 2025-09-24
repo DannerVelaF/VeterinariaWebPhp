@@ -46,7 +46,7 @@ final class PuestosTable extends PowerGridComponent
             ->add('nombre')
             ->add('descripcion')
             ->add('estado')
-            ->add('created_at');
+            ->add('fecha_registro');
     }
 
     public function columns(): array
@@ -65,10 +65,7 @@ final class PuestosTable extends PowerGridComponent
                 ->sortable()
                 ->searchable(),
 
-            Column::make('Created at', 'created_at_formatted', 'created_at')
-                ->sortable(),
-
-            Column::make('Created at', 'created_at')
+            Column::make('Created at', 'fecha_registro')
                 ->sortable()
                 ->searchable(),
 
@@ -78,21 +75,20 @@ final class PuestosTable extends PowerGridComponent
 
     public function filters(): array
     {
-        return [
-        ];
+        return [];
     }
 
     #[\Livewire\Attributes\On('edit')]
     public function edit($rowId): void
     {
-        $this->js('alert('.$rowId.')');
+        $this->js('alert(' . $rowId . ')');
     }
 
     public function actions(PuestoTrabajador $row): array
     {
         return [
             Button::add('edit')
-                ->slot('Edit: '.$row->id)
+                ->slot('Edit: ' . $row->id)
                 ->id()
                 ->class('pg-btn-white dark:ring-pg-primary-600 dark:border-pg-primary-600 dark:hover:bg-pg-primary-700 dark:ring-offset-pg-primary-800 dark:text-pg-primary-300 dark:bg-pg-primary-700')
                 ->dispatch('edit', ['rowId' => $row->id])

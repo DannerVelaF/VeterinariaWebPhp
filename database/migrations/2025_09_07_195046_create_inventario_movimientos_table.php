@@ -16,8 +16,6 @@ return new class extends Migration
             $table->enum("tipo_movimiento", ["ajuste", "entrada", "salida"])->default("entrada");
             $table->integer("cantidad_movimiento");
             $table->integer("stock_resultante");
-            $table->timestamp("fecha_movimiento");
-            $table->timestamp("fecha_registro");
             $table->enum("ubicacion", ["almacen", "mostrador"])->default("almacen");
             $table->unsignedBigInteger("id_lote")->nullable();
             $table->foreign("id_lote")->references("id")->on("lotes");
@@ -26,6 +24,10 @@ return new class extends Migration
             $table->foreign("id_trabajador")->references("id")->on("trabajadores");
 
             $table->morphs('movimentable');
+
+            $table->timestamp("fecha_movimiento");
+            $table->timestamp("fecha_registro");
+            $table->timestamp("fecha_actualizacion")->nullable();
         });
     }
 

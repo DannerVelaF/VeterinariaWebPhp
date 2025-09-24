@@ -41,7 +41,7 @@ class Entradas extends Component
     public $top10entradas = [];
 
     public bool $showModal = false;
-
+    public bool $showModalDetalle = false;
     public ?InventarioMovimiento $selectedEntrada = null;
 
     public $ordenCompra = '';

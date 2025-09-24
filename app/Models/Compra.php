@@ -6,6 +6,12 @@ use Illuminate\Database\Eloquent\Model;
 
 class Compra extends Model
 {
+
+    public $timestamps = true;
+
+    const CREATED_AT = 'fecha_registro';
+    const UPDATED_AT = 'fecha_actualizacion';
+
     protected $fillable = [
         "id_proveedor",
         "id_trabajador",

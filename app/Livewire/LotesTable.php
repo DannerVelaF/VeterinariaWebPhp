@@ -3,35 +3,51 @@
 namespace App\Livewire;
 
 use App\Models\Lotes;
+use App\Models\Producto;
+use App\Models\Proveedor;
 use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use PowerComponents\LivewirePowerGrid\Button;
 use PowerComponents\LivewirePowerGrid\Column;
+use PowerComponents\LivewirePowerGrid\Components\SetUp\Exportable;
 use PowerComponents\LivewirePowerGrid\Facades\Filter;
 use PowerComponents\LivewirePowerGrid\Facades\PowerGrid;
 use PowerComponents\LivewirePowerGrid\PowerGridFields;
 use PowerComponents\LivewirePowerGrid\PowerGridComponent;
+use PowerComponents\LivewirePowerGrid\Traits\WithExport;
 
 final class LotesTable extends PowerGridComponent
 {
     public string $tableName = 'lotes-table-navkq7-table';
+    public bool $showFilters = true;
+    use WithExport;
+
+    public function boot(): void
+    {
+        config(['livewire-powergrid.filter' => 'outside']);
+    }
 
     public function setUp(): array
     {
         $this->showCheckBox();
 
         return [
-            PowerGrid::header()
-                ->showSearchInput(),
+            PowerGrid::header(),
             PowerGrid::footer()
                 ->showPerPage()
                 ->showRecordCount(),
+            PowerGrid::exportable(fileName: 'Reporte_Lotes')
+                ->type(
+                    Exportable::TYPE_XLS,
+                    Exportable::TYPE_CSV,
+                )
+                ->striped()
         ];
     }
 
     public function datasource(): Builder
     {
-        return Lotes::query();
+        return Lotes::query(["producto.proveedor"])->orderBy('fecha_registro', 'desc');;
     }
 
     public function relationSearch(): array
@@ -42,81 +58,58 @@ final class LotesTable extends PowerGridComponent
     public function fields(): PowerGridFields
     {
         return PowerGrid::fields()
-            ->add('id')
             ->add('producto', fn($lote) => $lote->producto->nombre_producto)
-            ->add('cantidad_mostrada')
-            ->add('cantidad_almacenada')
-            ->add('cantidad_vendida')
+            ->add('cantidad_total')
             ->add('codigo_lote')
-            ->add('precio_compra')
-            ->add('fecha_recepcion_formatted', fn(Lotes $model) => Carbon::parse($model->fecha_recepcion)->format('d/m/Y'))
-            ->add('fecha_vencimiento_formatted', fn(Lotes $model) => Carbon::parse($model->fecha_vencimiento)->format('d/m/Y'))
+            ->add("cantidad_almacenada")
+            ->add("cantidad_mostrada")
+            ->add('precio_compra', fn($lote) => "$" . number_format($lote->precio_compra, 2))
+            ->add('fecha_recepcion')
+            ->add('fecha_vencimiento')
             ->add('estado')
-            ->add('observacion')
-            ->add('created_at')
-            ->add('updated_at')
-            ->add('created_at');
+            ->add('proveedor', fn($lote) => $lote->producto->proveedor->nombre)
+            ->add('fecha_registro');
     }
 
     public function columns(): array
     {
         return [
-            Column::make('Id', 'id'),
-            Column::make('Producto', 'producto'),
-            Column::make('Cantidad mostrada', 'cantidad_mostrada')
-                ->sortable()
-                ->searchable(),
-
-            Column::make('Cantidad almacenada', 'cantidad_almacenada')
-                ->sortable()
-                ->searchable(),
-
-            Column::make('Cantidad vendida', 'cantidad_vendida')
-                ->sortable()
-                ->searchable(),
-
             Column::make('Codigo lote', 'codigo_lote')
-                ->sortable()
                 ->searchable(),
+
+            Column::make('Producto', 'producto')
+                ->searchable(),
+
+            Column::make('Stock total', 'cantidad_total')
+                ->sortable(),
+
+            Column::make('Almacen', 'cantidad_almacenada')
+                ->sortable(),
+            Column::make('Mostrador', 'cantidad_mostrada')
+                ->sortable(),
 
             Column::make('Precio compra', 'precio_compra')
                 ->sortable()
                 ->searchable(),
 
-            Column::make('Fecha recepcion', 'fecha_recepcion_formatted', 'fecha_recepcion')
+            Column::make('Fecha recepcion', 'fecha_recepcion')
                 ->sortable(),
 
-            Column::make('Fecha vencimiento', 'fecha_vencimiento_formatted', 'fecha_vencimiento')
+            Column::make('Fecha vencimiento', 'fecha_vencimiento')
                 ->sortable(),
 
             Column::make('Estado', 'estado')
                 ->sortable()
                 ->searchable(),
 
-            Column::make('Observacion', 'observacion')
+            Column::make('Proveedor', 'proveedor')
                 ->sortable()
                 ->searchable(),
 
-            Column::make('Created at', 'created_at_formatted', 'created_at')
-                ->sortable(),
-
-            Column::make('Created at', 'created_at')
+            Column::make('Fecha de registro', 'fecha_registro')
                 ->sortable()
                 ->searchable(),
 
-            Column::make('Updated at', 'updated_at_formatted', 'updated_at')
-                ->sortable(),
-
-            Column::make('Updated at', 'updated_at')
-                ->sortable()
-                ->searchable(),
-
-            Column::make('Created at', 'created_at_formatted', 'created_at')
-                ->sortable(),
-
-            Column::make('Created at', 'created_at')
-                ->sortable()
-                ->searchable(),
 
             Column::action('Action')
         ];
@@ -125,8 +118,75 @@ final class LotesTable extends PowerGridComponent
     public function filters(): array
     {
         return [
-            Filter::datepicker('fecha_recepcion'),
-            Filter::datepicker('fecha_vencimiento'),
+            // Producto: Lotes tiene columna producto_id, por eso usamos 'producto_id' como columna real
+            Filter::select('producto', 'producto_id')
+                ->dataSource(Producto::orderBy('nombre_producto')->get()->toArray())
+                ->optionValue('id')
+                ->optionLabel('nombre_producto'),
+
+            // Proveedor: Lotes no tiene proveedor_id directo, filtramos con whereHas sobre la relación producto
+            Filter::select('proveedor', 'proveedor')
+                ->dataSource(Proveedor::orderBy('nombre')->get()->toArray())
+                ->optionValue('id')
+                ->optionLabel('nombre')
+                ->builder(function (Builder $query, $value) {
+                    // normalizar valor (puede venir string o array)
+                    if (is_array($value)) {
+                        $v = $value['value'] ?? $value['search'] ?? array_values($value)[0] ?? '';
+                    } else {
+                        $v = (string) $value;
+                    }
+
+                    $v = trim($v);
+                    if ($v === '') {
+                        return $query;
+                    }
+
+                    // Filtrar lotes por proveedor a través de la relación producto
+                    return $query->whereHas('producto', function ($q) use ($v) {
+                        // suponiendo que la columna FK en productos es id_proveedor
+                        $q->where('id_proveedor', $v);
+                    });
+                }),
+
+            // Estado (select simple sobre la columna estado en lotes)
+            Filter::select('estado', 'estado')
+                ->dataSource([
+                    ['id' => 'activo', 'name' => 'Activo'],
+                    ['id' => 'inactivo', 'name' => 'Inactivo'],
+                    // agrega más estados que uses en tu app
+                ])
+                ->optionValue('id')
+                ->optionLabel('name')
+                ->builder(function (Builder $query, $value) {
+                    if (is_array($value)) {
+                        $v = $value['value'] ?? $value['search'] ?? array_values($value)[0] ?? '';
+                    } else {
+                        $v = (string) $value;
+                    }
+
+                    $v = trim($v);
+                    if ($v === '') {
+                        return $query;
+                    }
+
+                    return $query->where('estado', $v);
+                }),
+
+            // Datepickers para fechas (columna real en lotes)
+            Filter::datePicker('fecha_recepcion', 'fecha_recepcion')
+                ->params([
+                    'dateFormat' => 'Y-m-d',
+                    'locale' => 'es',
+                    'enableTime' => false,
+                ]),
+
+            Filter::datePicker('fecha_vencimiento', 'fecha_vencimiento')
+                ->params([
+                    'dateFormat' => 'Y-m-d',
+                    'locale' => 'es',
+                    'enableTime' => false,
+                ]),
         ];
     }
 

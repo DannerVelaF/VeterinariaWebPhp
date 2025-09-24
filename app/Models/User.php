@@ -23,7 +23,14 @@ class User extends Authenticatable
         'password_hash',
         'estado',
         'id_persona',
+        'fecha_registro',
+        'fecha_actualizacion',
     ];
+
+    public $timestamps = true;
+
+    const CREATED_AT = 'fecha_registro';
+    const UPDATED_AT = 'fecha_actualizacion';
 
     /**
      * The attributes that should be hidden for serialization.

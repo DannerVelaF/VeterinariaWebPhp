@@ -6,6 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class Direccion extends Model
 {
+    public $timestamps = true;
+
+    const CREATED_AT = 'fecha_registro';
+    const UPDATED_AT = 'fecha_actualizacion';
+
     protected $table = 'direcciones';
     protected $fillable = [
         'zona',
@@ -15,6 +20,8 @@ class Direccion extends Model
         'codigo_postal',
         'referencia',
         'codigo_ubigeo',
+        'fecha_registro',
+        'fecha_actualizacion',
     ];
 
     public function proveedor()

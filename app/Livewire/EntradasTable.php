@@ -4,6 +4,7 @@ namespace App\Livewire;
 
 use App\Models\InventarioMovimiento;
 use App\Models\Producto;
+use App\Models\Proveedor;
 use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use PowerComponents\LivewirePowerGrid\Button;
@@ -12,19 +13,26 @@ use PowerComponents\LivewirePowerGrid\Facades\Filter;
 use PowerComponents\LivewirePowerGrid\Facades\PowerGrid;
 use PowerComponents\LivewirePowerGrid\PowerGridFields;
 use PowerComponents\LivewirePowerGrid\PowerGridComponent;
+use PowerComponents\LivewirePowerGrid\Traits\WithExport;
 
 final class EntradasTable extends PowerGridComponent
 {
     public string $tableName = 'entradas-table-zlucbi-table';
     protected $listeners = ['entradaRegistrada' => '$refresh'];
+    public bool $showFilters = true;
+    use WithExport;
+
+    public function boot(): void
+    {
+        config(['livewire-powergrid.filter' => 'outside']);
+    }
 
     public function setUp(): array
     {
         $this->showCheckBox();
 
         return [
-            PowerGrid::header()
-                ->showSearchInput(),
+            PowerGrid::header(),
             PowerGrid::footer()
                 ->showPerPage()
                 ->showRecordCount(),
@@ -33,9 +41,20 @@ final class EntradasTable extends PowerGridComponent
 
     public function datasource(): Builder
     {
-        return InventarioMovimiento::query(
-            ["trabajador", "lotes"]
-        )->orderBy('fecha_movimiento', 'desc');;
+        return InventarioMovimiento::query()
+            ->join('lotes', 'inventario_movimientos.id_lote', '=', 'lotes.id')
+            ->join('productos', 'lotes.producto_id', '=', 'productos.id')
+            ->join('proveedores', 'productos.id_proveedor', '=', 'proveedores.id')
+            ->with(['lote.producto.proveedor', 'trabajador.persona.user'])
+            ->select(
+                'inventario_movimientos.*',
+                'productos.id as producto_id',
+                'productos.nombre_producto as producto',
+                'proveedores.id as proveedor_id',
+                'proveedores.nombre as proveedor',
+                'lotes.codigo_lote as lote'
+            )
+            ->orderBy('inventario_movimientos.fecha_movimiento', 'desc');
     }
 
     public function relationSearch(): array
@@ -46,10 +65,9 @@ final class EntradasTable extends PowerGridComponent
     public function fields(): PowerGridFields
     {
         return PowerGrid::fields()
-            ->add('id', fn($row) => $row->id)
-            ->add('tipo_movimiento', fn($inventario) =>
-            '<span class="capitalize">' . $inventario->tipo_movimiento . '</span>')
-            ->add('producto', fn($inventario) => $inventario->lote->producto->nombre_producto)
+
+            ->add('producto')  // ya es un string gracias al alias en el select
+            ->add('proveedor') // igual
             ->add('cantidad_movimiento', fn($inventario) =>
             '<span class="bg-[#374151] text-white px-3 rounded-md text-sm">
                     +' . $inventario->cantidad_movimiento . '
@@ -88,7 +106,7 @@ final class EntradasTable extends PowerGridComponent
                     </p>';
             })
             ->add('usuario', fn($inventario) => $inventario->trabajador->persona->user->username)
-            ->add('lote', fn($inventario) => $inventario->lote->codigo_lote)
+            ->add('lote')
             ->add(
                 'fecha_recepcion',
                 fn($lote) =>
@@ -99,14 +117,11 @@ final class EntradasTable extends PowerGridComponent
     public function columns(): array
     {
         return [
-            Column::make('Id', 'id'),
-            Column::make('Tipo', 'tipo_movimiento')
-                ->sortable()
-                ->searchable(),
 
-            Column::make('Producto', 'producto')
-                ->sortable()
-                ->searchable(),
+
+            Column::make('Producto', 'producto', 'productos.nombre_producto')->sortable(),
+            Column::make('Proveedor', 'proveedor', 'proveedores.nombre')
+                ->sortable(),
 
             Column::make('Cantidad', 'cantidad_movimiento')
                 ->sortable()
@@ -127,25 +142,64 @@ final class EntradasTable extends PowerGridComponent
     public function filters(): array
     {
         return [
-            Filter::select('ubicacion')
+            // 1er arg = field (lo que añadiste en fields()->add('producto'))
+            // 2do arg = columna/alias real en la query (producto_id)
+            Filter::select('producto', 'productos.id')
+                ->dataSource(Producto::orderBy('nombre_producto')->get()->toArray())
+                ->optionValue('id')
+                ->optionLabel('nombre_producto'),
+
+            Filter::select('proveedor', 'proveedores.id')
+                ->dataSource(Proveedor::orderBy('nombre')->get()->toArray())
+                ->optionValue('id')
+                ->optionLabel('nombre'),
+
+
+            Filter::select('ubicacion', 'ubicacion')
                 ->dataSource([
                     ['id' => 'almacen', 'name' => 'Almacén'],
                     ['id' => 'mostrador', 'name' => 'Mostrador'],
                 ])
-                ->optionValue('id')   // valor real en la DB
-                ->optionLabel('name') // lo que se muestra en el select
-            ,
-            Filter::select('producto', 'Producto')
-                ->dataSource(
-                    Producto::query()
-                        ->select('id as id', 'nombre_producto as name')
-                        ->get()
-                        ->toArray()
-                )
                 ->optionValue('id')
                 ->optionLabel('name'),
+
+            Filter::datePicker('fecha_movimiento', 'fecha_movimiento')
+                ->params([
+                    'dateFormat' => 'Y-m-d',
+                    'locale'     => 'es',
+                    'enableTime' => false,
+                ]),
+            Filter::inputText('usuario')
+                ->placeholder('Usuario (contiene)...')
+                ->builder(function (Builder $query, $value) {
+                    // Normalizar el valor (puede venir como string o como array)
+                    if (is_array($value)) {
+                        // intentar varias claves comunes; si no existe, tomar el primer elemento
+                        $v = $value['value'] ?? $value['search'] ?? array_values($value)[0] ?? '';
+                    } else {
+                        $v = (string) $value;
+                    }
+
+                    $v = trim($v);
+
+                    if ($v === '') {
+                        return $query;
+                    }
+
+                    // Filtrar por username con LIKE (contains)
+                    return $query->whereHas('trabajador.persona.user', function ($q) use ($v) {
+                        $q->where('username', 'like', '%' . $v . '%');
+                    });
+                }),
+            Filter::datePicker('fecha_recepcion', 'lotes.fecha_recepcion')
+                ->params([
+                    'dateFormat' => 'Y-m-d',
+                    'locale'     => 'es',
+                    'enableTime' => false,
+                ]),
         ];
     }
+
 
     #[\Livewire\Attributes\On('edit')]
     public function edit($rowId): void

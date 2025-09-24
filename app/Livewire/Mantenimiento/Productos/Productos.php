@@ -64,8 +64,8 @@ class Productos extends Component
             : 'XX';
 
         do {
-            // Genera un número de 5 dígitos aleatorio
-            $codigo = "P." . $prefijo . "-" . random_int(10000, 99999);
+            // Genera un número de 4 dígitos aleatorio
+            $codigo = "P." . $prefijo . "-" . random_int(1000, 9999);
         } while (Producto::where('codigo_barras', $codigo)->exists());
 
         $this->codigoBarras = $codigo;
@@ -91,6 +91,7 @@ class Productos extends Component
                     "id_proveedor" => $this->producto["id_proveedor"],
                     "codigo_barras" => $this->codigoBarras,
                     "id_unidad" => $this->producto["id_unidad"] ?? null,
+                    "fecha_registro" => now()
                 ]);
             });
 

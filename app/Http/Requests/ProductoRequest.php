@@ -25,7 +25,7 @@ class ProductoRequest extends FormRequest
             'producto.nombre_producto' => 'required|string|max:255',
             'producto.descripcion' => 'string|max:1000',
             'producto.id_unidad' => 'required|exists:unidades,id',
-            'producto.id_categoria_producto' => 'required|exists:categoria__productos,id',
+            'producto.id_categoria_producto' => 'required|exists:categoria_productos,id',
             'producto.id_proveedor' => 'required|exists:proveedores,id',
         ];
     }

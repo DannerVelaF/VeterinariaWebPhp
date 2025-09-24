@@ -7,8 +7,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class InventarioMovimiento extends Model
 {
+    public $timestamps = true;
+
+    const CREATED_AT = 'fecha_registro';
+    const UPDATED_AT = 'fecha_actualizacion';
+
     protected $table = "inventario_movimientos";
-    public $timestamps = false;
     protected $fillable = [
         "tipo_movimiento",
         "cantidad_movimiento",
@@ -20,6 +24,8 @@ class InventarioMovimiento extends Model
         "ubicacion",
         "movimentable_type",
         "movimentable_id",
+        "fecha_actualizacion",
+        "fecha_registro",
     ];
 
 

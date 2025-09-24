@@ -44,8 +44,8 @@ final class ComprasTable extends PowerGridComponent
         return PowerGrid::fields()
             ->add('id')
             ->add('codigo')
-            ->add('fecha_compra_formatted', fn(Compra $model) => Carbon::parse($model->fecha_compra)->format('d/m/Y'))
-            ->add('fecha_actualizacion_formatted', fn(Compra $model) => Carbon::parse($model->fecha_actualizacion)->format('d/m/Y'))
+            ->add('fecha_compra')
+            ->add('fecha_registro')
             ->add('estado', fn($compra) =>
             '<span class="capitalize">' . $compra->estado . '</span>')
             ->add('cantidad_total')
@@ -62,10 +62,10 @@ final class ComprasTable extends PowerGridComponent
                 ->sortable()
                 ->searchable(),
 
-            Column::make('Fecha compra', 'fecha_compra_formatted', 'fecha_compra')
+            Column::make('Fecha compra', 'fecha_compra')
                 ->sortable(),
 
-            Column::make('Fecha actualizacion', 'fecha_actualizacion_formatted', 'fecha_actualizacion')
+            Column::make('Fecha registro', 'fecha_registro')
                 ->sortable(),
 
             Column::make('Estado', 'estado')
@@ -87,10 +87,7 @@ final class ComprasTable extends PowerGridComponent
 
     public function filters(): array
     {
-        return [
-            Filter::datepicker('fecha_compra'),
-            Filter::datepicker('fecha_actualizacion'),
-        ];
+        return [];
     }
 
     #[\Livewire\Attributes\On('edit')]

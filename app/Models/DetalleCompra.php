@@ -6,6 +6,12 @@ use Illuminate\Database\Eloquent\Model;
 
 class DetalleCompra extends Model
 {
+
+    public $timestamps = true;
+
+    const CREATED_AT = 'fecha_registro';
+    const UPDATED_AT = 'fecha_actualizacion';
+
     protected $fillable = [
         "id_compra",
         "id_producto",
@@ -13,6 +19,8 @@ class DetalleCompra extends Model
         "estado",
         "precio_unitario",
         "sub_total",
+        "fecha_registro",
+        "fecha_actualizacion",
     ];
 
 

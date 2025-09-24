@@ -11,12 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('categoria__productos', function (Blueprint $table) {
+        Schema::create('especies', function (Blueprint $table) {
             $table->id();
-            $table->string("nombre");
-            $table->text("descripccion")->nullable();
-            $table->enum('estado', ['activo', 'inactivo'])->default('activo');
-            $table->timestamps();
+            $table->string("nombre_especie");
+            $table->text("descripcion");
+            $table->enum("estado", ["activo", "inactivo"])->default("activo");
+            $table->timestamp("fecha_registro");
+            $table->timestamp("fecha_actualizacion")->nullable();
         });
     }
 
@@ -25,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('categoria__productos');
+        Schema::dropIfExists('especies');
     }
 };

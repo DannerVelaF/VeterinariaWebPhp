@@ -60,23 +60,11 @@ final class TrabajadorTable extends PowerGridComponent
             )
             ->add('puesto_nombre', fn($trabajador) => $trabajador->puestoTrabajo?->nombre)
             ->add('estado_nombre', fn($trabajador) => $trabajador->estadoTrabajador?->nombre)
-            ->add(
-                'fecha_ingreso_formatted',
-                fn(Trabajador $model) =>
-                Carbon::parse($model->fecha_ingreso)->format('d/m/Y')
-            )
-            ->add(
-                'fecha_salida_formatted',
-                fn(Trabajador $model) =>
-                $model->fecha_salida ? Carbon::parse($model->fecha_salida)->format('d/m/Y') : '-'
-            )
+            ->add('fecha_ingreso')
+            ->add('fecha_salida')
             ->add('salario')
             ->add('numero_seguro_social')
-            ->add(
-                'created_at_formatted',
-                fn($model) =>
-                Carbon::parse($model->created_at)->format('d/m/Y H:i')
-            );
+            ->add('fecha_registro');
     }
 
     public function columns(): array
@@ -100,10 +88,10 @@ final class TrabajadorTable extends PowerGridComponent
                 ->searchable()
                 ->editOnClick(),
 
-            Column::make('Fecha ingreso', 'fecha_ingreso_formatted', 'fecha_ingreso')
+            Column::make('Fecha ingreso', 'fecha_ingreso')
                 ->sortable(),
 
-            Column::make('Fecha salida', 'fecha_salida_formatted', 'fecha_salida')
+            Column::make('Fecha salida',  'fecha_salida')
                 ->sortable(),
 
             Column::make('Salario', 'salario')
@@ -116,7 +104,7 @@ final class TrabajadorTable extends PowerGridComponent
                 ->searchable()
                 ->editOnClick(),
 
-            Column::make('Fecha creación', 'created_at_formatted', 'created_at')
+            Column::make('Fecha creación', 'fecha_registro')
                 ->sortable(),
 
 

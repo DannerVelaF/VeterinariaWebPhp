@@ -31,7 +31,8 @@ return new class extends Migration
             $table->unsignedBigInteger("id_usuario_aprobador")->nullable();
             $table->foreign("id_usuario_aprobador")->references("id")->on("users");
 
-            $table->timestamps();
+            $table->timestamp("fecha_registro");
+            $table->timestamp("fecha_actualizacion")->nullable();
         });
     }
 

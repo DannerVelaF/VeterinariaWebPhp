@@ -31,7 +31,8 @@ return new class extends Migration
             $table->enum("estado", ["activo", "vendido", "devuelto"])->default("activo");
             $table->text("observacion")->nullable();
 
-            $table->timestamps();
+            $table->timestamp("fecha_registro");
+            $table->timestamp("fecha_actualizacion")->nullable();
         });
     }
 

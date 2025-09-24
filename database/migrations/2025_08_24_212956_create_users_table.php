@@ -20,7 +20,8 @@ return new class extends Migration
             $table->unsignedBigInteger("id_persona")->nullable();
             $table->foreign("id_persona")->references("id")->on("personas")->onDelete("set null");
 
-            $table->timestamps();
+            $table->timestamp("fecha_registro");
+            $table->timestamp("fecha_actualizacion")->nullable();
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {

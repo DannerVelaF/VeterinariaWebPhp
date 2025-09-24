@@ -6,6 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class Producto extends Model
 {
+    public $timestamps = true;
+
+    const CREATED_AT = 'fecha_registro';
+    const UPDATED_AT = 'fecha_actualizacion';
+
     protected $fillable = [
         'nombre_producto',
         'descripcion',
@@ -14,8 +19,8 @@ class Producto extends Model
         'id_categoria_producto',
         'id_proveedor',
         'id_unidad',
-        "created_at",
-        "updated_at",
+        'fecha_registro',
+        'fecha_actualizacion',
     ];
 
     public function categoria_producto()

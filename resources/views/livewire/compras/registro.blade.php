@@ -2,6 +2,70 @@
     <p>Compras</p>
     <x-tabs :tabs="['registro' => 'Registrar orden de compra']" default="registro">
         <x-tab name="registro">
+            <div class="grid grid-cols-4 gap-4 mb-4">
+                <x-card>
+                    <div class="h-[100px] flex flex-col justify-between">
+                        <div class="flex justify-between items-center">
+                            <p>Órdenes pendientes</p>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round"
+                                class="lucide lucide-clipboard-clock-icon lucide-clipboard-clock">
+                                <path d="M16 14v2.2l1.6 1" />
+                                <path d="M16 4h2a2 2 0 0 1 2 2v.832" />
+                                <path d="M8 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h2" />
+                                <circle cx="16" cy="16" r="6" />
+                                <rect x="8" y="2" width="8" height="4" rx="1" />
+                            </svg>
+                        </div>
+                        <p class="font-medium text-3xl">{{ $cantOrdenesPendientes }}</p>
+                    </div>
+                </x-card>
+                <x-card>
+                    <div class="h-[100px] flex flex-col justify-between">
+                        <div class="flex justify-between items-center">
+                            <p>Órdenes aprobadas</p>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" class="lucide lucide-check-icon lucide-check">
+                                <path d="M20 6 9 17l-5-5" />
+                            </svg>
+                        </div>
+                        <p class="font-medium text-3xl">{{ $cantOrdenesAprobadas }}</p>
+                    </div>
+                </x-card>
+                <x-card>
+                    <div class="h-[100px] flex flex-col justify-between">
+                        <div class="flex justify-between items-center">
+                            <p>Órdenes recibidas</p>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" class="lucide lucide-package-icon lucide-package">
+                                <path
+                                    d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z" />
+                                <path d="M12 22V12" />
+                                <polyline points="3.29 7 12 12 20.71 7" />
+                                <path d="m7.5 4.27 9 5.15" />
+                            </svg>
+                        </div>
+                        <p class="font-medium text-3xl">{{ $cantOrdenesRecibidas }}</p>
+                    </div>
+                </x-card>
+                <x-card>
+                    <div class="h-[100px] flex flex-col justify-between">
+                        <div class="flex justify-between items-center">
+                            <p>Precio compra total</p>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" class="lucide lucide-dollar-sign-icon lucide-dollar-sign">
+                                <line x1="12" x2="12" y1="2" y2="22" />
+                                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                            </svg>
+                        </div>
+                        <p class="font-medium text-3xl">${{ $precioCompraTotal }}</p>
+                    </div>
+                </x-card>
+            </div>
             <x-card>
                 @if (session()->has('success'))
                     <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 4000)"
@@ -26,7 +90,7 @@
                         {{ session('error') }}
                     </div>
                 @endif
-                <div class="flex justify-between">
+                <div class="flex justify-between mb-5">
                     <div>
                         <p class="font-medium text-gray-600 text-xl">Órdenes de Compra</p>
                         <p class="font-medium text-gray-600 text-sm">Gestiona las órdenes de compra a proveedores</p>
@@ -115,7 +179,8 @@
                                                 class="border rounded px-2 py-1 focus:outline-none focus:ring focus:ring-blue-300 border-gray-200">
                                                 <option value="">Seleccione un producto</option>
                                                 @foreach ($productos as $producto)
-                                                    <option value="{{ $producto->id }}">{{ $producto->nombre_producto }}
+                                                    <option value="{{ $producto->id }}">
+                                                        {{ $producto->nombre_producto }}
                                                     </option>
                                                 @endforeach
                                             </select>
@@ -139,7 +204,7 @@
 
                                         <!-- Precio -->
                                         <div class="col-span-3 flex flex-col">
-                                            <label class="text-sm font-medium text-gray-600">Precio unitario</label>
+                                            <label class="text-sm font-medium text-gray-600">Precio compra</label>
                                             <input type="number" min="0.01" step="0.01"
                                                 wire:model="detalleCompra.{{ $index }}.precio_unitario"
                                                 class="border rounded px-2 py-1 focus:outline-none focus:ring focus:ring-blue-300 border-gray-200">

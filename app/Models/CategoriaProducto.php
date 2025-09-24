@@ -6,12 +6,19 @@ use Illuminate\Database\Eloquent\Model;
 
 class CategoriaProducto extends Model
 {
-    protected $table = 'categoria__productos';
+
+    public $timestamps = true;
+    const CREATED_AT = 'fecha_registro';
+    const UPDATED_AT = 'fecha_actualizacion';
+
+    protected $table = 'categoria_productos';
 
     protected $fillable = [
         'nombre',
         'descripccion',
         'estado',
+        'fecha_registro',
+        'fecha_actualizacion',
     ];
 
     public function productos()

@@ -53,7 +53,7 @@ final class ProductoTable extends PowerGridComponent
                 return $row->estado === 'activo';
             })
             ->add('codigo_barras')
-            ->add('created_at_formatted', fn($producto) => Carbon::parse($producto->created_at)->format('d/m/Y H:i'))
+            ->add('fecha_registro')
             ->add('categoria_nombre', fn($producto) => $producto->categoria_producto?->nombre)
             ->add('proveedor_nombre', fn($producto) => $producto->proveedor?->nombre);
     }
@@ -72,7 +72,7 @@ final class ProductoTable extends PowerGridComponent
             Column::make('Codigo barras', 'codigo_barras')->sortable()->searchable(),
             Column::make('Categoría', 'categoria_nombre', 'categoria_producto.nombre'),
             Column::make('Proveedor', 'proveedor_nombre', 'proveedor.nombre'),
-            Column::make('Fecha creación', 'created_at_formatted', 'created_at')->sortable(),
+            Column::make('Fecha creación', 'fecha_registro')->sortable(),
             Column::make('Estado', 'estado_boolean')
                 ->sortable()
                 ->searchable()

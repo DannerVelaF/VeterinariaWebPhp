@@ -48,7 +48,7 @@ final class UserTable extends PowerGridComponent
             ->add('puesto', fn($user) => $user->persona?->trabajador?->puestoTrabajo?->nombre)
             ->add('ultimo_login', fn($user) => $user->ultimo_login ? Carbon::parse($user->ultimo_login)->format('d/m/Y H:i') : '-')
             ->add('estado')
-            ->add('created_at')
+            ->add('fecha_registro')
             ->add('estado_boolean', function ($row) {
                 return $row->estado === 'activo';
             });
@@ -72,7 +72,7 @@ final class UserTable extends PowerGridComponent
 
             Column::make('Ultimo login', 'ultimo_login'),
 
-            Column::make('Fecha creaciòn', 'created_at')
+            Column::make('Fecha de registro', 'fecha_registro')
                 ->sortable()
                 ->searchable(),
             Column::make('Estado', 'estado_boolean')

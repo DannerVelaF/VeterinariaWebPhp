@@ -19,7 +19,7 @@ return new class extends Migration
             $table->string("codigo_barras");
 
             $table->unsignedBigInteger("id_categoria_producto");
-            $table->foreign('id_categoria_producto')->references('id')->on('categoria__productos');
+            $table->foreign('id_categoria_producto')->references('id')->on('categoria_productos');
             $table->string("ruta_imagen")->nullable();
             $table->unsignedBigInteger("id_proveedor");
             $table->foreign('id_proveedor')->references('id')->on('proveedores');
@@ -27,7 +27,8 @@ return new class extends Migration
             $table->unsignedBigInteger("id_unidad");
             $table->foreign('id_unidad')->references('id')->on('unidades');
 
-            $table->timestamps();
+            $table->timestamp("fecha_registro");
+            $table->timestamp("fecha_actualizacion")->nullable();
         });
     }
 
