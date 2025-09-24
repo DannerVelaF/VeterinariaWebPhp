@@ -11,6 +11,10 @@
         <x-tab name="entradas">
             <livewire:inventario.entradas />
         </x-tab>
+
+        <x-tab name="salidas">
+            <livewire:inventario.salidas />
+        </x-tab>
     </x-tabs>
 
 </x-panel>

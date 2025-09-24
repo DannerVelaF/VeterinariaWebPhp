@@ -28,6 +28,10 @@ class InventarioMovimiento extends Model
         "fecha_registro",
     ];
 
+    protected $casts = [
+    'fecha_movimiento' => 'datetime',
+    'fecha_registro' => 'datetime',
+    ];
 
     public function trabajador()
     {
