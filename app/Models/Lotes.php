@@ -18,7 +18,6 @@ class Lotes extends Model
         "cantidad_mostrada",
         "cantidad_almacenada",
         "cantidad_vendida",
-        "cantidad_total",
         "precio_compra",
         "fecha_recepcion",
         "fecha_vencimiento",
