@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string("nombre_especie");
             $table->text("descripcion");
             $table->enum("estado", ["activo", "inactivo"])->default("activo");
-            $table->timestamp("fecha_registro");
+            $table->timestamp("fecha_registro")->useCurrent();
             $table->timestamp("fecha_actualizacion")->nullable();
         });
     }

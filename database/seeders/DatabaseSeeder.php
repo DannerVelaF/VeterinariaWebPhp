@@ -7,6 +7,7 @@ use App\Models\EstadoTrabajadores;
 use App\Models\Persona;
 use App\Models\PuestoTrabajador;
 use App\Models\Tipo_documento;
+use App\Models\Trabajador;
 use App\Models\User;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -76,6 +77,15 @@ class DatabaseSeeder extends Seeder
             "numero_telefono_secundario" => null,
             'id_tipo_documento' => $tipoDocumento->id,
             'id_direccion' => $direccion->id,
+        ]);
+
+        $trabajo = Trabajador::create([
+            "id_persona" => $persona->id,
+            "id_puesto_trabajo" => 1,
+            "id_estado_trabajador" => 1,
+            "fecha_ingreso" => "2023-01-01",
+            "numero_seguro_social" => "123456789",
+            "salario" => 2500.00,
         ]);
 
         // Crear usuario vinculado a persona

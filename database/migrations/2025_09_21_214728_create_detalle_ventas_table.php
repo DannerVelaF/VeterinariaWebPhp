@@ -14,8 +14,8 @@ return new class extends Migration
         Schema::create('detalle_ventas', function (Blueprint $table) {
             $table->id();
             $table->integer("cantidad");
-            $table->double("precio_unitario", 12, 2);
-            $table->double("subtotal", 12, 2);
+            $table->decimal("precio_unitario", 12, 2);
+            $table->decimal("subtotal", 12, 2);
             $table->enum("tipo_item", ["producto", "servicio"]);
 
             $table->unsignedBigInteger("id_venta");
@@ -27,7 +27,7 @@ return new class extends Migration
             $table->unsignedBigInteger("id_servicio")->nullable();
             $table->foreign("id_servicio")->references("id")->on("servicios")->onDelete("cascade");
 
-            $table->timestamp("fecha_registro");
+            $table->timestamp("fecha_registro")->useCurrent();
             $table->timestamp("fecha_actualizacion")->nullable();
         });
     }

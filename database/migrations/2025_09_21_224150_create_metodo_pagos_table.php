@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string("nombre_metodo");
             $table->text("observacion")->nullable();
-            $table->timestamp("fecha_registro");
+            $table->timestamp("fecha_registro")->useCurrent();
             $table->timestamp("fecha_actualizacion")->nullable();
         });
     }

@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('personas', function (Blueprint $table) {
             $table->id();
-            $table->bigInteger("numero_documento");
+            $table->string("numero_documento");
             $table->string("nombre");
             $table->string("apellido_paterno");
             $table->string("apellido_materno");
@@ -32,7 +32,7 @@ return new class extends Migration
             $table->unsignedBigInteger("id_tipo_documento")->nullable();
             $table->foreign("id_tipo_documento")->references("id")->on("tipo_documentos")->onDelete("set null");
 
-            $table->timestamp("fecha_registro");
+            $table->timestamp("fecha_registro")->useCurrent();
             $table->timestamp("fecha_actualizacion")->nullable();
         });
     }

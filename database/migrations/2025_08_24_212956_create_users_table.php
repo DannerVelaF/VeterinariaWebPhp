@@ -20,7 +20,7 @@ return new class extends Migration
             $table->unsignedBigInteger("id_persona")->nullable();
             $table->foreign("id_persona")->references("id")->on("personas")->onDelete("set null");
 
-            $table->timestamp("fecha_registro");
+            $table->timestamp("fecha_registro")->useCurrent();
             $table->timestamp("fecha_actualizacion")->nullable();
         });
 

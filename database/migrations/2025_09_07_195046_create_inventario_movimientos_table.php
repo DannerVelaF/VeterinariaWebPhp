@@ -26,7 +26,7 @@ return new class extends Migration
             $table->morphs('movimentable');
 
             $table->timestamp("fecha_movimiento");
-            $table->timestamp("fecha_registro");
+            $table->timestamp("fecha_registro")->useCurrent();
             $table->timestamp("fecha_actualizacion")->nullable();
         });
     }

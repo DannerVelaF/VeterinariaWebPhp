@@ -48,7 +48,7 @@
                                 class="text-red-500">*</span></label>
                         <input type="text" id="nombre_categoria" name="nombre_categoria" maxlength="255"
                             class="border rounded px-2 py-1 focus:outline-none focus:ring focus:ring-blue-300 @error('cateogoria.nombre') border-red-500 @enderror"
-                            placeholder="Categoria de productos" wire:model="categoria.nombre">
+                            placeholder="Categoria de productos" wire:model="categoria.nombre_categoria">
                         @error('categoria.nombre')
                             <p class="text-red-500 text-xs italic mt-1">
                                 {{ $message }}

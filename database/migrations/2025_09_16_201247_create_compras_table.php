@@ -22,7 +22,6 @@ return new class extends Migration
             $table->string("codigo");
             $table->string("numero_factura");
             $table->date("fecha_compra");
-            $table->date("fecha_actualizacion")->nullable();
             $table->decimal("cantidad_total", 12, 2);
             $table->decimal('total', 12, 2);
             $table->text("observacion")->nullable();
@@ -31,7 +30,7 @@ return new class extends Migration
             $table->unsignedBigInteger("id_usuario_aprobador")->nullable();
             $table->foreign("id_usuario_aprobador")->references("id")->on("users");
 
-            $table->timestamp("fecha_registro");
+            $table->timestamp("fecha_registro")->useCurrent();
             $table->timestamp("fecha_actualizacion")->nullable();
         });
     }

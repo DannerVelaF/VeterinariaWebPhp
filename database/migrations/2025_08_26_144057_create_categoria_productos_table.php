@@ -13,10 +13,10 @@ return new class extends Migration
     {
         Schema::create('categoria_productos', function (Blueprint $table) {
             $table->id();
-            $table->string("nombre");
-            $table->text("descripccion")->nullable();
+            $table->string("nombre_categoria");
+            $table->text("descripcion")->nullable();
             $table->enum('estado', ['activo', 'inactivo'])->default('activo');
-            $table->timestamp("fecha_registro");
+            $table->timestamp("fecha_registro")->useCurrent();
             $table->timestamp("fecha_actualizacion")->nullable();
         });
     }

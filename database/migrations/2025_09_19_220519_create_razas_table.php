@@ -17,7 +17,7 @@ return new class extends Migration
             $table->foreign("id_especie")->references("id")->on("especies");
             $table->string("nombre_raza");
             $table->text("descripcion");
-            $table->timestamp("fecha_registro");
+            $table->timestamp("fecha_registro")->useCurrent();
             $table->timestamp("fecha_actualizacion")->nullable();
         });
     }

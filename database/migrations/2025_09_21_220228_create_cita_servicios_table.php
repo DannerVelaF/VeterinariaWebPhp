@@ -19,13 +19,13 @@ return new class extends Migration
             $table->unsignedBigInteger("id_servicio");
             $table->foreign("id_servicio")->references("id")->on("servicios");
 
-            $table->double("precio_aplicado", 12, 2);
+            $table->decimal("precio_aplicado", 12, 2);
             $table->integer("cantidad");
             $table->text("diagnostico");
             $table->text("medicamentos");
             $table->text("recomendaciones");
 
-            $table->timestamp("fecha_registro");
+            $table->timestamp("fecha_registro")->useCurrent();
             $table->timestamp("fecha_actualizacion")->nullable();
         });
     }

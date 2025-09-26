@@ -22,7 +22,7 @@ return new class extends Migration
             $table->string('codigo_ubigeo');
             $table->foreign('codigo_ubigeo')->references('codigo_ubigeo')->on('ubigeos');
 
-            $table->timestamp("fecha_registro");
+            $table->timestamp("fecha_registro")->useCurrent();
             $table->timestamp("fecha_actualizacion")->nullable();
         });
     }

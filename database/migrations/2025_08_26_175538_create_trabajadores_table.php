@@ -27,7 +27,7 @@ return new class extends Migration
 
             $table->unsignedBigInteger('id_estado_trabajador');
             $table->foreign("id_estado_trabajador")->references("id")->on("estado_trabajadores");
-            $table->timestamp("fecha_registro");
+            $table->timestamp("fecha_registro")->useCurrent();
             $table->timestamp("fecha_actualizacion")->nullable();
         });
     }

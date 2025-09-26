@@ -27,7 +27,7 @@ return new class extends Migration
             $table->unsignedBigInteger("id_unidad");
             $table->foreign('id_unidad')->references('id')->on('unidades');
 
-            $table->timestamp("fecha_registro");
+            $table->timestamp("fecha_registro")->useCurrent();
             $table->timestamp("fecha_actualizacion")->nullable();
         });
     }

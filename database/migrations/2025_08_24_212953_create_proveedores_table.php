@@ -25,7 +25,7 @@ return new class extends Migration
             $table->unsignedBigInteger("id_direccion")->nullable();
             $table->foreign('id_direccion')->references('id')->on('direcciones');
 
-            $table->timestamp("fecha_registro");
+            $table->timestamp("fecha_registro")->useCurrent();
             $table->timestamp("fecha_actualizacion")->nullable();
         });
     }

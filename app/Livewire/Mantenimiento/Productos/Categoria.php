@@ -10,13 +10,13 @@ use Livewire\Component;
 class Categoria extends Component
 {
     public $categoria = [
-        'nombre' => '',
+        'nombre_categoria' => '',
         'descripcion' => '',
     ];
 
     public $mensajes = [
-        'categoria.nombre.required' => 'El nombre de la categoria es obligatorio.',
-        'categoria.nombre.max' => 'El nombre no puede tener más de 255 caracteres.',
+        'categoria.nombre_categoria.required' => 'El nombre de la categoria es obligatorio.',
+        'categoria.nombre_categoria.max' => 'El nombre no puede tener más de 255 caracteres.',
         'categoria.descripcion.max' => 'La descripción no puede tener más de 1000 caracteres.',
     ];
 
@@ -24,14 +24,14 @@ class Categoria extends Component
     {
         // Validación
         $validatedData = $this->validate([
-            'categoria.nombre' => 'required|string|max:255',
+            'categoria.nombre_categoria' => 'required|string|max:255',
             'categoria.descripcion' => 'nullable|string|max:1000',
         ]);
 
         try {
             DB::transaction(function () use ($validatedData, &$categoria) {
                 $categoria = CategoriaProducto::create([
-                    'nombre' => $validatedData['categoria']['nombre'],
+                    'nombre_categoria' => $validatedData['categoria']['nombre_categoria'],
                     'descripcion' => $validatedData['categoria']['descripcion'] ?? null,
                 ]);
             });

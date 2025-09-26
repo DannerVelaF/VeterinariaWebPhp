@@ -14,10 +14,10 @@ return new class extends Migration
         Schema::create('ventas', function (Blueprint $table) {
             $table->id();
             $table->date("fecha_venta");
-            $table->double("subtotal", 12, 2);
-            $table->double("total", 12, 2);
-            $table->double("descuento", 12, 2);
-            $table->double("impuesto", 12, 2);
+            $table->decimal("subtotal", 12, 2);
+            $table->decimal("total", 12, 2);
+            $table->decimal("descuento", 12, 2);
+            $table->decimal("impuesto", 12, 2);
             $table->text("observacion")->nullable();
             $table->enum("estado", ["pendiente", "entregado", "cancelado"]);
 
@@ -27,7 +27,7 @@ return new class extends Migration
             $table->unsignedBigInteger("id_trabajador");
             $table->foreign("id_trabajador")->references("id")->on("trabajadores")->onDelete("cascade");
 
-            $table->timestamp("fecha_registro");
+            $table->timestamp("fecha_registro")->useCurrent();
             $table->timestamp("fecha_actualizacion")->nullable();
         });
     }
