@@ -10,15 +10,24 @@ use App\Models\Unidades;
 use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Livewire\Component;
 use Illuminate\Support\Str;
+use Livewire\WithFileUploads;
 
 class Productos extends Component
 {
+    use WithFileUploads; // ✅ Agregar esta línea
+    protected $listeners = [
+        'unidadesUpdated' => 'refreshData',
+        'categoriaUpdated' => 'refreshData',
+        'proveedoresUpdated' => 'refreshData',
+    ];
     public $producto = [
         "nombre_producto" => "",
         "descripcion" => "",
+        "ruta_imagen" => "",
         "id_categoria_producto" => "",
         "id_proveedor" => "",
     ];
@@ -27,7 +36,18 @@ class Productos extends Component
     public $proveedores = [];
     public $unidades = [];
     public $codigoBarras;
-
+    public $imagenProducto; // propiedad separada para el archivo
+    public $modalEditar = false;
+    public $productoEditar = [
+        'id_producto' => null,
+        'nombre_producto' => '',
+        'descripcion' => '',
+        'id_categoria_producto' => '',
+        'id_proveedor' => '',
+        'id_unidad' => '',
+        'ruta_imagen' => null,
+    ]; // array para editar
+    public $imagenEditar;
 
     public function mount()
     {
@@ -36,6 +56,17 @@ class Productos extends Component
         $this->unidades = Unidades::all();
         $this->generarCodigoBarras();
     }
+
+    #[\Livewire\Attributes\On('unidadesUpdated')]
+    #[\Livewire\Attributes\On('categoriaUpdated')]
+    #[\Livewire\Attributes\On('proveedoresUpdated')]
+    public function refreshData()
+    {
+        $this->unidades = Unidades::all();
+        $this->categorias = CategoriaProducto::where('estado', 'activo')->get();
+        $this->proveedores = Proveedor::where('estado', 'activo')->get();
+    }
+
 
     private function generarPrefijoCategoria($nombreCategoria): string
     {
@@ -60,7 +91,7 @@ class Productos extends Component
         $categoria = CategoriaProducto::find($this->producto['id_categoria_producto']);
 
         $prefijo = $categoria
-            ? $this->generarPrefijoCategoria($categoria->nombre)
+            ? $this->generarPrefijoCategoria($categoria->nombre_categoria)
             : 'XX';
 
         do {
@@ -83,11 +114,15 @@ class Productos extends Component
         try {
             DB::transaction(function () {
                 $this->generarCodigoBarras();
-
+                $imagenPath = null;
+                if ($this->imagenProducto) {
+                    $imagenPath = $this->imagenProducto->store('productos', 'public');
+                }
                 Producto::create([
                     "nombre_producto" => $this->producto["nombre_producto"],
                     "descripcion" => $this->producto["descripcion"],
                     "id_categoria_producto" => $this->producto["id_categoria_producto"],
+                    "ruta_imagen" => $imagenPath,
                     "id_proveedor" => $this->producto["id_proveedor"],
                     "codigo_barras" => $this->codigoBarras,
                     "id_unidad" => $this->producto["id_unidad"] ?? null,
@@ -115,15 +150,74 @@ class Productos extends Component
             "id_unidad" => "",
         ];
 
+        $this->imagenProducto = null;
         $this->codigoBarras = null;
 
         $this->mount();
     }
 
-    #[\Livewire\Attributes\On('mostrarDescripcion')]
-    public function mostrarDescripcion(string $descripcion): void
+    #[\Livewire\Attributes\On('editarProducto')]
+    public function abrirModalEditar($productoId)
     {
-        $this->dispatch('open-modal', descripcion: $descripcion);
+        $producto = Producto::findOrFail($productoId);
+
+        $this->productoEditar = [
+            'id_producto' => $producto->id_producto,
+            'nombre_producto' => $producto->nombre_producto,
+            'descripcion' => $producto->descripcion,
+            'id_categoria_producto' => $producto->id_categoria_producto,
+            'id_proveedor' => $producto->id_proveedor,
+            'id_unidad' => $producto->id_unidad,
+            'ruta_imagen' => $producto->ruta_imagen,
+        ];
+
+        $this->imagenEditar = null;
+        $this->modalEditar = true;
+    }
+
+    public function actualizarProducto()
+    {
+        $validatedData = Validator::make(array_merge($this->productoEditar, [
+            'imagenEditar' => $this->imagenEditar,
+        ]), [
+            'nombre_producto' => 'required|string|max:255',
+            'descripcion' => 'nullable|string|max:1000',
+            'id_categoria_producto' => 'required|exists:categoria_productos,id_categoria_producto',
+            'id_proveedor' => 'required|exists:proveedores,id_proveedor',
+            'id_unidad' => 'required|exists:unidades,id_unidad',
+            'imagenEditar' => 'nullable|image|max:2048', // ✅ Validar solo si existe
+        ])->validate();
+
+        try {
+            DB::transaction(function () use ($validatedData) {
+                $producto = Producto::findOrFail($this->productoEditar['id_producto']);
+
+                // Si hay nueva imagen, borrar la anterior
+                if ($this->imagenEditar) {
+                    if ($producto->ruta_imagen && Storage::disk('public')->exists($producto->ruta_imagen)) {
+                        Storage::disk('public')->delete($producto->ruta_imagen);
+                    }
+                    // Guardar la nueva imagen
+                    $imagenPath = $this->imagenEditar->store('productos', 'public');
+                    $producto->ruta_imagen = $imagenPath;
+                }
+
+                $producto->update([
+                    'nombre_producto' => $validatedData['nombre_producto'],
+                    'descripcion' => $validatedData['descripcion'],
+                    'id_categoria_producto' => $validatedData['id_categoria_producto'],
+                    'id_proveedor' => $validatedData['id_proveedor'],
+                    'id_unidad' => $validatedData['id_unidad'],
+                ]);
+            });
+
+            $this->dispatch('productoRegistrado'); // refresca tabla
+            session()->flash('success', '✅ Producto actualizado correctamente.');
+            $this->modalEditar = false;
+        } catch (Exception $e) {
+            Log::error('Error al actualizar el producto', ['error' => $e->getMessage()]);
+            session()->flash('error', 'Error al actualizar el producto: ' . $e->getMessage());
+        }
     }
 
     public function render()

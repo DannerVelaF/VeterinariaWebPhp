@@ -10,10 +10,11 @@ class Persona extends Model
 
     const CREATED_AT = 'fecha_registro';
     const UPDATED_AT = 'fecha_actualizacion';
-
+    protected $primaryKey = 'id_persona';
     protected $table = 'personas';
 
     protected $fillable = [
+        'id',
         "numero_documento",
         'nombre',
         "apellido_paterno",
@@ -34,20 +35,20 @@ class Persona extends Model
 
     public function tipo_documento()
     {
-        return $this->belongsTo(Tipo_documento::class, "id_tipo_documento", "id");
+        return $this->belongsTo(Tipo_documento::class, "id_tipo_documento");
     }
 
     public function direccion()
     {
-        return $this->belongsTo(Direccion::class, "id_direccion", "id");
+        return $this->belongsTo(Direccion::class, "id_direccion");
     }
 
     public function trabajador()
     {
-        return $this->hasOne(Trabajador::class, 'id_persona', 'id');
+        return $this->hasOne(Trabajador::class, "id_trabajador");
     }
     public function user()
     {
-        return $this->hasOne(User::class, 'id_persona', 'id');
+        return $this->hasOne(User::class, "id_usuario");
     }
 }

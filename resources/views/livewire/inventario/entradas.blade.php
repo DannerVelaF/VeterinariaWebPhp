@@ -1,6 +1,6 @@
 <div class="">
 
-    <x-tabs :tabs="['registro' => 'Registar movimiento', 'detalle' => 'Listado de entradas']" default="registro">
+    <x-tabs :tabs="['registro' => 'Registar entradas', 'detalle' => 'Listado de entradas']" default="registro">
         <x-tab name="registro">
             @if (session()->has('success'))
                 <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 4000)"
@@ -53,11 +53,11 @@
                             <div class="flex flex-col gap-2">
                                 <label for="producto" class="font-medium">Seleccionar un producto <span
                                         class="text-red-500">*</span></label>
-                                <select wire:model.live="producto_id" id="producto"
+                                <select wire:model.live="id_producto" id="producto" name="producto_id"
                                     class="border rounded px-2 py-1 focus:outline-none focus:ring focus:ring-blue-300">
                                     <option value="">Seleccione un producto</option>
                                     @foreach ($productosOC as $producto)
-                                        <option value="{{ $producto['detalle_compra_id'] }}">
+                                        <option value="{{ $producto['id_detalle_compra'] }}">
                                             {{ $producto['nombre'] }}
                                         </option>
                                     @endforeach
@@ -74,7 +74,7 @@
                                 <label for="proveedor" class="font-medium">Proveedor</label>
                                 <input type="text" id="proveedor"
                                     class="border rounded px-2 py-1 border-gray-200 w-full"
-                                    value="{{ $proveedorOC?->nombre }}" readonly>
+                                    value="{{ $proveedorOC?->nombre_proveedor }}" readonly>
                             </div>
                         </div>
 
@@ -246,4 +246,5 @@
             </div>
         </x-tab>
     </x-tabs>
+    <x-loader />
 </div>

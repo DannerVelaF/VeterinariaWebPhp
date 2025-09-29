@@ -100,6 +100,7 @@ class Ubigeos extends Component
                 $this->reset(['preview', 'archivo']);
 
                 session()->flash('success', "Se importaron {$importados} ubigeos correctamente.");
+                $this->dispatch('ubigeosUpdated');
             }
         } catch (\Exception $e) {
             DB::rollBack();

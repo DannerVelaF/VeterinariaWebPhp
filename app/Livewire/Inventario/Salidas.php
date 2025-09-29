@@ -2,9 +2,11 @@
 
 namespace App\Livewire\Inventario;
 
+use App\Models\DetalleVentas;
 use App\Models\InventarioMovimiento;
 use App\Models\Lotes;
 use App\Models\Producto;
+use App\Models\Ventas;
 use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -17,7 +19,7 @@ class Salidas extends Component
     use WithPagination;
 
     public $productos = [];
-    public $producto_id = null;
+    public $id_producto = null;
     public $productoSeleccionado = null;
     public $ubicacion = "mostrador";
     public $motivo = "";
@@ -57,7 +59,7 @@ class Salidas extends Component
             ->get();
     }
 
-    public function updatedProductoId($value)
+    public function updatedIdProducto($value)
     {
         if ($value) {
             $this->productoSeleccionado = Producto::with('unidad')->find($value);
@@ -91,7 +93,7 @@ class Salidas extends Component
         }
 
         $this->validate([
-            "producto_id" => "required|exists:productos,id",
+            "id_producto" => "required|exists:productos,id_producto",
             'cantidad' => 'required|numeric|min:0.01|max:999999999.99',
             'ubicacion' => 'required|in:almacen,mostrador',
             "motivo" => "required|in:" . implode(',', $this->motivosPredefinidos),
@@ -114,13 +116,13 @@ class Salidas extends Component
         try {
             DB::transaction(function () use (&$consumoInfo, $motivoFinal) {
                 // 1) Lock del producto
-                $producto = Producto::where('id', $this->producto_id)->lockForUpdate()->first();
+                $producto = Producto::where('id_producto', $this->id_producto)->lockForUpdate()->first();
                 if (!$producto) {
                     throw new Exception("Producto no encontrado.");
                 }
 
                 // 2) Calcular stock total disponible (ambas ubicaciones)
-                $lotesTotales = Lotes::where('producto_id', $this->producto_id)
+                $lotesTotales = Lotes::where('id_producto', $this->id_producto)
                     ->where('estado', 'activo')
                     ->lockForUpdate()
                     ->get();
@@ -163,7 +165,7 @@ class Salidas extends Component
 
                 // 7) Actualizar stock_actual del producto
                 if (Schema::hasColumn('productos', 'stock_actual')) {
-                    $stockActualReal = (float) Lotes::where('producto_id', $this->producto_id)
+                    $stockActualReal = (float) Lotes::where('id_producto', $this->id_producto)
                         ->where('estado', 'activo')
                         ->get()
                         ->sum(function ($lote) {
@@ -193,7 +195,7 @@ class Salidas extends Component
             session()->flash('error', 'Error al registrar la salida: ' . $e->getMessage());
             Log::error('Error al registrar salida', [
                 'error' => $e->getMessage(),
-                'producto_id' => $this->producto_id,
+                'id_producto' => $this->id_producto,
                 'cantidad' => $this->cantidad,
                 'ubicacion' => $this->ubicacion,
                 'motivo' => $motivoFinal
@@ -247,7 +249,7 @@ class Salidas extends Component
             $lote->save();
 
             // 🔹 Recalcular stock total real del producto
-            $stockProductoDespues = Lotes::where('producto_id', $lote->producto_id)
+            $stockProductoDespues = Lotes::where('id_producto', $lote->id_producto)
                 ->where('estado', 'activo')
                 ->get()
                 ->sum(function ($l) {
@@ -261,6 +263,32 @@ class Salidas extends Component
                 'ubicacion' => $ubicacion
             ]);
 
+            // 🔹 Crear o reutilizar una venta dummy
+            $ventaDummy = Ventas::firstOrCreate(
+                [
+                    'fecha_venta' => now(),
+                    'total' => 0,
+                    'subtotal' => 0,
+                    'descuento' => 0,
+                    'impuesto' => 0,
+                    'estado' => 'entregado',
+                    'id_cliente' => 1, // o un cliente genérico
+                    'id_trabajador' => $trabajador->id_trabajador,
+                    "fecha_registro" => now(),
+                ]
+            );
+
+            // 🔹 Crear detalle_venta dummy
+            $detalleVenta = DetalleVentas::create([
+                'id_venta' => $ventaDummy->id_venta,
+                'id_producto' => $this->id_producto,
+                'cantidad' => $cantidadAUsar,   // la misma que consumiste del lote
+                'precio_unitario' => 0,
+                'subtotal' => 0,
+                'motivo_salida' => $motivoFinal,
+            ]);
+
+
             // 🔹 Registrar movimiento
             InventarioMovimiento::create([
                 "tipo_movimiento" => "salida",
@@ -268,12 +296,12 @@ class Salidas extends Component
                 "stock_resultante" => $stockProductoDespues,
                 "fecha_movimiento" => now(),
                 "fecha_registro" => now(),
-                "id_lote" => $lote->id,
-                "id_trabajador" => $trabajador->id,
+                "id_lote" => $lote->id_lote,
+                "id_trabajador" => $trabajador->id_trabajador,
                 "ubicacion" => $ubicacion,
-                "motivo" => $motivoFinal ?? 'Sin motivo especificado :c',
-                "movimentable_type" => 'App\Models\Lotes',
-                "movimentable_id" => $lote->id,
+                "motivo_salida" => $motivoFinal ?? 'Sin motivo especificado',
+                "movimentable_type"    => DetalleVentas::class,
+                "movimentable_id"      => $detalleVenta->id_detalle_venta,
             ]);
 
             $cantidadRestante -= $cantidadAUsar;
@@ -304,7 +332,7 @@ class Salidas extends Component
 
     public function resetForm()
     {
-        $this->producto_id = null;
+        $this->id_producto = null;
         $this->productoSeleccionado = null;
         $this->ubicacion = "mostrador";
         $this->cantidad = "";
@@ -323,7 +351,7 @@ class Salidas extends Component
             ];
         }
 
-        $lotes = Lotes::where('producto_id', $this->producto_id)
+        $lotes = Lotes::where('id_producto', $this->productoSeleccionado['id_producto'])
             ->where('estado', 'activo')
             ->get();
 

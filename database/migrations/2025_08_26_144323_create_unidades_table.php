@@ -12,8 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('unidades', function (Blueprint $table) {
-            $table->id();
-            $table->string("nombre");
+            $table->id("id_unidad");
+            $table->string("nombre_unidad");
             $table->timestamp("fecha_registro")->useCurrent();
             $table->timestamp("fecha_actualizacion")->nullable();
         });

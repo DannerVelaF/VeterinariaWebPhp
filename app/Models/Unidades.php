@@ -11,15 +11,16 @@ class Unidades extends Model
 
     const CREATED_AT = 'fecha_registro';
     const UPDATED_AT = 'fecha_actualizacion';
-
+    protected $primaryKey = 'id_unidad';
     protected $fillable = [
-        "nombre",
+        'id_unidad',
+        "nombre_unidad",
         'fecha_registro',
         'fecha_actualizacion',
     ];
 
     public function productos()
     {
-        return $this->hasMany(Producto::class, 'id_unidad', 'id');
+        return $this->hasMany(Producto::class, "id_unidad");
     }
 }

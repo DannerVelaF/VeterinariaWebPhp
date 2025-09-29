@@ -20,6 +20,8 @@ final class LotesTable extends PowerGridComponent
 {
     public string $tableName = 'lotes-table-navkq7-table';
     public bool $showFilters = true;
+    public string $primaryKey = 'id_lote';
+    public string $sortField = 'id_lote';
     use WithExport;
 
     public function boot(): void
@@ -36,12 +38,7 @@ final class LotesTable extends PowerGridComponent
             PowerGrid::footer()
                 ->showPerPage()
                 ->showRecordCount(),
-            PowerGrid::exportable(fileName: 'Reporte_Lotes')
-                ->type(
-                    Exportable::TYPE_XLS,
-                    Exportable::TYPE_CSV,
-                )
-                ->striped()
+
         ];
     }
 
@@ -67,7 +64,7 @@ final class LotesTable extends PowerGridComponent
             ->add('fecha_recepcion')
             ->add('fecha_vencimiento')
             ->add('estado')
-            ->add('proveedor', fn($lote) => $lote->producto->proveedor->nombre)
+            ->add('proveedor', fn($lote) => $lote->producto->proveedor->nombre_proveedor)
             ->add('fecha_registro');
     }
 
@@ -100,6 +97,7 @@ final class LotesTable extends PowerGridComponent
 
             Column::make('Estado', 'estado')
                 ->sortable()
+                ->hidden()
                 ->searchable(),
 
             Column::make('Proveedor', 'proveedor')
@@ -118,17 +116,17 @@ final class LotesTable extends PowerGridComponent
     public function filters(): array
     {
         return [
-            // Producto: Lotes tiene columna producto_id, por eso usamos 'producto_id' como columna real
-            Filter::select('producto', 'producto_id')
+            // Producto: Lotes tiene columna id_producto, por eso usamos 'id_producto' como columna real
+            Filter::select('producto', 'id_producto')
                 ->dataSource(Producto::orderBy('nombre_producto')->get()->toArray())
-                ->optionValue('id')
+                ->optionValue('id_producto')
                 ->optionLabel('nombre_producto'),
 
             // Proveedor: Lotes no tiene proveedor_id directo, filtramos con whereHas sobre la relación producto
             Filter::select('proveedor', 'proveedor')
-                ->dataSource(Proveedor::orderBy('nombre')->get()->toArray())
-                ->optionValue('id')
-                ->optionLabel('nombre')
+                ->dataSource(Proveedor::orderBy('nombre_proveedor')->get()->toArray())
+                ->optionValue('id_proveedor')
+                ->optionLabel('nombre_proveedor')
                 ->builder(function (Builder $query, $value) {
                     // normalizar valor (puede venir string o array)
                     if (is_array($value)) {
@@ -200,10 +198,10 @@ final class LotesTable extends PowerGridComponent
     {
         return [
             Button::add('edit')
-                ->slot('Edit: ' . $row->id)
+                ->slot('Edit: ' . $row->id_lote)
                 ->id()
                 ->class('pg-btn-white dark:ring-pg-primary-600 dark:border-pg-primary-600 dark:hover:bg-pg-primary-700 dark:ring-offset-pg-primary-800 dark:text-pg-primary-300 dark:bg-pg-primary-700')
-                ->dispatch('edit', ['rowId' => $row->id])
+                ->dispatch('edit', ['rowId' => $row->id_lote])
         ];
     }
 

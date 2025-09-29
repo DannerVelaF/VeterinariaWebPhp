@@ -20,10 +20,10 @@ class Entradas extends Component
     use WithPagination;
 
     // Para que la paginación se reinicie al filtrar productos
-    protected $updatesQueryString = ['producto_id'];
+    protected $updatesQueryString = ['id_producto'];
     public $productos = [];
     public $proveedores = [];
-    public $producto_id = null;
+    public $id_producto = null;
     public $observacion = "";
     public $productoSeleccionado = null; // objeto del producto
     public $ubicacion = "";
@@ -63,7 +63,7 @@ class Entradas extends Component
     {
         $this->productosOC = [];
         $this->proveedorOC = null;
-        $this->producto_id = null;
+        $this->id_producto = null;
         $this->productoSeleccionado = null;
         $this->lote['cantidad_total'] = '';
         $this->lote['precio_compra'] = '';
@@ -108,9 +108,9 @@ class Entradas extends Component
             ->where('estado', 'pendiente')
             ->map(function ($detalle) {
                 return [
-                    'id' => $detalle->producto->id,
-                    'detalle_compra_id' => $detalle->id,
-                    'nombre' => $detalle->producto->nombre_producto . ' (' . $detalle->producto->unidad->nombre . ')',
+                    'id_producto' => $detalle->producto->id_producto,
+                    'id_detalle_compra' => $detalle->id_detalle_compra,
+                    'nombre' => $detalle->producto->nombre_producto . ' (' . $detalle->producto->unidad->nombre_unidad . ')',
                     'precio_compra' => $detalle->precio_unitario,
                     'cantidad' => $detalle->cantidad,
                     'codigo_barras' => $detalle->producto->codigo_barras,
@@ -119,15 +119,15 @@ class Entradas extends Component
             })->values();
     }
 
-    public function updatedProductoId($value)
+    public function updatedIdProducto($value)
     {
         $this->productoSeleccionado = collect($this->productosOC)
-            ->firstWhere('detalle_compra_id', $value);
+            ->firstWhere('id_detalle_compra', $value);
 
         if ($this->productoSeleccionado) {
             $this->lote['precio_compra'] = $this->productoSeleccionado['precio_compra'];
             $this->lote['cantidad_total'] = $this->productoSeleccionado['cantidad'];
-            $this->lote['detalle_compra_id'] = $this->productoSeleccionado['detalle_compra_id'];
+            $this->lote['id_detalle_compra'] = $this->productoSeleccionado['id_detalle_compra'];
         } else {
             $this->lote['precio_compra'] = '';
             $this->lote['cantidad_total'] = '';
@@ -146,7 +146,7 @@ class Entradas extends Component
     public function registrar()
     {
         $this->validate([
-            "producto_id"             => "required|exists:detalle_compras,id",
+            "id_producto"             => "required|exists:detalle_compras,id_detalle_compra",
             'lote.cantidad_total'     => 'required|numeric|min:0.01|max:999999999.99',
             'lote.fecha_recepcion'    => 'required|date',
             'lote.fecha_vencimiento' => 'nullable|date|after:lote.fecha_recepcion',
@@ -161,7 +161,7 @@ class Entradas extends Component
                 $fechaVencimiento = $this->lote['fecha_vencimiento'] ?: null;
 
                 $lote = Lotes::create([
-                    "producto_id"       => $this->productoSeleccionado['id'], // <-- CORRECTO
+                    "id_producto"       => $this->productoSeleccionado['id_producto'],
                     "cantidad_total"    => $this->lote['cantidad_total'],
                     "precio_compra"     => $this->lote['precio_compra'],
                     "fecha_recepcion"   => $this->lote['fecha_recepcion'],
@@ -184,14 +184,14 @@ class Entradas extends Component
                     "stock_resultante"  => $lote->cantidad_total,
                     "fecha_movimiento"  => now(),
                     "fecha_registro"    => now(),
-                    "id_lote"           => $lote->id,
-                    "id_trabajador"     => $trabajador->id,
+                    "id_lote"           => $lote->id_lote,
+                    "id_trabajador"     => $trabajador->id_trabajador,
                     "ubicacion"         => $this->ubicacion,
                     "movimentable_type" => DetalleCompra::class,
-                    "movimentable_id"    => $this->lote['detalle_compra_id'],
+                    "movimentable_id"    => $this->lote['id_detalle_compra'],
                 ]);
 
-                $detalle = DetalleCompra::find($this->lote['detalle_compra_id']);
+                $detalle = DetalleCompra::find($this->lote['id_detalle_compra']);
                 $detalle->estado = 'recibido';
                 $detalle->save();
 
@@ -206,7 +206,7 @@ class Entradas extends Component
 
             session()->flash('success', '✅ Entrada registrada con éxito. Código de lote: ' . $this->lote['codigo_lote']);
             $this->resetForm();
-            $this->dispatch('entradaRegistrada');
+            $this->dispatch('entradasUpdated');
         } catch (Exception $e) {
             session()->flash('error', 'Error al registrar la entrada: ' . $e->getMessage());
             Log::error('Error al registrar entrada', ['error' => $e->getMessage()]);
@@ -215,19 +215,14 @@ class Entradas extends Component
 
     public function render()
     {
-        $entradas = InventarioMovimiento::where("tipo_movimiento", "entrada")
-            ->orderBy("fecha_movimiento", "desc")
-            ->paginate(10); // <- Paginación aquí
 
-        return view('livewire.inventario.entradas', [
-            'entradas' => $entradas
-        ]);
+        return view('livewire.inventario.entradas');
     }
 
     public function resetForm()
     {
         $this->ordenCompra = "";
-        $this->producto_id = null;
+        $this->id_producto = null;
         $this->productoSeleccionado = null;
         $this->ubicacion = "";
         $this->lote = [
@@ -255,7 +250,7 @@ class Entradas extends Component
         }
 
         // Sumar los lotes activos del producto
-        $lotes = Lotes::where('producto_id', $this->productoSeleccionado['id'])
+        $lotes = Lotes::where('id_producto', $this->productoSeleccionado['id_producto'])
             ->where('estado', 'activo')
             ->get();
 

@@ -11,8 +11,9 @@ class Compra extends Model
 
     const CREATED_AT = 'fecha_registro';
     const UPDATED_AT = 'fecha_actualizacion';
-
+    protected $primaryKey = 'id_compra';
     protected $fillable = [
+        "id_compra",
         "id_proveedor",
         "id_trabajador",
         "codigo",
@@ -31,19 +32,19 @@ class Compra extends Model
 
     public function proveedor()
     {
-        return $this->belongsTo(Proveedor::class, "id_proveedor", "id");
+        return $this->belongsTo(Proveedor::class, "id_proveedor");
     }
     public function trabajador()
     {
-        return $this->belongsTo(Trabajador::class, "id_trabajador", "id");
+        return $this->belongsTo(Trabajador::class, "id_trabajador", "id_trabajador");
     }
     public function detalleCompra()
     {
-        return $this->hasMany(DetalleCompra::class, 'id_compra', 'id');
+        return $this->hasMany(DetalleCompra::class, "id_compra");
     }
 
     public function usuarioAprobador()
     {
-        return $this->belongsTo(User::class, "id_usuario_aprobador", "id");
+        return $this->belongsTo(User::class, "id_usuario_aprobador", "id_usuario");
     }
 }

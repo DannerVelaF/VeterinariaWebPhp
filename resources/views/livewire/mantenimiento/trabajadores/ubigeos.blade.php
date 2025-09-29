@@ -188,4 +188,5 @@
             </div>
         </x-tab>
     </x-tabs>
+    <x-loader />
 </x-panel>

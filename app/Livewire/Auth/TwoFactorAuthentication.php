@@ -22,7 +22,6 @@ class TwoFactorAuthentication extends Component
     public function mount()
     {
         $userId = Session::get('two_factor_user_id');
-
         if (!$userId) {
             return redirect()->route('login'); // no hay usuario en 2FA
         }

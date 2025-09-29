@@ -12,8 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('proveedores', function (Blueprint $table) {
-            $table->id();
-            $table->string('nombre');
+            $table->id("id_proveedor");
+            $table->string('nombre_proveedor');
             $table->string('ruc')->unique();
             $table->string('correo_electronico_empresa')->nullable();
             $table->string("telefono_contacto")->nullable();
@@ -23,7 +23,7 @@ return new class extends Migration
             $table->string("correo_electronico_encargado")->nullable();
 
             $table->unsignedBigInteger("id_direccion")->nullable();
-            $table->foreign('id_direccion')->references('id')->on('direcciones');
+            $table->foreign('id_direccion')->references('id_direccion')->on('direcciones');
 
             $table->timestamp("fecha_registro")->useCurrent();
             $table->timestamp("fecha_actualizacion")->nullable();

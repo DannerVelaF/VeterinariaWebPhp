@@ -54,7 +54,7 @@
                 <x-card>
                     <div class="h-[100px] flex flex-col justify-between">
                         <div class="flex justify-between items-center">
-                            <p>Precio compra total</p>
+                            <p>Precio total compras recibidas</p>
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
                                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                                 stroke-linejoin="round" class="lucide lucide-dollar-sign-icon lucide-dollar-sign">
@@ -95,17 +95,21 @@
                         <p class="font-medium text-gray-600 text-xl">Órdenes de Compra</p>
                         <p class="font-medium text-gray-600 text-sm">Gestiona las órdenes de compra a proveedores</p>
                     </div>
-                    <button wire:click="openModal"
-                        class="bg-gray-500 hover:bg-gray-700 transition ease-in-out text-white rounded-md px-4 font-medium flex items-center gap-2 text-sm">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                            stroke-linejoin="round" class="lucide lucide-plus-icon lucide-plus">
-                            <path d="M5 12h14" />
-                            <path d="M12 5v14" />
-                        </svg>
-                        Nueva orden
-                    </button>
+                    <div class="flex gap-2">
+                        <x-exports />
+                        <button wire:click="openModal"
+                            class="inline-flex items-center gap-2 px-4 py-2 h-10 bg-gray-500 hover:bg-gray-700 transition text-white rounded-lg font-medium">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" class="lucide lucide-plus">
+                                <path d="M5 12h14" />
+                                <path d="M12 5v14" />
+                            </svg>
+                            Nueva orden
+                        </button>
+                    </div>
                 </div>
+
                 <livewire:compras-table />
 
             </x-card>
@@ -134,8 +138,8 @@
                                     class=" border rounded px-2 py-1 focus:outline-none focus:ring focus:ring-blue-300 border-gray-200 ">
                                     <option value="">Seleccione un proveedor</option>
                                     @foreach ($proveedores as $proveedor)
-                                        <option value="{{ $proveedor->id }}">
-                                            {{ $proveedor->nombre }}
+                                        <option value="{{ $proveedor->id_proveedor }}">
+                                            {{ $proveedor->nombre_proveedor }}
                                         </option>
                                     @endforeach
                                 </select>
@@ -175,16 +179,16 @@
                                         <!-- Producto -->
                                         <div class="col-span-5 flex flex-col">
                                             <label class="text-sm font-medium text-gray-600">Producto</label>
-                                            <select wire:model="detalleCompra.{{ $index }}.producto_id"
+                                            <select wire:model="detalleCompra.{{ $index }}.id_producto"
                                                 class="border rounded px-2 py-1 focus:outline-none focus:ring focus:ring-blue-300 border-gray-200">
                                                 <option value="">Seleccione un producto</option>
                                                 @foreach ($productos as $producto)
-                                                    <option value="{{ $producto->id }}">
+                                                    <option value="{{ $producto->id_producto }}">
                                                         {{ $producto->nombre_producto }}
                                                     </option>
                                                 @endforeach
                                             </select>
-                                            @error('detalleCompra.' . $index . '.producto_id')
+                                            @error('detalleCompra.' . $index . '.id_producto')
                                                 <span class="text-red-500 text-sm">{{ $message }}</span>
                                             @enderror
 
@@ -283,15 +287,70 @@
         <div>
             @if ($showModalDetalle && $compraSeleccionada)
                 <div class="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
-                    <div class="bg-white rounded-xl shadow-xl w-1/2 p-6">
-                        <h2 class="text-xl font-bold mb-4">
-                            Detalles de compra #{{ $compraSeleccionada->codigo }}
-                        </h2>
-                        <button wire:click="aprobarCompra"
-                            class="bg-green-500 hover:bg-green-700 text-white px-4 py-2 rounded-md">
-                            Aprobar
-                        </button>
-                        <div class="flex justify-end mt-4">
+                    <div class="bg-white rounded-xl shadow-xl w-1/4 p-6">
+                        <p class="text-xl font-medium ">
+                            Detalles de orden de compra
+                        </p>
+                        <p class="text-sm font-medium ">
+                            Información completa de la orden {{ $compraSeleccionada->codigo }}
+                        </p>
+                        <div class="grid grid-cols-2 gap-5 mt-5">
+                            <div>
+                                <label class="font-medium">Numero de orden</label>
+                                <p class="text-gray-700">{{ $compraSeleccionada->codigo }}</p>
+                            </div>
+                            <div>
+                                <label class="font-medium">Fecha de orden</label>
+                                <p class="text-gray-700">{{ $compraSeleccionada->proveedor->nombre }}</p>
+                            </div>
+                            <div>
+                                <label class="font-medium">Estado</label>
+                                <p class="text-gray-700">{{ $compraSeleccionada->estado }}</p>
+                            </div>
+                            <div>
+                                <label class="font-medium">Fecha de compra</label>
+                                <p class="text-gray-700">{{ $compraSeleccionada->fecha_compra }}</p>
+                            </div>
+                            <div>
+                                <label class="font-medium">Fecha de registro</label>
+                                <p class="text-gray-700">{{ $compraSeleccionada->fecha_registro }}</p>
+                            </div>
+                        </div>
+
+                        <div class="mt-5">
+                            <p class="font-medium text-md">Detalles productos</p>
+                            <table>
+                                <thead>
+                                    <tr class="border-b border-gray-200">
+                                        <th class="text-start font-medium">Producto</th>
+                                        <th class="text-start font-medium">Cantidad</th>
+                                        <th class="text-start font-medium">Precio</th>
+                                        <th class="text-start font-medium">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach ($compraSeleccionada->detalleCompra as $detalle)
+                                        <tr class="border-b border-gray-200 text-sm">
+                                            <td class="pb-3 pt-2 text-gray-700 font-medium">
+                                                {{ $detalle->producto->nombre_producto }}
+                                            </td>
+                                            <td class="text-gray-700 font-medium">{{ $detalle->cantidad }}</td>
+                                            <td class="text-gray-700 font-medium">s/{{ $detalle->precio_unitario }}
+                                            </td>
+                                            <td class="text-gray-700 font-medium">s/{{ $detalle->sub_total }}</td>
+                                        </tr>
+                                    @endforeach
+                            </table>
+                        </div>
+                        <div class="mt-5">
+                            <p class="font-medium text-xl text-end"> Total: s/{{ $compraSeleccionada->total }}</p>
+                        </div>
+                        <div>
+                            <label>Observaciones</label>
+                            <p class="text-gray-700">{{ $compraSeleccionada->observacion }}</p>
+                        </div>
+
+                        <div class="flex justify-end mt-5">
                             <button wire:click="$set('showModalDetalle', false)"
                                 class="bg-gray-500 hover:bg-gray-700 text-white px-4 py-2 rounded-md">
                                 Cerrar
@@ -302,4 +361,5 @@
             @endif
         </div>
     </div>
+    <x-loader />
 </div>

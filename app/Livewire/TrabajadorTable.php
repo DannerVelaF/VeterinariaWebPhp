@@ -16,13 +16,15 @@ use PowerComponents\LivewirePowerGrid\PowerGridComponent;
 final class TrabajadorTable extends PowerGridComponent
 {
     public string $tableName = 'trabajador-table-w4ssvw-table';
+    protected $listeners = ['trabajadoresUpdated' => '$refresh'];
     public array $estados = [];
-
+    public string $primaryKey = 'id_trabajador';
+    public string $sortField = 'id_trabajador';
     public function setUp(): array
     {
         $this->showCheckBox();
 
-        $this->estados = EstadoTrabajadores::pluck('nombre', 'id')->toArray();
+        $this->estados = EstadoTrabajadores::pluck('nombre_estado_trabajador', 'id_estado_trabajador')->toArray() ?? [];
 
         return [
             PowerGrid::header()
@@ -58,8 +60,8 @@ final class TrabajadorTable extends PowerGridComponent
                     $trabajador->persona->apellido_materno
                     : '-'
             )
-            ->add('puesto_nombre', fn($trabajador) => $trabajador->puestoTrabajo?->nombre)
-            ->add('estado_nombre', fn($trabajador) => $trabajador->estadoTrabajador?->nombre)
+            ->add('puesto_nombre', fn($trabajador) => $trabajador->puestoTrabajo?->nombre_puesto)
+            ->add('estado_nombre', fn($trabajador) => $trabajador->estadoTrabajador?->nombre_estado_trabajador)
             ->add('fecha_ingreso')
             ->add('fecha_salida')
             ->add('salario')
@@ -78,12 +80,12 @@ final class TrabajadorTable extends PowerGridComponent
                 ->searchable()
                 ->editOnClick(),
 
-            Column::make('Puesto', 'puesto_nombre', 'puestoTrabajo.nombre')
+            Column::make('Puesto', 'puesto_nombre')
                 ->sortable()
                 ->searchable()
                 ->editOnClick(),
 
-            Column::make('Estado', 'estado_nombre', 'estadoTrabajador.nombre')
+            Column::make('Estado', 'estado_nombre')
                 ->sortable()
                 ->searchable()
                 ->editOnClick(),
@@ -129,13 +131,13 @@ final class TrabajadorTable extends PowerGridComponent
     public function actions(Trabajador $row): array
     {
         return [
-            Button::add('edit')
+            Button::add('editar-trabajador')
                 ->slot('Editar')
-                ->id()
-                ->class('bg-blue-500 text-white px-2 py-1 rounded')
-                ->dispatch('edit', ['rowId' => $row->id])
+                ->class('px-2 py-1 bg-yellow-500 hover:bg-yellow-600 text-white text-xs rounded')
+                ->dispatch('abrirModalTrabajador', ['trabajadorId' => $row->id_trabajador])
         ];
     }
+
     public function onUpdatedEditable(string|int $id, string $field, string $value): void
     {
         Trabajador::find($id)->update([

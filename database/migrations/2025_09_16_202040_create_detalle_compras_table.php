@@ -12,13 +12,13 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('detalle_compras', function (Blueprint $table) {
-            $table->id();
+            $table->id("id_detalle_compra");
 
             $table->unsignedBigInteger("id_compra");
-            $table->foreign("id_compra")->references("id")->on("compras");
+            $table->foreign("id_compra")->references("id_compra")->on("compras");
 
             $table->unsignedBigInteger('id_producto');
-            $table->foreign("id_producto")->references("id")->on("productos");
+            $table->foreign("id_producto")->references("id_producto")->on("productos");
             $table->enum("estado", ["pendiente", "recibido", "pagado", "cancelado"])->default("pendiente");
             $table->decimal("cantidad", 12, 2);
             $table->decimal("precio_unitario", 12, 2);

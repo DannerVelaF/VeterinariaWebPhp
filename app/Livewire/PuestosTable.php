@@ -15,14 +15,14 @@ use PowerComponents\LivewirePowerGrid\PowerGridComponent;
 final class PuestosTable extends PowerGridComponent
 {
     public string $tableName = 'puestos-table-nctcot-table';
-
+    public string $primaryKey = 'id_puesto_trabajo';
+    public string $sortField = 'id_puesto_trabajo';
     public function setUp(): array
     {
         $this->showCheckBox();
 
         return [
-            PowerGrid::header()
-                ->showSearchInput(),
+            PowerGrid::header(),
             PowerGrid::footer()
                 ->showPerPage()
                 ->showRecordCount(),
@@ -42,34 +42,50 @@ final class PuestosTable extends PowerGridComponent
     public function fields(): PowerGridFields
     {
         return PowerGrid::fields()
-            ->add('id')
-            ->add('nombre')
+            ->add('nombre_puesto')
             ->add('descripcion')
             ->add('estado')
-            ->add('fecha_registro');
+            ->add('estado_boolean', function ($row) {
+                return $row->estado === 'activo';
+            })
+            ->add('fecha_registro')
+            ->add('fecha_actualizacion');
     }
+
 
     public function columns(): array
     {
         return [
-            Column::make('Id', 'id'),
-            Column::make('Nombre', 'nombre')
-                ->sortable()
-                ->searchable(),
 
-            Column::make('Descripcion', 'descripcion')
+            Column::make('Nombre', 'nombre_puesto')
                 ->sortable()
-                ->searchable(),
+                ->searchable()
+                ->editOnClick(),
+
+            Column::make('Descripción', 'descripcion')
+                ->sortable()
+                ->searchable()
+                ->editOnClick(),
 
             Column::make('Estado', 'estado')
                 ->sortable()
                 ->searchable(),
 
-            Column::make('Created at', 'fecha_registro')
+
+
+            Column::make('Fecha de registro', 'fecha_registro')
                 ->sortable()
                 ->searchable(),
-
-            Column::action('Action')
+            Column::make('Fecha de actualización', 'fecha_actualizacion')
+                ->sortable()
+                ->searchable(),
+            Column::make('Cambiar Estado', 'estado_boolean')
+                ->toggleable(
+                    trueLabel: 'activo',
+                    falseLabel: 'inactivo'
+                ),
+            Column::action('Acciones')
+                ->hidden(),
         ];
     }
 
@@ -84,6 +100,26 @@ final class PuestosTable extends PowerGridComponent
         $this->js('alert(' . $rowId . ')');
     }
 
+
+    public function onUpdatedEditable(string|int $id, string $field, string $value): void
+    {
+        PuestoTrabajador::find($id)->update([
+            $field => $value
+        ]);
+    }
+
+    public function onUpdatedToggleable(string|int $id, string $field, string $value): void
+    {
+        if ($field === 'estado_boolean') {
+            $nuevoEstado = $value ? 'activo' : 'inactivo';
+
+            PuestoTrabajador::find($id)->update([
+                'estado' => $nuevoEstado
+            ]);
+        }
+
+        $this->skipRender();
+    }
     public function actions(PuestoTrabajador $row): array
     {
         return [

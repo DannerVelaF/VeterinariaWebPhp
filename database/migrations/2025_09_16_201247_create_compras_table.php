@@ -12,12 +12,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('compras', function (Blueprint $table) {
-            $table->id();
+            $table->id("id_compra");
             $table->unsignedBigInteger("id_proveedor");
-            $table->foreign("id_proveedor")->references("id")->on("proveedores");
+            $table->foreign("id_proveedor")->references("id_proveedor")->on("proveedores");
 
             $table->unsignedBigInteger('id_trabajador');
-            $table->foreign("id_trabajador")->references("id")->on("trabajadores");
+            $table->foreign("id_trabajador")->references("id_trabajador")->on("trabajadores");
 
             $table->string("codigo");
             $table->string("numero_factura");
@@ -25,10 +25,10 @@ return new class extends Migration
             $table->decimal("cantidad_total", 12, 2);
             $table->decimal('total', 12, 2);
             $table->text("observacion")->nullable();
-            $table->enum("estado", ["pendiente", "aprobado", "recibido", "pagado", "cancelado"])->default("pendiente");
+            $table->enum("estado", ["pendiente", "aprobado", "recibido",  "pagado", "cancelado"])->default("pendiente");
 
             $table->unsignedBigInteger("id_usuario_aprobador")->nullable();
-            $table->foreign("id_usuario_aprobador")->references("id")->on("users");
+            $table->foreign("id_usuario_aprobador")->references("id_usuario")->on("usuarios");
 
             $table->timestamp("fecha_registro")->useCurrent();
             $table->timestamp("fecha_actualizacion")->nullable();

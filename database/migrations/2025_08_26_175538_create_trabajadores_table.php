@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('trabajadores', function (Blueprint $table) {
-            $table->id();
+            $table->id("id_trabajador");
             $table->date("fecha_ingreso");
             $table->date("fecha_salida")->nullable();
             $table->decimal("salario", 12, 2);
@@ -20,13 +20,13 @@ return new class extends Migration
 
 
             $table->unsignedBigInteger("id_persona");
-            $table->foreign("id_persona")->references("id")->on('personas');
+            $table->foreign("id_persona")->references("id_persona")->on('personas');
 
             $table->unsignedBigInteger("id_puesto_trabajo");
-            $table->foreign("id_puesto_trabajo")->references("id")->on('puesto_trabajadores');
+            $table->foreign("id_puesto_trabajo")->references("id_puesto_trabajo")->on('puesto_trabajadores');
 
             $table->unsignedBigInteger('id_estado_trabajador');
-            $table->foreign("id_estado_trabajador")->references("id")->on("estado_trabajadores");
+            $table->foreign("id_estado_trabajador")->references("id_estado_trabajador")->on("estado_trabajadores");
             $table->timestamp("fecha_registro")->useCurrent();
             $table->timestamp("fecha_actualizacion")->nullable();
         });

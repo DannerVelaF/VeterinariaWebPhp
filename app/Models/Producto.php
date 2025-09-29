@@ -10,14 +10,17 @@ class Producto extends Model
 
     const CREATED_AT = 'fecha_registro';
     const UPDATED_AT = 'fecha_actualizacion';
-
+    protected $primaryKey = 'id_producto';
     protected $fillable = [
+        'id_producto',
+        "ruta_imagen",
         'nombre_producto',
         'descripcion',
         'estado',
         'codigo_barras',
         'id_categoria_producto',
         'id_proveedor',
+        
         'id_unidad',
         'fecha_registro',
         'fecha_actualizacion',
@@ -25,16 +28,16 @@ class Producto extends Model
 
     public function categoria_producto()
     {
-        return $this->belongsTo(CategoriaProducto::class, 'id_categoria_producto', 'id');
+        return $this->belongsTo(CategoriaProducto::class, "id_categoria_producto");
     }
 
     public function proveedor()
     {
-        return $this->belongsTo(Proveedor::class, 'id_proveedor', 'id');
+        return $this->belongsTo(Proveedor::class, "id_proveedor");
     }
 
     public function unidad()
     {
-        return $this->belongsTo(Unidades::class, 'id_unidad', 'id');
+        return $this->belongsTo(Unidades::class, "id_unidad");
     }
 }

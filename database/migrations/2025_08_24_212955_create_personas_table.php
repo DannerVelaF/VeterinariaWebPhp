@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('personas', function (Blueprint $table) {
-            $table->id();
+            $table->id("id_persona");
             $table->string("numero_documento");
             $table->string("nombre");
             $table->string("apellido_paterno");
@@ -27,10 +27,10 @@ return new class extends Migration
 
 
             $table->unsignedBigInteger('id_direccion');
-            $table->foreign('id_direccion')->references('id')->on('direcciones');
+            $table->foreign('id_direccion')->references('id_direccion')->on('direcciones');
 
             $table->unsignedBigInteger("id_tipo_documento")->nullable();
-            $table->foreign("id_tipo_documento")->references("id")->on("tipo_documentos")->onDelete("set null");
+            $table->foreign("id_tipo_documento")->references("id_tipo_documento")->on("tipo_documentos")->onDelete("set null");
 
             $table->timestamp("fecha_registro")->useCurrent();
             $table->timestamp("fecha_actualizacion")->nullable();

@@ -12,11 +12,11 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('transaccion_pagos', function (Blueprint $table) {
-            $table->id();
+            $table->id("id_transaccion_pago");
             $table->unsignedBigInteger("id_venta");
-            $table->foreign("id_venta")->references("id")->on("ventas");
+            $table->foreign("id_venta")->references("id_venta")->on("ventas");
             $table->unsignedBigInteger("id_metodo");
-            $table->foreign("id_metodo")->references("id")->on("metodo_pagos");
+            $table->foreign("id_metodo")->references("id_metodo_pago")->on("metodo_pagos");
             $table->decimal("monto", 12, 2);
             $table->string("referencia");
             $table->enum("estado", ["pendiente", "completada", "rechazada", "reversada"])->default("pendiente");

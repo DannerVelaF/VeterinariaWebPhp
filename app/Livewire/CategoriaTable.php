@@ -16,7 +16,8 @@ final class CategoriaTable extends PowerGridComponent
 {
     public string $tableName = 'categoria-table-rfu70q-table';
     protected $listeners = ['categoriaRegistrado' => '$refresh'];
-
+    public string $primaryKey = 'id_categoria_producto';
+    public string $sortField = 'id_categoria_producto';
     public function setUp(): array
     {
         $this->showCheckBox();
@@ -43,8 +44,8 @@ final class CategoriaTable extends PowerGridComponent
     public function fields(): PowerGridFields
     {
         return PowerGrid::fields()
-            ->add('id')
-            ->add('nombre')
+            ->add('id_categoria_producto')
+            ->add('nombre_categoria')
             ->add('descripccion')
             ->add('estado')
             ->add("estado")
@@ -57,8 +58,8 @@ final class CategoriaTable extends PowerGridComponent
     public function columns(): array
     {
         return [
-            Column::make('Id', 'id'),
-            Column::make('Nombre', 'nombre')
+            Column::make('Id', 'id_categoria_producto'),
+            Column::make('Nombre', 'nombre_categoria')
                 ->sortable()
                 ->searchable()
                 ->editOnClick(),
@@ -102,11 +103,10 @@ final class CategoriaTable extends PowerGridComponent
     public function actions(CategoriaProducto $row): array
     {
         return [
-            Button::add('edit')
-                ->slot('Edit: ' . $row->id)
-                ->id()
-                ->class('pg-btn-white dark:ring-pg-primary-600 dark:border-pg-primary-600 dark:hover:bg-pg-primary-700 dark:ring-offset-pg-primary-800 dark:text-pg-primary-300 dark:bg-pg-primary-700')
-                ->dispatch('edit', ['rowId' => $row->id])
+            Button::add('editar-categoria')
+                ->slot('Editar')
+                ->class('px-2 py-1 bg-yellow-500 hover:bg-yellow-600 text-white text-xs rounded')
+                ->dispatch('abrirModalCategoria', ["categoriaId" => $row->id_categoria_producto])
         ];
     }
 
@@ -129,7 +129,7 @@ final class CategoriaTable extends PowerGridComponent
                 'estado' => $nuevoEstado
             ]);
         }
-
+        $this->dispatch('categoriaUpdated');
         // Evitar que Livewire vuelva a renderizar el componente
         $this->skipRender();
     }

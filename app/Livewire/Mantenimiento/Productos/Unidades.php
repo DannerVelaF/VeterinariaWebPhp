@@ -25,12 +25,13 @@ class Unidades extends Component
         try {
             DB::transaction(function () {
                 $unidad = UnidadesModel::create([
-                    'nombre' => $this->nombre,
+                    'nombre_unidad' => $this->nombre,
                 ]);
             });
 
             $this->unidades = UnidadesModel::all(); // refrescar lista
             $this->nombre = null;
+            $this->dispatch('unidadesUpdated');
             session()->flash('success', 'Unidad registrada con éxito');
         } catch (\Exception $e) {
             session()->flash('error', 'Error al registrar la unidad: ' . $e->getMessage());
@@ -45,6 +46,7 @@ class Unidades extends Component
             });
 
             $this->unidades = UnidadesModel::all(); // refrescar lista
+            $this->dispatch('unidadesUpdated');
             session()->flash('success', 'Unidad eliminada con éxito');
         } catch (\Exception $e) {
             session()->flash('error', 'Error al eliminar la unidad: ' . $e->getMessage());

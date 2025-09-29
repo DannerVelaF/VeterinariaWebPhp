@@ -11,9 +11,10 @@ class InventarioMovimiento extends Model
 
     const CREATED_AT = 'fecha_registro';
     const UPDATED_AT = 'fecha_actualizacion';
-
+    protected $primaryKey = 'id_inventario_movimiento';
     protected $table = "inventario_movimientos";
     protected $fillable = [
+        "id_inventario_movimiento",
         "tipo_movimiento",
         "cantidad_movimiento",
         "stock_resultante",
@@ -29,18 +30,18 @@ class InventarioMovimiento extends Model
     ];
 
     protected $casts = [
-    'fecha_movimiento' => 'datetime',
-    'fecha_registro' => 'datetime',
+        'fecha_movimiento' => 'datetime',
+        'fecha_registro' => 'datetime',
     ];
 
     public function trabajador()
     {
-        return $this->belongsTo(Trabajador::class, "id_trabajador", "id");
+        return $this->belongsTo(Trabajador::class, "id_trabajador");
     }
 
     public function lote()
     {
-        return $this->belongsTo(Lotes::class, "id_lote", "id");
+        return $this->belongsTo(Lotes::class, "id_lote");
     }
 
     public function movimentable()

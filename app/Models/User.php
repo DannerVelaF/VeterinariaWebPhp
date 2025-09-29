@@ -11,20 +11,23 @@ use Spatie\Permission\Traits\HasRoles;
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, HasRoles;
-
+    use HasFactory, Notifiable;
+    protected $table = 'usuarios';
+    protected $primaryKey = 'id_usuario';
     /**
      * The attributes that are mass assignable.
      *
      * @var list<string>
      */
     protected $fillable = [
-        'username',
-        'password_hash',
+        "id_usuario",
+        "usuario",
+        "contrasena",
         'estado',
         'id_persona',
         'fecha_registro',
         'fecha_actualizacion',
+        'id_rol',
     ];
 
     public $timestamps = true;
@@ -38,7 +41,7 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $hidden = [
-        'password_hash',
+        'contrasena',
         'remember_token',
     ];
     /**
@@ -50,22 +53,31 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
-            'password_hash' => 'hashed',
+            'contrasena' => 'hashed',
         ];
     }
 
     public function getAuthPassword()
     {
-        return $this->password_hash;
+        return $this->contrasena;
     }
 
     public function persona()
     {
-        return $this->belongsTo(Persona::class, "id_persona", "id");
+        return $this->belongsTo(Persona::class, 'id_persona');
     }
 
     public function comprasAprobadas()
     {
-        return $this->hasMany(Compra::class, 'id_usuario_aprobador', 'id');
+        return $this->hasMany(Compra::class, "id_usuario_aprobador", "id_usuario");
+    }
+    public function rol()
+    {
+        return $this->belongsTo(Roles::class, 'id_rol');
+    }
+
+    public function permisos()
+    {
+        return $this->rol()->with('permisos');
     }
 }

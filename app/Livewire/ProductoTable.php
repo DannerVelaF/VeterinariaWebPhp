@@ -17,14 +17,14 @@ final class ProductoTable extends PowerGridComponent
 {
     public string $tableName = 'producto-table-ghu6nb-table';
     protected $listeners = ['productoRegistrado' => '$refresh'];
-
+    public string $primaryKey = 'id_producto';
+    public string $sortField = 'id_producto';
     public function setUp(): array
     {
         $this->showCheckBox();
 
         return [
-            PowerGrid::header()
-                ->showSearchInput(),
+            PowerGrid::header(),
             PowerGrid::footer()
                 ->showPerPage()
                 ->showRecordCount(),
@@ -45,37 +45,33 @@ final class ProductoTable extends PowerGridComponent
     public function fields(): PowerGridFields
     {
         return PowerGrid::fields()
-            ->add('id')
+            ->add('id_producto')
             ->add('nombre_producto')
-            ->add('unidad_nombre', fn($producto) => $producto->unidad?->nombre ?? '-')
+            ->add('unidad_nombre', fn($producto) => $producto->unidad?->nombre_unidad ?? '-')
             ->add("estado")
             ->add('estado_boolean', function ($row) {
                 return $row->estado === 'activo';
             })
             ->add('codigo_barras')
             ->add('fecha_registro')
-            ->add('categoria_nombre', fn($producto) => $producto->categoria_producto?->nombre)
-            ->add('proveedor_nombre', fn($producto) => $producto->proveedor?->nombre);
+            ->add('categoria_nombre', fn($producto) => $producto->categoria_producto?->nombre_categoria)
+            ->add('proveedor_nombre', fn($producto) => $producto->proveedor?->nombre_proveedor);
     }
 
 
     public function columns(): array
     {
         return [
-            Column::make('Id', 'id'),
+            Column::make('Id', 'id_producto'),
             Column::make('Nombre producto', 'nombre_producto')
-                ->sortable()
-                ->searchable()
-                ->editOnClick(),
-
-            Column::make('Unidad', 'unidad_nombre')->sortable()->searchable(),
-            Column::make('Codigo barras', 'codigo_barras')->sortable()->searchable(),
+                ->sortable(),
+            Column::make('Unidad', 'unidad_nombre')->sortable(),
+            Column::make('Codigo barras', 'codigo_barras')->sortable(),
             Column::make('Categoría', 'categoria_nombre', 'categoria_producto.nombre'),
-            Column::make('Proveedor', 'proveedor_nombre', 'proveedor.nombre'),
+            Column::make('Proveedor', 'proveedor_nombre'),
             Column::make('Fecha creación', 'fecha_registro')->sortable(),
             Column::make('Estado', 'estado_boolean')
                 ->sortable()
-                ->searchable()
                 ->toggleable(
                     trueLabel: 'activo',
                     falseLabel: 'inactivo'
@@ -98,14 +94,10 @@ final class ProductoTable extends PowerGridComponent
     public function actions(Producto $row): array
     {
         return [
-            Button::add('verDescripcion')
-                ->slot('Ver Detalle')
-                ->id()
-                ->class('bg-blue-500 text-white px-2 py-1 rounded')
-                ->dispatch('mostrarDescripcion', [
-                    'id' => $row->id,
-                    'descripcion' => $row->descripcion,
-                ])
+            Button::add('editarProducto')
+                ->slot('Editar') // <-- aquí defines el texto
+                ->class('px-2 py-1 bg-yellow-500 hover:bg-yellow-600 text-white text-xs rounded')
+                ->dispatch('editarProducto', ['productoId' => $row->id_producto])
         ];
     }
     public function onUpdatedEditable(string|int $id, string $field, string $value): void

@@ -40,12 +40,8 @@ class Puestos extends Component
             DB::commit();
 
             session()->flash('success', '✅ Puesto registrado correctamente');
-            Log::info('Puesto registrado con éxito', [
-                'puesto_id' => $puesto->id,
-                'nombre' => $puesto->nombre,
-            ]);
-
             $this->resetForm();
+            $this->dispatch('puestosUpdated');
         } catch (\Exception $e) {
             DB::rollBack();
 

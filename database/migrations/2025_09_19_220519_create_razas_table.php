@@ -12,9 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('razas', function (Blueprint $table) {
-            $table->id();
+            $table->id("id_raza");
             $table->unsignedBigInteger("id_especie");
-            $table->foreign("id_especie")->references("id")->on("especies");
+            $table->foreign("id_especie")->references("id_especie")->on("especies");
             $table->string("nombre_raza");
             $table->text("descripcion");
             $table->timestamp("fecha_registro")->useCurrent();

@@ -12,16 +12,16 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('inventario_movimientos', function (Blueprint $table) {
-            $table->id();
+            $table->id("id_inventario_movimiento");
             $table->enum("tipo_movimiento", ["ajuste", "entrada", "salida"])->default("entrada");
             $table->integer("cantidad_movimiento");
             $table->integer("stock_resultante");
             $table->enum("ubicacion", ["almacen", "mostrador"])->default("almacen");
             $table->unsignedBigInteger("id_lote")->nullable();
-            $table->foreign("id_lote")->references("id")->on("lotes");
+            $table->foreign("id_lote")->references("id_lote")->on("lotes");
 
             $table->unsignedBigInteger("id_trabajador");
-            $table->foreign("id_trabajador")->references("id")->on("trabajadores");
+            $table->foreign("id_trabajador")->references("id_trabajador")->on("trabajadores");
 
             $table->morphs('movimentable');
 

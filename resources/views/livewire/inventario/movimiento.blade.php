@@ -1,10 +1,8 @@
 <x-panel title="Gestión de inventario">
 
-    <x-tabs :tabs="['resumen' => 'Resumen', 'lotes' => 'Lotes', 'entradas' => 'Entradas', 'salidas' => 'Salidas']" default="resumen">
-        <x-tab name="resumen">
-            <livewire:inventario.resumen />
-        </x-tab>
-        <x-tab name="lotes">
+    <x-tabs :tabs="['inventario' => 'Inventario', 'entradas' => 'Entradas', 'salidas' => 'Salidas']" default="inventario">
+
+        <x-tab name="inventario">
             <livewire:inventario.lotes />
         </x-tab>
 

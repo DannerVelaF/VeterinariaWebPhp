@@ -11,9 +11,10 @@ class Lotes extends Model
 
     const CREATED_AT = 'fecha_registro';
     const UPDATED_AT = 'fecha_actualizacion';
-
+    protected $primaryKey = 'id_lote';
     protected $fillable = [
-        "producto_id",
+        "id_lote",
+        "id_producto",
         "codigo_lote",
         "cantidad_mostrada",
         "cantidad_almacenada",
@@ -29,12 +30,12 @@ class Lotes extends Model
 
     public function producto()
     {
-        return $this->belongsTo(Producto::class, 'producto_id', 'id');
+        return $this->belongsTo(Producto::class, "id_producto");
     }
 
     public function inventarios()
     {
-        return $this->hasMany(InventarioMovimiento::class, 'id_lote', 'id');
+        return $this->hasMany(InventarioMovimiento::class, "id_lote");
     }
 
     public function getCantidadTotalAttribute()

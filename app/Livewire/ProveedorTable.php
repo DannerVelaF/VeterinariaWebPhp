@@ -20,26 +20,25 @@ final class ProveedorTable extends PowerGridComponent
     public string $tableName = 'proveedor-table-dedggx-table';
     use WithExport;
     protected $listeners = ['proveedorRegistrado' => '$refresh'];
+    public string $primaryKey = 'id_proveedor';
+    public string $sortField = 'id_proveedor';
 
     public function setUp(): array
     {
         $this->showCheckBox();
 
         return [
-            PowerGrid::header()
-                ->showSearchInput(),
-
+            PowerGrid::header(),
             PowerGrid::footer()
                 ->showPerPage()
                 ->showRecordCount(),
-            PowerGrid::exportable(fileName: 'DetalleProveedores')
-                ->type(Exportable::TYPE_XLS, Exportable::TYPE_CSV)
+
         ];
     }
 
     public function datasource(): Builder
     {
-        return Proveedor::query();
+        return Proveedor::query()->orderBy('id_proveedor', 'asc');
     }
 
     public function relationSearch(): array
@@ -50,8 +49,8 @@ final class ProveedorTable extends PowerGridComponent
     public function fields(): PowerGridFields
     {
         return PowerGrid::fields()
-            ->add('id')
-            ->add('nombre')
+            ->add('id_proveedor')
+            ->add('nombre_proveedor')
             ->add('ruc')
             ->add('telefono_contacto')
             ->add('correo_electronico_empresa')
@@ -66,25 +65,22 @@ final class ProveedorTable extends PowerGridComponent
     public function columns(): array
     {
         return [
-            Column::make('Id', 'id'),
-            Column::make('Nombre', 'nombre')
+            Column::make('Id', 'id_proveedor'),
+            Column::make('Nombre', 'nombre_proveedor')
                 ->sortable()
                 ->searchable(),
 
             Column::make('Ruc', 'ruc')
                 ->sortable()
-                ->searchable()
-                ->editOnClick(),
+                ->searchable(),
 
             Column::make('Telefono', 'telefono_contacto')
                 ->sortable()
-                ->searchable()
-                ->editOnClick(),
+                ->searchable(),
 
             Column::make('Correo', 'correo_electronico_empresa')
                 ->sortable()
-                ->searchable()
-                ->editOnClick(),
+                ->searchable(),
 
             Column::make('Pais', 'pais')
                 ->sortable()
@@ -117,23 +113,22 @@ final class ProveedorTable extends PowerGridComponent
     public function actions(Proveedor $row): array
     {
         return [
-            Button::add('edit')
-                ->slot('Edit: ' . $row->id)
-                ->id()
-                ->class('pg-btn-white dark:ring-pg-primary-600 dark:border-pg-primary-600 dark:hover:bg-pg-primary-700 dark:ring-offset-pg-primary-800 dark:text-pg-primary-300 dark:bg-pg-primary-700')
-                ->dispatch('edit', ['rowId' => $row->id])
+            Button::add('editarProveedor')
+                ->slot('Editar') // <-- aquí defines el texto
+                ->class('px-2 py-1 bg-yellow-500 hover:bg-yellow-600 text-white text-xs rounded')
+                ->dispatch('editarProveedor', ['proveedorId' => $row->id_proveedor])
         ];
     }
 
 
-    public function onUpdatedEditable(string|int $id, string $field, string $value): void
+    public function onUpdatedEditable(string|int $id_proveedor, string $field, string $value): void
     {
-        Proveedor::find($id)->update([
+        Proveedor::find($id_proveedor)->update([
             $field => $value
         ]);
     }
 
-    public function onUpdatedToggleable(string|int $id, string $field, string $value): void
+    public function onUpdatedToggleable(string|int $id_proveedor, string $field, string $value): void
     {
         // Solo procesar si el campo es estado_boolean
         if ($field === 'estado_boolean') {
@@ -141,7 +136,7 @@ final class ProveedorTable extends PowerGridComponent
             $nuevoEstado = $value ? 'activo' : 'inactivo';
 
             // Actualizar el campo real 'estado' en la base de datos
-            Proveedor::find($id)->update([
+            Proveedor::find($id_proveedor)->update([
                 'estado' => $nuevoEstado
             ]);
         }

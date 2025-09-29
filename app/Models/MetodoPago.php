@@ -11,8 +11,9 @@ class MetodoPago extends Model
 
     const CREATED_AT = 'fecha_registro';
     const UPDATED_AT = 'fecha_actualizacion';
-
+    protected $primaryKey = 'id_metodo_pago';
     protected $fillable = [
+        'id_metodo_pago',
         'nombre_metodo',
         'observacion',
         'fecha_registro',
@@ -21,6 +22,6 @@ class MetodoPago extends Model
 
     public function transaccionPagos()
     {
-        return $this->hasMany(TransaccionPago::class);
+        return $this->hasMany(TransaccionPago::class, "id_metodo_pago");
     }
 }

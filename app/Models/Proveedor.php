@@ -11,10 +11,11 @@ class Proveedor extends Model
 
     const CREATED_AT = 'fecha_registro';
     const UPDATED_AT = 'fecha_actualizacion';
-
+    protected $primaryKey = 'id_proveedor';
     protected $table = 'proveedores';
     protected $fillable = [
-        'nombre',
+        'id_proveedor',
+        'nombre_proveedor',
         'ruc',
         'correo',
         'pais',
@@ -30,16 +31,16 @@ class Proveedor extends Model
 
     public function direccion()
     {
-        return $this->belongsTo(Direccion::class);
+        return $this->belongsTo(Direccion::class, "id_direccion");
     }
 
     public function productos()
     {
-        return $this->hasMany(Producto::class);
+        return $this->hasMany(Producto::class, "id_proveedor");
     }
 
     public function compras()
     {
-        return $this->hasMany(Compra::class);
+        return $this->hasMany(Compra::class, "id_proveedor");
     }
 }

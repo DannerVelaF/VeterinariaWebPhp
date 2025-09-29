@@ -53,9 +53,9 @@
                 <tbody>
                     @forelse ($unidades as $unidad)
                         <tr>
-                            <td class="p-2 border font-bold">{{ $unidad->nombre }}</td>
+                            <td class="p-2 border font-bold">{{ $unidad->nombre_unidad }}</td>
                             <td class="p-2 border text-center">
-                                <button wire:click="eliminar({{ $unidad->id }})"
+                                <button wire:click="eliminar({{ $unidad->id_unidad }})"
                                     class="px-3 py-1 rounded text-white bg-red-500 hover:bg-red-600">
                                     Eliminar
                                 </button>

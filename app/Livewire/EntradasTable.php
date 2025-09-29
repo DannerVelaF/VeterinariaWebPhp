@@ -18,10 +18,11 @@ use PowerComponents\LivewirePowerGrid\Traits\WithExport;
 final class EntradasTable extends PowerGridComponent
 {
     public string $tableName = 'entradas-table-zlucbi-table';
-    protected $listeners = ['entradaRegistrada' => '$refresh'];
+    protected $listeners = ['entradasUpdated' => '$refresh'];
     public bool $showFilters = true;
+    public string $primaryKey = 'id_inventario_movimiento';
+    public string $sortField = 'id_inventario_movimiento';
     use WithExport;
-
     public function boot(): void
     {
         config(['livewire-powergrid.filter' => 'outside']);
@@ -42,16 +43,16 @@ final class EntradasTable extends PowerGridComponent
     public function datasource(): Builder
     {
         return InventarioMovimiento::query()
-            ->join('lotes', 'inventario_movimientos.id_lote', '=', 'lotes.id')
-            ->join('productos', 'lotes.producto_id', '=', 'productos.id')
-            ->join('proveedores', 'productos.id_proveedor', '=', 'proveedores.id')
+            ->join('lotes', 'inventario_movimientos.id_lote', '=', 'lotes.id_lote')
+            ->join('productos', 'lotes.id_producto', '=', 'productos.id_producto')
+            ->join('proveedores', 'productos.id_proveedor', '=', 'proveedores.id_proveedor')
             ->with(['lote.producto.proveedor', 'trabajador.persona.user'])
             ->select(
                 'inventario_movimientos.*',
-                'productos.id as producto_id',
+                'productos.id_producto',
                 'productos.nombre_producto as producto',
-                'proveedores.id as proveedor_id',
-                'proveedores.nombre as proveedor',
+                'proveedores.id_proveedor',
+                'proveedores.nombre_proveedor as proveedor',
                 'lotes.codigo_lote as lote'
             )
             ->orderBy('inventario_movimientos.fecha_movimiento', 'desc');
@@ -120,7 +121,7 @@ final class EntradasTable extends PowerGridComponent
 
 
             Column::make('Producto', 'producto', 'productos.nombre_producto')->sortable(),
-            Column::make('Proveedor', 'proveedor', 'proveedores.nombre')
+            Column::make('Proveedor', 'proveedor', 'proveedores.nombre_proveedor')
                 ->sortable(),
 
             Column::make('Cantidad', 'cantidad_movimiento')
@@ -143,16 +144,16 @@ final class EntradasTable extends PowerGridComponent
     {
         return [
             // 1er arg = field (lo que añadiste en fields()->add('producto'))
-            // 2do arg = columna/alias real en la query (producto_id)
-            Filter::select('producto', 'productos.id')
+            // 2do arg = columna/alias real en la query (id_producto)
+            Filter::select('producto', 'productos.id_producto')
                 ->dataSource(Producto::orderBy('nombre_producto')->get()->toArray())
-                ->optionValue('id')
+                ->optionValue('id_producto')
                 ->optionLabel('nombre_producto'),
 
-            Filter::select('proveedor', 'proveedores.id')
-                ->dataSource(Proveedor::orderBy('nombre')->get()->toArray())
-                ->optionValue('id')
-                ->optionLabel('nombre'),
+            Filter::select('proveedor', 'proveedores.id_proveedor')
+                ->dataSource(Proveedor::orderBy('nombre_proveedor')->get()->toArray())
+                ->optionValue('id_proveedor')
+                ->optionLabel('nombre_proveedor'),
 
 
             Filter::select('ubicacion', 'ubicacion')

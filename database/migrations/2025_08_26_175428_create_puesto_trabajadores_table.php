@@ -12,8 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('puesto_trabajadores', function (Blueprint $table) {
-            $table->id();
-            $table->string("nombre");
+            $table->id("id_puesto_trabajo");
+            $table->string("nombre_puesto");
             $table->string("descripcion")->nullable();
             $table->enum('estado', ['activo', 'inactivo'])->default('activo');
             $table->timestamp("fecha_registro")->useCurrent();

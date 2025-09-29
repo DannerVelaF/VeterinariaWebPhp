@@ -2,14 +2,17 @@
 
 namespace App\Livewire\Compras;
 
+use App\Exports\CompraConDetalleExport;
 use App\Models\Compra;
 use App\Models\DetalleCompra;
 use App\Models\Producto;
 use App\Models\Proveedor;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Livewire\Component;
+use Maatwebsite\Excel\Facades\Excel;
 
 class Registro extends Component
 {
@@ -37,7 +40,7 @@ class Registro extends Component
         $this->generarCodigoOrden();
         $this->proveedores = Proveedor::where('estado', 'activo')->get();
         $this->detalleCompra = [
-            ['producto_id' => '', 'cantidad' => 0, 'precio_unitario' => 0]
+            ['id_producto' => '', 'cantidad' => 0, 'precio_unitario' => 0]
         ];
         $this->compra = [
             'numero_factura' => '',
@@ -58,7 +61,7 @@ class Registro extends Component
         // Buscar el último correlativo del mes
         $ultimo = Compra::whereYear('fecha_registro', $año)
             ->whereMonth('fecha_registro', $mes)
-            ->orderBy('id', 'desc')
+            ->orderBy('id_compra', 'desc')
             ->first();
 
         $correlativo = 1;
@@ -90,26 +93,47 @@ class Registro extends Component
             DB::transaction(function () {
                 $compra = $this->compraSeleccionada;
                 $compra->estado = "aprobado";
+                $compra->id_usuario_aprobador = auth()->user()->persona->id_persona;
                 $compra->save();
             });
 
             session()->flash('success', '✅ Compra aprobada correctamente ✅');
             $this->reset(["compraSeleccionada", "detalleCompra", "proveedorSeleccionado", "codigoOrden", "proveedores"]);
             $this->showModalDetalle = false;
+            $this->dispatch('comprasUpdated');
         } catch (\Exception $e) {
             session()->flash('error', 'Error al registrar la compra: ' . $e->getMessage());
             Log::error('Error al registrar la compra', ['error' => $e->getMessage()]);
         }
     }
 
+    public function rechazarCompra()
+    {
+        try {
+            DB::transaction(function () {
+                $compra = $this->compraSeleccionada;
+                $compra->estado = "cancelado";
+                $compra->save();
+            });
+
+            session()->flash('success', '❌ Compra rechazada correctamente ❌');
+            $this->reset(["compraSeleccionada", "detalleCompra", "proveedorSeleccionado", "codigoOrden", "proveedores"]);
+            $this->showModalDetalle = false;
+            $this->dispatch('comprasUpdated');
+        } catch (\Exception $e) {
+            session()->flash('error', 'Error al rechazar la compra: ' . $e->getMessage());
+            Log::error('Error al rechazar la compra', ['error' => $e->getMessage()]);
+        }
+    }
+
     public function guardar()
     {
         $this->validate([
-            "proveedorSeleccionado" => "required|exists:proveedores,id",
+            "proveedorSeleccionado" => "required|exists:proveedores,id_proveedor",
             "compra.numero_factura" => "required|string|max:255",
             "compra.fecha_compra" => "required|date",
             "compra.observacion" => "max:1000",
-            "detalleCompra.*.producto_id" => "required|exists:productos,id",
+            "detalleCompra.*.id_producto" => "required|exists:productos,id_producto",
             "detalleCompra.*.cantidad" => "required|numeric|min:0.01",
             "detalleCompra.*.precio_unitario" => "required|numeric|min:0.01",
         ]);
@@ -124,7 +148,7 @@ class Registro extends Component
 
                 $compra = Compra::create([
                     "id_proveedor" => $this->proveedorSeleccionado,
-                    "id_trabajador" => auth()->user()->persona->trabajador->id,
+                    "id_trabajador" => auth()->user()->persona->trabajador->id_trabajador,
                     "codigo" => $this->codigoOrden,
                     "numero_factura" => $this->compra['numero_factura'],
                     "fecha_compra" => $this->compra['fecha_compra'],
@@ -138,8 +162,8 @@ class Registro extends Component
 
                 foreach ($this->detalleCompra as $index => $detalle) {
                     DetalleCompra::create([
-                        "id_compra" => $compra->id,
-                        "id_producto" => $detalle['producto_id'],
+                        "id_compra" => $compra->id_compra,
+                        "id_producto" => $detalle['id_producto'],
                         "cantidad" => $detalle['cantidad'],
                         "precio_unitario" => $detalle['precio_unitario'],
                         "sub_total" => $detalle['precio_unitario'] * $detalle['cantidad'],
@@ -148,12 +172,13 @@ class Registro extends Component
 
                 $this->reset(["compra", "detalleCompra", "proveedorSeleccionado", "codigoOrden", "proveedores"]);
                 $this->detalleCompra = [
-                    ['producto_id' => '', 'cantidad' => 0, 'precio_unitario' => 0]
+                    ['id_producto' => '', 'cantidad' => 0, 'precio_unitario' => 0]
                 ];
                 $this->closeModal();
             });
             $this->mount();
             session()->flash('success', 'Orden de compra registrada correctamente ✅');
+            $this->dispatch('comprasUpdated');
         } catch (\Exception $e) {
             session()->flash('error', 'Error al registrar el proveedor: ' . $e->getMessage());
             Log::error('Error al registrar la compra', ['error' => $e->getMessage()]);
@@ -177,7 +202,7 @@ class Registro extends Component
     public function agregarDetalle()
     {
         if (count($this->detalleCompra) < 50) { // límite por seguridad
-            $this->detalleCompra[] = ['producto_id' => '', 'cantidad' => 1, 'precio' => 0];
+            $this->detalleCompra[] = ['id_producto' => '', 'cantidad' => 1, 'precio' => 0];
         }
     }
 
@@ -195,5 +220,40 @@ class Registro extends Component
             ->find($rowId);
 
         $this->showModalDetalle = true;
+    }
+    #[\Livewire\Attributes\On('rechazar-compra')]
+    public function rechazarComprafn(int $rowId): void
+    {
+        $this->compraSeleccionada = Compra::find($rowId);
+
+        if ($this->compraSeleccionada) {
+            $this->rechazarCompra();
+        }
+    }
+    #[\Livewire\Attributes\On('aprobar-compra')]
+    public function aprobarComprafn(int $rowId): void
+    {
+        $this->compraSeleccionada = Compra::find($rowId);
+
+        if ($this->compraSeleccionada) {
+            $this->aprobarCompra();
+        }
+    }
+
+    public function exportarExcel()
+    {
+        return Excel::download(new CompraConDetalleExport, 'reporteCompras.xlsx');
+    }
+
+    public function exportarPdf()
+    {
+        $compras = Compra::with(['proveedor', 'detalleCompra.producto'])->get();
+
+        $pdf = Pdf::loadView('exports.compras_pdf', compact('compras'))
+            ->setPaper('a4', 'landscape'); // opcional
+
+        return response()->streamDownload(function () use ($pdf) {
+            echo $pdf->output();
+        }, 'reporte_compras.pdf');
     }
 }

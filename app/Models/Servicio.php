@@ -10,8 +10,9 @@ class Servicio extends Model
 
     const CREATED_AT = 'fecha_registro';
     const UPDATED_AT = 'fecha_actualizacion';
-
+    protected $primaryKey = 'id_servicio';
     protected $fillable = [
+        'id_servicio',
         'nombre_servicio',
         'descripcion',
         'duracion_estimada',
@@ -24,6 +25,6 @@ class Servicio extends Model
 
     public function categoriaServicio()
     {
-        return $this->belongsTo(CategoriaServicio::class, 'id_categoria_servicio', 'id');
+        return $this->belongsTo(CategoriaServicio::class, "id_categoria_servicio");
     }
 }

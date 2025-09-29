@@ -12,19 +12,19 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('citas', function (Blueprint $table) {
-            $table->id();
+            $table->id("id_cita");
             $table->date("fecha_programada");
             $table->text("motivo");
             $table->enum("estado", ["pendiente", "confirmada", "en progreso", "completada", "cancelada", "no asistio"])->default("pendiente");
 
             $table->unsignedBigInteger("id_cliente");
-            $table->foreign("id_cliente")->references("id")->on("clientes");
+            $table->foreign("id_cliente")->references("id_cliente")->on("clientes");
 
             $table->unsignedBigInteger("id_trabajador_asignado");
-            $table->foreign("id_trabajador_asignado")->references("id")->on("trabajadores");
+            $table->foreign("id_trabajador_asignado")->references("id_trabajador")->on("trabajadores");
 
             $table->unsignedBigInteger("id_mascota");
-            $table->foreign("id_mascota")->references("id")->on("mascotas");
+            $table->foreign("id_mascota")->references("id_mascota")->on("mascotas");
 
             $table->timestamp("fecha_registro")->useCurrent();
             $table->timestamp("fecha_actualizacion")->nullable();

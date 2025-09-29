@@ -12,11 +12,11 @@ class Trabajador extends Model
 
     const CREATED_AT = 'fecha_registro';
     const UPDATED_AT = 'fecha_actualizacion';
-
+    protected $primaryKey = 'id_trabajador';
     protected $table = 'trabajadores';
 
     protected $fillable = [
-        "id",
+        'id_trabajador',
         'fecha_ingreso',
         'fecha_salida',
         'salario',
@@ -31,20 +31,20 @@ class Trabajador extends Model
 
     public function puestoTrabajo()
     {
-        return $this->BelongsTo(PuestoTrabajador::class, "id_puesto_trabajo", "id");
+        return $this->belongsTo(PuestoTrabajador::class, "id_puesto_trabajo");
     }
 
     public function estadoTrabajador()
     {
-        return $this->belongsTo(EstadoTrabajadores::class, "id_estado_trabajador", "id");
+        return $this->belongsTo(EstadoTrabajadores::class, "id_estado_trabajador");
     }
     public function persona()
     {
-        return $this->belongsTo(Persona::class, "id_persona", "id");
+        return $this->belongsTo(Persona::class, "id_persona");
     }
 
     public function compras()
     {
-        return $this->hasMany(Compra::class);
+        return $this->hasMany(Compra::class, "id_trabajador");
     }
 }

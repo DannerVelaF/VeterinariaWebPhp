@@ -10,8 +10,9 @@ class Especie extends Model
 
     const CREATED_AT = 'fecha_registro';
     const UPDATED_AT = 'fecha_actualizacion';
-
+    protected $primaryKey = 'id_especie';
     protected $fillable = [
+        'id_especie',
         'nombre_especie',
         'descripcion',
         'estado',
@@ -21,6 +22,6 @@ class Especie extends Model
 
     public function razas()
     {
-        return $this->hasMany(Raza::class);
+        return $this->hasMany(Raza::class, "id_especie");
     }
 }

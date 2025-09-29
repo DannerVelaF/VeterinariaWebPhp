@@ -15,7 +15,9 @@ use PowerComponents\LivewirePowerGrid\PowerGridComponent;
 final class UserTable extends PowerGridComponent
 {
     public string $tableName = 'user-table-hkfcya-table';
-
+    protected $listeners = ['userUpdated' => '$refresh'];
+    public string $primaryKey = 'id_usuario';
+    public string $sortField = 'id_usuario';
     public function setUp(): array
     {
         $this->showCheckBox();
@@ -43,12 +45,13 @@ final class UserTable extends PowerGridComponent
     {
         return PowerGrid::fields()
             ->add('id')
-            ->add('username', fn($user) => $user->username)
+            ->add('usuario')
             ->add('trabajador', fn($user) => $user->persona?->nombre)
-            ->add('puesto', fn($user) => $user->persona?->trabajador?->puestoTrabajo?->nombre)
+            ->add('puesto', fn($user) => $user->persona?->trabajador?->puestoTrabajo?->nombre_puesto)
             ->add('ultimo_login', fn($user) => $user->ultimo_login ? Carbon::parse($user->ultimo_login)->format('d/m/Y H:i') : '-')
             ->add('estado')
             ->add('fecha_registro')
+            ->add('roles', fn($user) => $user->rol?->nombre_rol ?? '')
             ->add('estado_boolean', function ($row) {
                 return $row->estado === 'activo';
             });
@@ -58,8 +61,8 @@ final class UserTable extends PowerGridComponent
     public function columns(): array
     {
         return [
-            Column::make('Id', 'id'),
-            Column::make('Username', 'username')
+            Column::make('Id', 'id_usuario'),
+            Column::make('Usuario', 'usuario')
                 ->sortable()
                 ->searchable(),
 
@@ -82,7 +85,8 @@ final class UserTable extends PowerGridComponent
                     trueLabel: 'activo',
                     falseLabel: 'inactivo'
                 ),
-
+            Column::make('Roles', 'roles'),
+            Column::action('Acciones')
         ];
     }
 
@@ -121,16 +125,16 @@ final class UserTable extends PowerGridComponent
         $this->js('alert(' . $rowId . ')');
     }
 
-    /*public function actions(User $row): array
+    public function actions(User $row): array
     {
         return [
-            Button::add('edit')
-                ->slot('Edit: ' . $row->id)
-                ->id()
-                ->class('pg-btn-white dark:ring-pg-primary-600 dark:border-pg-primary-600 dark:hover:bg-pg-primary-700 dark:ring-offset-pg-primary-800 dark:text-pg-primary-300 dark:bg-pg-primary-700')
-                ->dispatch('edit', ['rowId' => $row->id])
+            Button::add('cambiar-rol')
+                ->slot('Editar') // <-- aquí defines el texto
+                ->class('px-2 py-1 bg-yellow-500 hover:bg-yellow-600 text-white text-xs rounded')
+                ->dispatch('abrirModalRol', ['userId' => $row->id_usuario])
         ];
-    }*/
+    }
+
 
     /*
     public function actionRules($row): array

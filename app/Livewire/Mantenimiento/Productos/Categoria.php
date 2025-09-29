@@ -9,6 +9,15 @@ use Livewire\Component;
 
 class Categoria extends Component
 {
+
+    public $modalEditar = false;
+    public $categoriaSeleccionado;
+    public $categoriaEditar = [
+        'id_categoria_producto' => null,
+        'nombre_categoria' => '',
+        'descripcion' => '',
+    ];
+
     public $categoria = [
         'nombre_categoria' => '',
         'descripcion' => '',
@@ -40,6 +49,7 @@ class Categoria extends Component
             $this->dispatch('categoriaRegistrado');
             session()->flash('success', 'Categoria registrada con éxito');
             $this->resetForm();
+            $this->dispatch('categoriaUpdated');
         } catch (\Exception $e) {
             session()->flash('error', 'Error al registrar la categoria: ' . $e->getMessage());
             Log::error('Error al registrar categoria', ['error' => $e->getMessage()]);
@@ -55,6 +65,35 @@ class Categoria extends Component
         ];
     }
 
+    #[\Livewire\Attributes\On('abrirModalCategoria')]
+    public function abrirModalEditar($categoriaId)
+    {
+        $this->categoriaSeleccionado = CategoriaProducto::findOrFail($categoriaId);
+        $this->categoriaEditar = [
+            'id_categoria_producto' => $categoriaId,
+            'nombre_categoria' => $this->categoriaSeleccionado->nombre_categoria,
+            'descripcion' => $this->categoriaSeleccionado->descripcion,
+        ];
+        $this->modalEditar = true;
+    }
+
+    public function guardarEdicion()
+    {
+        if (!$this->categoriaSeleccionado) return;
+
+        DB::transaction(function () {
+            // Actualizar persona
+            $this->categoriaSeleccionado->update([
+                'nombre_categoria' => $this->categoriaEditar['nombre_categoria'],
+                'descripcion' => $this->categoriaEditar['descripcion'],
+                'fecha_actualizacion' => now(),
+            ]);
+        });
+
+        $this->modalEditar = false;
+        session()->flash('success', '✅ Trabajador actualizado correctamente.');
+        $this->dispatch('trabajadoresUpdated');
+    }
 
     public function render()
     {

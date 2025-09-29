@@ -20,6 +20,6 @@ class Ubigeo extends Model
 
     public function direccion()
     {
-        return $this->hasMany(Direccion::class, "codigo_ubigeo", "codigo_ubigeo");
+        return $this->hasMany(Direccion::class, "codigo_ubigeo");
     }
 }

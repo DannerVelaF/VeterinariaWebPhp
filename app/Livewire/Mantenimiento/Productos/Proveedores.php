@@ -6,13 +6,14 @@ use App\Models\Direccion;
 use App\Models\Proveedor;
 use App\Models\Ubigeo;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Livewire\Component;
 
 class Proveedores extends Component
 {
     public $proveedor = [
-        'nombre' => '',
+        'nombre_proveedor' => '',
         'ruc' => '',
         'telefono' => '',
         'correo_electronico_empresa' => '',
@@ -32,7 +33,7 @@ class Proveedores extends Component
         'codigo_ubigeo' => ''
     ];
     protected $messages = [
-        'proveedor.nombre.required' => 'El nombre del proveedor es obligatorio.',
+        'proveedor.nombre_proveedor.required' => 'El nombre del proveedor es obligatorio.',
         'proveedor.nombre.max' => 'El nombre no puede tener más de 255 caracteres.',
         'proveedor.ruc.required' => 'El RUC es obligatorio.',
         'proveedor.ruc.digits' => 'El RUC debe tener exactamente 11 dígitos.',
@@ -61,7 +62,28 @@ class Proveedores extends Component
 
     public $departamentoSeleccionado = '';
     public $provinciaSeleccionada = '';
-
+    public $modalEditar = false;
+    public $proveedorSeleccionado;
+    public $proveedorEditar = [
+        'id_proveedor' => null,
+        'nombre_proveedor' => '',
+        'ruc' => '',
+        'telefono_contacto' => '',
+        'correo_electronico_empresa' => '',
+        'telefono_secundario' => '',
+        'correo_electronico_encargado' => '',
+        'pais' => '',
+        'id_direccion' => null,
+        'direccion' => [
+            'tipo_calle' => '',
+            'nombre_calle' => '',
+            'numero' => '',
+            'referencia' => '',
+            'codigo_postal' => '',
+            'zona' => '',
+            'codigo_ubigeo' => '',
+        ],
+    ]; // array para editar
     public function mount()
     {
         $this->departamentos = Ubigeo::select("departamento")->distinct()->pluck('departamento')->toArray();
@@ -98,7 +120,7 @@ class Proveedores extends Component
     public function guardar()
     {
         $validatedData = $this->validate([
-            'proveedor.nombre' => 'required|string|max:255',
+            'proveedor.nombre_proveedor' => 'required|string|max:255',
             'proveedor.ruc' => 'required|digits:11|unique:proveedores,ruc',
             'proveedor.correo_electronico_empresa' => 'nullable|unique:proveedores,correo_electronico_empresa|email|max:255',
             'proveedor.telefono_contacto' => 'nullable|string|max:15',
@@ -119,16 +141,120 @@ class Proveedores extends Component
                 $direccion = Direccion::create($validatedData['direccion']);
 
                 $proveedor = Proveedor::create(array_merge($validatedData['proveedor'], [
-                    'id_direccion' => $direccion->id
+                    'id_direccion' => $direccion->id_direccion
                 ]));
             });
 
             // Si llegamos aquí, todo se guardó correctamente
             session()->flash('success', 'Proveedor registrado con éxito');
             $this->resetForm();
+            $this->dispatch('proveedoresUpdated');
         } catch (\Exception $e) {
             session()->flash('error', 'Error al registrar el proveedor: ' . $e->getMessage());
             Log::error('Error al registrar proveedor', ['error' => $e->getMessage()]);
+        }
+    }
+
+    public function buscarRuc()
+    {
+        $ruc = $this->proveedor['ruc'];
+
+        if (strlen($ruc) !== 11) {
+            session()->flash('error', 'El RUC debe tener 11 dígitos.');
+            return;
+        }
+
+        try {
+
+            $response = Http::withHeaders([
+                "content-type" => "application/json",
+                'Authorization' => "Bearer " . env("DECOLECTA_API_KEY"),
+            ])->withOptions(['verify' => false])
+                ->get("https://api.decolecta.com/v1/sunat/ruc", [
+                    
+                    'numero' => $ruc
+                ]);
+
+
+                
+            if ($response->successful()) {
+                $data = $response->json();
+                if (!empty($data['razon_social'])) {
+                    $this->proveedor['nombre_proveedor'] = $data['razon_social'];
+                    session()->flash('success', 'Razón social cargada desde SUNAT.');
+                } else {
+                    session()->flash('error', 'No se encontró la razón social para este RUC.');
+                }
+            } else {
+                session()->flash('error', 'Error al consultar el RUC. Intente nuevamente.');
+            }
+        } catch (\Exception $e) {
+            session()->flash('error', 'Error al conectar con la API: ' . $e->getMessage());
+        }
+    }
+    #[\Livewire\Attributes\On('editarProveedor')]
+    public function abrirModalEditar($proveedorId)
+    {
+        $this->proveedorSeleccionado = Proveedor::findOrFail($proveedorId);
+
+        $this->proveedorEditar = [
+            'id_proveedor' => $proveedorId,
+            'nombre_proveedor' => $this->proveedorSeleccionado->nombre_proveedor,
+            'ruc' => $this->proveedorSeleccionado->ruc,
+            'telefono_contacto' => $this->proveedorSeleccionado->telefono_contacto,
+            'correo_electronico_empresa' => $this->proveedorSeleccionado->correo_electronico_empresa,
+            'telefono_secundario' => $this->proveedorSeleccionado->telefono_secundario,
+            'correo_electronico_encargado' => $this->proveedorSeleccionado->correo_electronico_encargado,
+            'pais' => $this->proveedorSeleccionado->pais,
+            'id_direccion' => $this->proveedorSeleccionado->id_direccion,
+            'direccion' => [
+                'tipo_calle' => $this->proveedorSeleccionado->direccion->tipo_calle,
+                'nombre_calle' => $this->proveedorSeleccionado->direccion->nombre_calle,
+                'numero' => $this->proveedorSeleccionado->direccion->numero,
+                'referencia' => $this->proveedorSeleccionado->direccion->referencia,
+                'codigo_postal' => $this->proveedorSeleccionado->direccion->codigo_postal,
+                'zona' => $this->proveedorSeleccionado->direccion->zona,
+                'codigo_ubigeo' => $this->proveedorSeleccionado->direccion->codigo_ubigeo,
+            ],
+        ];
+
+        $this->modalEditar = true;
+    }
+
+    public function actualizarProveedor()
+    {
+        try {
+            DB::transaction(function () {
+                $proveedor = Proveedor::findOrFail($this->proveedorEditar['id_proveedor']);
+                $proveedor->update([
+                    'nombre_proveedor' => $this->proveedorEditar['nombre_proveedor'],
+                    'telefono_contacto' => $this->proveedorEditar['telefono_contacto'],
+                    'telefono_secundario' => $this->proveedorEditar['telefono_secundario'],
+                    'correo_electronico_empresa' => $this->proveedorEditar['correo_electronico_empresa'],
+                    'correo_electronico_encargado' => $this->proveedorEditar['correo_electronico_encargado'],
+                    'pais' => $this->proveedorEditar['pais'],
+                    'fecha_actualizacion' => now(),
+                ]);
+
+                // Actualizar dirección
+                $direccion = Direccion::findOrFail($proveedor->id_direccion);
+                $direccion->update([
+                    'tipo_calle' => $this->proveedorEditar['direccion']['tipo_calle'],
+                    'nombre_calle' => $this->proveedorEditar['direccion']['nombre_calle'],
+                    'numero' => $this->proveedorEditar['direccion']['numero'],
+                    'zona' => $this->proveedorEditar['direccion']['zona'],
+                    'codigo_postal' => $this->proveedorEditar['direccion']['codigo_postal'],
+                    'referencia' => $this->proveedorEditar['direccion']['referencia'],
+                    'codigo_ubigeo' => $this->proveedorEditar['direccion']['codigo_ubigeo'],
+                    'fecha_actualizacion' => now(),
+                ]);
+            });
+
+            session()->flash('success', 'Proveedor actualizado correctamente.');
+            $this->modalEditar = false;
+            $this->emit('proveedoresUpdated'); // Para refrescar la tabla
+        } catch (\Exception $e) {
+            session()->flash('error', 'Error al actualizar el proveedor: ' . $e->getMessage());
         }
     }
 
@@ -136,7 +262,7 @@ class Proveedores extends Component
     public function resetForm()
     {
         $this->proveedor = [
-            'nombre' => '',
+            'nombre_proveedor' => '',
             'ruc' => '',
             'correo_electronico_empresa' => '',
             'telefono_contacto' => '',

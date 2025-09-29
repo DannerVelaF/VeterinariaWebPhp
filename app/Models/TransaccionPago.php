@@ -10,8 +10,9 @@ class TransaccionPago extends Model
 
     const CREATED_AT = 'fecha_registro';
     const UPDATED_AT = 'fecha_actualizacion';
-
+    protected $primaryKey = 'id_transaccion_pago';
     protected $fillable = [
+        "id_transaccion_pago",
         "id_venta",
         "id_metodo",
         "monto",
@@ -24,11 +25,11 @@ class TransaccionPago extends Model
 
     public function venta()
     {
-        return $this->belongsTo(Ventas::class, "id_venta", "id");
+        return $this->belongsTo(Ventas::class, "id_venta");
     }
 
     public function metodo()
     {
-        return $this->belongsTo(MetodoPago::class, "id_metodo", "id");
+        return $this->belongsTo(MetodoPago::class, "id_metodo");
     }
 }

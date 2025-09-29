@@ -12,8 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('estado_trabajadores', function (Blueprint $table) {
-            $table->id();
-            $table->string("nombre");
+            $table->id("id_estado_trabajador");
+            $table->string("nombre_estado_trabajador");
             $table->timestamp("fecha_registro")->useCurrent();
             $table->timestamp("fecha_actualizacion")->nullable();
         });

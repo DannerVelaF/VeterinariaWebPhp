@@ -8,6 +8,7 @@ use App\Livewire\Mantenimiento\Trabajadores\Registro as MantenimientoTrabajadore
 use App\Livewire\Mantenimiento\Usuarios\Registro as MantenimientoUsuarios;
 use App\Livewire\Inventario\Registro as RegistrarInventario;
 use App\Livewire\Compras\Registro as RegistroCompras;
+use App\Livewire\Mantenimiento\Clientes\Registro as RegistroClientes;
 use App\Livewire\Ventas\RegistroVenta;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -15,10 +16,9 @@ use Illuminate\Support\Facades\Session;
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', Login::class)->name('login');
-    Route::get('/login/two-factor', TwoFactorAuthentication::class)->name('two.factor');
 });
+Route::get('/login/two-factor', TwoFactorAuthentication::class)->name('two.factor');
 
-// Ruta raíz
 Route::get('/', function () {
     return redirect()->route(auth()->check() ? 'ventas' : 'login');
 });
@@ -42,6 +42,9 @@ Route::middleware('auth')->group(function () {
 
     // Compras
     Route::get('/compras', RegistroCompras::class)->name('compras');
+
+    Route::get('/clientes', RegistroCompras::class)->name('clientes');
+
 
     // Mantenimiento
     Route::prefix('mantenimiento')->group(function () {

@@ -17,7 +17,9 @@ final class SalidasTable extends PowerGridComponent
 {
     public string $tableName = 'salidas-table';
     protected $listeners = ['salidaRegistrada' => '$refresh'];
-
+    public bool $showFilters = true;
+    public string $primaryKey = 'id_inventario_movimiento';
+    public string $sortField = 'id_inventario_movimiento';
     public function setUp(): array
     {
         $this->showCheckBox();
@@ -50,13 +52,13 @@ final class SalidasTable extends PowerGridComponent
             ->add('id', fn($row) => $row->id)
             ->add('producto', fn($inventario) => $inventario->lote->producto->nombre_producto)
             ->add('cantidad_movimiento', fn($inventario) =>
-                '<span class="bg-red-100 text-red-800 px-3 rounded-md text-sm font-medium">
+            '<span class="bg-red-100 text-red-800 px-3 rounded-md text-sm font-medium">
                     -' . $inventario->cantidad_movimiento . '
                   </span>')
-           ->add('fecha_movimiento_formatted', fn($inventario) => 
-                $inventario->fecha_movimiento?->format('d/m/Y H:i'))
+            ->add('fecha_movimiento_formatted', fn($inventario) =>
+            $inventario->fecha_movimiento?->format('d/m/Y H:i'))
             ->add('ubicacion', function ($salida) {
-                $icon = $salida->ubicacion === 'mostrador' 
+                $icon = $salida->ubicacion === 'mostrador'
                     ? '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shopping-cart text-gray-600"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>'
                     : '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-warehouse text-gray-600"><path d="M18 21V10a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1v11"/><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 1.132-1.803l7.95-3.974a2 2 0 0 1 1.837 0l7.948 3.974A2 2 0 0 1 22 8z"/><path d="M6 13h12"/><path d="M6 17h12"/></svg>';
 
@@ -83,7 +85,7 @@ final class SalidasTable extends PowerGridComponent
                 ->sortable(),
 
             Column::make("Ubicación", "ubicacion"),
-            
+
             Column::make("Motivo", "motivo")
                 ->sortable()
                 ->searchable(),
@@ -95,47 +97,45 @@ final class SalidasTable extends PowerGridComponent
     }
 
     public function filters(): array
-{
-    $motivosPredefinidos = [
-        'Venta',
-        'Producto defectuoso', 
-        'Cambio',
-        'Devolución',
-        'Merma',
-        'Ajuste de inventario',
-        'Donación',
-        'Uso interno',
-        'Promoción',
-        'Otro'
-    ];
+    {
+        $motivosPredefinidos = [
+            'Venta',
+            'Producto defectuoso',
+            'Cambio',
+            'Devolución',
+            'Merma',
+            'Ajuste de inventario',
+            'Donación',
+            'Uso interno',
+            'Promoción',
+            'Otro'
+        ];
 
-    return [
-        Filter::select('ubicacion')
-            ->dataSource([
-                ['id' => 'almacen', 'name' => 'Almacén'],
-                ['id' => 'mostrador', 'name' => 'Mostrador'],
-            ])
-            ->optionValue('id')
-            ->optionLabel('name'),
-        
-        Filter::select('motivo', 'Motivo')
-            ->dataSource(collect($motivosPredefinidos)->map(function($motivo) {
-                return ['id' => $motivo, 'name' => $motivo];
-            })->toArray())
-            ->optionValue('id')
-            ->optionLabel('name'),
-            
-        Filter::select('producto', 'Producto')
-            ->dataSource(
-                Producto::query()
-                    ->select('id as id', 'nombre_producto as name')
-                    ->get()
-                    ->toArray()
-            )
-            ->optionValue('id')
-            ->optionLabel('name'),
-    ];
-}
+        return [
+            Filter::select('ubicacion')
+                ->dataSource([
+                    ['id' => 'almacen', 'name' => 'Almacén'],
+                    ['id' => 'mostrador', 'name' => 'Mostrador'],
+                ])
+                ->optionValue('id')
+                ->optionLabel('name'),
+
+            Filter::select('motivo', 'Motivo')
+                ->dataSource(collect($motivosPredefinidos)->map(function ($motivo) {
+                    return ['id' => $motivo, 'name' => $motivo];
+                })->toArray())
+                ->optionValue('id')
+                ->optionLabel('name'),
+
+            Filter::select('producto', 'productos.id_producto')
+                ->dataSource(
+                    Producto::orderBy('nombre_producto')->get()->toArray()
+                )
+                ->optionValue('id_producto')
+                ->optionLabel('nombre_producto'),
+
+        ];
+    }
 
     public function actions(InventarioMovimiento $row): array
     {

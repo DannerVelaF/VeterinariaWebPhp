@@ -10,8 +10,9 @@ class Clientes extends Model
 
     const CREATED_AT = 'fecha_registro';
     const UPDATED_AT = 'fecha_actualizacion';
-
+    protected $primaryKey = 'id_cliente';
     protected $fillable = [
+        "id_cliente",
         "id_persona",
         "fecha_registro",
         "fecha_actualizacion",
@@ -19,11 +20,11 @@ class Clientes extends Model
 
     public function persona()
     {
-        return $this->belongsTo(Persona::class, "id_persona", "id");
+        return $this->belongsTo(Persona::class, "id_persona");
     }
 
     public function compras()
     {
-        return $this->hasMany(Compra::class);
+        return $this->hasMany(Compra::class, "id_cliente");
     }
 }

@@ -11,17 +11,18 @@ class Tipo_documento extends Model
 
     const CREATED_AT = 'fecha_registro';
     const UPDATED_AT = 'fecha_actualizacion';
-
+    protected $primaryKey = 'id_tipo_documento';
     protected $table = 'tipo_documentos';
 
     protected $fillable = [
-        'nombre',
+        'id_tipo_documento',
+        'nombre_tipo_documento',
         'fecha_registro',
         'fecha_actualizacion',
     ];
 
     public function personas()
     {
-        return $this->hasMany(Persona::class, "id_tipo_documento", "id");
+        return $this->hasMany(Persona::class, "id_tipo_documento");
     }
 }

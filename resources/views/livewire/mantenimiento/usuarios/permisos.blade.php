@@ -1,8 +1,26 @@
 <x-panel title="Gestión de Permisos">
     <!-- Formulario de creación -->
     @if (session()->has('success'))
-        <div class="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded">
+        <div class="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded" x-data="{ show: true }"
+            x-show="show" x-init="setTimeout(() => show = false, 4000)" x-transition:enter="transition ease-out duration-500"
+            x-transition:enter-start="opacity-0 transform translate-y-2"
+            x-transition:enter-end="opacity-100 transform translate-y-0"
+            x-transition:leave="transition ease-in duration-500"
+            x-transition:leave-start="opacity-100 transform translate-y-0"
+            x-transition:leave-end="opacity-0 transform translate-y-2">
             {{ session('success') }}
+        </div>
+    @endif
+
+    @if (session()->has('error'))
+        <div class="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded" x-data="{ show: true }"
+            x-show="show" x-init="setTimeout(() => show = false, 4000)" x-transition:enter="transition ease-out duration-500"
+            x-transition:enter-start="opacity-0 transform translate-y-2"
+            x-transition:enter-end="opacity-100 transform translate-y-0"
+            x-transition:leave="transition ease-in duration-500"
+            x-transition:leave-start="opacity-100 transform translate-y-0"
+            x-transition:leave-end="opacity-0 transform translate-y-2">
+            {{ session('error') }}
         </div>
     @endif
 
@@ -22,7 +40,6 @@
     </form>
 
     <!-- Tabla de permisos -->
-    <!-- Tabla de permisos -->
     <table class="w-full text-xs border border-gray-300">
         <thead class="bg-gray-100">
             <tr>
@@ -35,19 +52,17 @@
         <tbody>
             @forelse ($permisos as $permiso)
                 <tr>
-                    <td class="p-2 border">{{ $permiso->id }}</td>
-                    <td class="p-2 border font-bold">{{ $permiso->name }}</td>
+                    <td class="p-2 border">{{ $permiso->id_permiso }}</td>
+                    <td class="p-2 border font-bold">{{ $permiso->nombre_permiso }}</td>
                     <td class="p-2 border">
                         <span
-                            class="px-2 py-1 rounded text-white 
-                        {{ $permiso->estado === 'activo' ? 'bg-green-600' : 'bg-red-600' }}">
+                            class="px-2 py-1 rounded text-white {{ $permiso->estado === 'activo' ? 'bg-green-600' : 'bg-red-600' }}">
                             {{ ucfirst($permiso->estado) }}
                         </span>
                     </td>
                     <td class="p-2 border text-center">
-                        <button wire:click="cambiarEstado({{ $permiso->id }})"
-                            class="px-3 py-1 rounded text-white
-                            {{ $permiso->estado === 'activo' ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600' }}">
+                        <button wire:click="cambiarEstado({{ $permiso->id_permiso }})"
+                            class="px-3 py-1 rounded text-white {{ $permiso->estado === 'activo' ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600' }}">
                             {{ $permiso->estado === 'activo' ? 'Desactivar' : 'Activar' }}
                         </button>
                     </td>
@@ -59,5 +74,5 @@
             @endforelse
         </tbody>
     </table>
-
+    <x-loader />
 </x-panel>

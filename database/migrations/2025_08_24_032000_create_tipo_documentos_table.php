@@ -12,8 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('tipo_documentos', function (Blueprint $table) {
-            $table->id();
-            $table->string("nombre");
+            $table->id("id_tipo_documento");
+            $table->string("nombre_tipo_documento");
             $table->timestamp("fecha_registro")->useCurrent();
             $table->timestamp("fecha_actualizacion")->nullable();
         });

@@ -11,8 +11,9 @@ class DetalleCompra extends Model
 
     const CREATED_AT = 'fecha_registro';
     const UPDATED_AT = 'fecha_actualizacion';
-
+    protected $primaryKey = 'id_detalle_compra';
     protected $fillable = [
+        "id_detalle_compra",
         "id_compra",
         "id_producto",
         "cantidad",
@@ -26,12 +27,12 @@ class DetalleCompra extends Model
 
     public function compra()
     {
-        return $this->belongsTo(Compra::class, "id_compra", "id");
+        return $this->belongsTo(Compra::class, "id_compra");
     }
 
     public function producto()
     {
-        return $this->belongsTo(Producto::class, "id_producto", "id");
+        return $this->belongsTo(Producto::class, "id_producto");
     }
 
     public function movimientos()

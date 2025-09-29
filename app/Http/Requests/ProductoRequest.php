@@ -23,16 +23,19 @@ class ProductoRequest extends FormRequest
     {
         return [
             'producto.nombre_producto' => 'required|string|max:255',
+            "imagenProducto" => "nullable|image|max:2048",
             'producto.descripcion' => 'string|max:1000',
-            'producto.id_unidad' => 'required|exists:unidades,id',
-            'producto.id_categoria_producto' => 'required|exists:categoria_productos,id',
-            'producto.id_proveedor' => 'required|exists:proveedores,id',
+            'producto.id_unidad' => 'required|exists:unidades,id_unidad',
+            'producto.id_categoria_producto' => 'required|exists:categoria_productos,id_categoria_producto',
+            'producto.id_proveedor' => 'required|exists:proveedores,id_proveedor',
         ];
     }
 
     public function messages(): array
     {
         return [
+            "imagenProducto" => "Debe subir una imagen.",
+            "imagenProducto" => "El tamaño de la imagen no puede exceder los 2MB.",
             'producto.nombre_producto.required' => 'El nombre del producto es obligatorio.',
             'producto.nombre_producto.max' => 'El nombre no puede tener más de 255 caracteres.',
             'producto.descripcion.required' => 'La descripción del producto es obligatoria.',

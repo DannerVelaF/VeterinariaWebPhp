@@ -75,12 +75,12 @@ class DatabaseSeeder extends Seeder
             "correo_electronico_secundario" => null,
             "numero_telefono_personal" => "999888777",
             "numero_telefono_secundario" => null,
-            'id_tipo_documento' => $tipoDocumento->id,
-            'id_direccion' => $direccion->id,
+            'id_tipo_documento' => $tipoDocumento->id_tipo_documento,
+            'id_direccion' => $direccion->id_direccion,
         ]);
 
         $trabajo = Trabajador::create([
-            "id_persona" => $persona->id,
+            "id_persona" => $persona->id_persona,
             "id_puesto_trabajo" => 1,
             "id_estado_trabajador" => 1,
             "fecha_ingreso" => "2023-01-01",
@@ -90,10 +90,10 @@ class DatabaseSeeder extends Seeder
 
         // Crear usuario vinculado a persona
         User::create([
-            'username' => 'user',
-            'password_hash' =>  Hash::make('user'),
+            'usuario' => 'user',
+            'contrasena' =>  Hash::make('user'),
             "estado" => "activo",
-            "id_persona" => $persona->id,
+            "id_persona" => $persona->id_persona,
         ]);
     }
 }

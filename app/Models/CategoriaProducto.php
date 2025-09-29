@@ -10,10 +10,11 @@ class CategoriaProducto extends Model
     public $timestamps = true;
     const CREATED_AT = 'fecha_registro';
     const UPDATED_AT = 'fecha_actualizacion';
-
+    protected $primaryKey = 'id_categoria_producto';
     protected $table = 'categoria_productos';
 
     protected $fillable = [
+        'id_categoria_producto',
         'nombre_categoria',
         'descripcion',
         'estado',
@@ -23,6 +24,6 @@ class CategoriaProducto extends Model
 
     public function productos()
     {
-        return $this->hasMany(Producto::class);
+        return $this->hasMany(Producto::class, "id_categoria_producto");
     }
 }

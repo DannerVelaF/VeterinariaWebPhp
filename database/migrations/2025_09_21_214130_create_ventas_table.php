@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('ventas', function (Blueprint $table) {
-            $table->id();
+            $table->id("id_venta");
             $table->date("fecha_venta");
             $table->decimal("subtotal", 12, 2);
             $table->decimal("total", 12, 2);
@@ -22,10 +22,10 @@ return new class extends Migration
             $table->enum("estado", ["pendiente", "entregado", "cancelado"]);
 
             $table->unsignedBigInteger("id_cliente");
-            $table->foreign("id_cliente")->references("id")->on("clientes")->onDelete("cascade");
+            $table->foreign("id_cliente")->references("id_cliente")->on("clientes")->onDelete("cascade");
 
             $table->unsignedBigInteger("id_trabajador");
-            $table->foreign("id_trabajador")->references("id")->on("trabajadores")->onDelete("cascade");
+            $table->foreign("id_trabajador")->references("id_trabajador")->on("trabajadores")->onDelete("cascade");
 
             $table->timestamp("fecha_registro")->useCurrent();
             $table->timestamp("fecha_actualizacion")->nullable();

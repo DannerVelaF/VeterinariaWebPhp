@@ -11,13 +11,25 @@
         <x-tab name="registro">
             <!-- Mensajes de éxito y error -->
             @if (session()->has('success'))
-                <div class="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded">
+                <div class="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded" x-data="{ show: true }"
+                    x-show="show" x-init="setTimeout(() => show = false, 4000)" x-transition:enter="transition ease-out duration-500"
+                    x-transition:enter-start="opacity-0 transform translate-y-2"
+                    x-transition:enter-end="opacity-100 transform translate-y-0"
+                    x-transition:leave="transition ease-in duration-500"
+                    x-transition:leave-start="opacity-100 transform translate-y-0"
+                    x-transition:leave-end="opacity-0 transform translate-y-2">
                     {{ session('success') }}
                 </div>
             @endif
 
             @if (session()->has('error'))
-                <div class="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+                <div class="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded" x-data="{ show: true }"
+                    x-show="show" x-init="setTimeout(() => show = false, 4000)" x-transition:enter="transition ease-out duration-500"
+                    x-transition:enter-start="opacity-0 transform translate-y-2"
+                    x-transition:enter-end="opacity-100 transform translate-y-0"
+                    x-transition:leave="transition ease-in duration-500"
+                    x-transition:leave-start="opacity-100 transform translate-y-0"
+                    x-transition:leave-end="opacity-0 transform translate-y-2">
                     {{ session('error') }}
                 </div>
             @endif
@@ -31,9 +43,9 @@
 
                     <div class="flex flex-col">
                         <label for="nombre" class="font-bold mb-1">Nombre <span class="text-red-500">*</span></label>
-                        <input type="text" id="nombre" name="nombre"
-                            class="border rounded px-2 py-1 focus:outline-none focus:ring focus:ring-blue-300 @error('proveedor.nombre') border-red-500 @enderror"
-                            placeholder="Nombre del proveedor" wire:model="proveedor.nombre">
+                        <input readonly type="text" id="nombre" name="nombre"
+                            class="border rounded px-2 py-1 focus:outline-none focus:ring focus:ring-blue-300 @error('proveedor.nombre_proveedor') border-red-500 @enderror"
+                            placeholder="Nombre del proveedor" wire:model="proveedor.nombre_proveedor">
                         @error('proveedor.nombre')
                             <p class="text-red-500 text-xs italic mt-1">
                                 {{ $message }}
@@ -43,9 +55,15 @@
 
                     <div class="flex flex-col">
                         <label for="ruc" class="font-bold mb-1">RUC <span class="text-red-500">*</span></label>
-                        <input type="text" id="ruc" name="ruc" maxlength="11"
-                            class="border rounded px-2 py-1 focus:outline-none focus:ring focus:ring-blue-300 @error('proveedor.ruc') border-red-500 @enderror"
-                            placeholder="RUC del proveedor (11 dígitos)" wire:model="proveedor.ruc">
+                        <div class="flex items-center">
+                            <input type="text" id="ruc" name="ruc" maxlength="11"
+                                class="border rounded px-2 py-1 focus:outline-none focus:ring focus:ring-blue-300"
+                                placeholder="RUC del proveedor (11 dígitos)" wire:model="proveedor.ruc">
+                            <button type="button" wire:click="buscarRuc"
+                                class="ml-2 bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded text-xs font-bold">
+                                Buscar RUC
+                            </button>
+                        </div>
                         @error('proveedor.ruc')
                             <p class="text-red-500 text-xs italic mt-1">
                                 {{ $message }}
@@ -260,4 +278,115 @@
             </div>
         </x-tab>
     </x-tabs>
+    @if ($modalEditar)
+        <div class="fixed inset-0 z-50 flex items-center justify-center">
+            <!-- Overlay -->
+            <div class="absolute inset-0 bg-black opacity-50" wire:click="$set('modalEditar', false)"></div>
+
+            <!-- Contenido del modal -->
+            <div class="relative bg-white rounded-md p-6 w-1/2 z-10 overflow-y-auto max-h-[90vh]">
+                <h2 class="text-lg font-bold mb-4 flex gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="24"
+                        height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round"
+                        class="lucide lucide-pencil-icon lucide-pencil">
+                        <path
+                            d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" />
+                        <path d="m15 5 4 4" />
+                    </svg>Editar Proveedor</h2>
+                <form wire:submit.prevent="actualizarProveedor">
+                    <!-- Nombre -->
+                    <div class="mb-2">
+                        <label class="font-bold text-xs mb-1 block">Nombre</label>
+                        <input readonly type="text" wire:model="proveedorEditar.nombre_proveedor"
+                            class="border rounded px-2 py-1 w-full text-xs" />
+                    </div>
+
+                    <!-- RUC (readonly para evitar cambios) -->
+                    <div class="mb-2">
+                        <label class="font-bold text-xs mb-1 block">RUC</label>
+                        <input type="text" wire:model="proveedorEditar.ruc"
+                            class="border rounded px-2 py-1 w-full text-xs" readonly />
+                    </div>
+
+                    <!-- Teléfonos y correos -->
+                    <div class="mb-2">
+                        <label class="font-bold text-xs mb-1 block">Teléfono Principal</label>
+                        <input type="text" wire:model="proveedorEditar.telefono_contacto"
+                            class="border rounded px-2 py-1 w-full text-xs" />
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="font-bold text-xs mb-1 block">Teléfono Secundario</label>
+                        <input type="text" wire:model="proveedorEditar.telefono_secundario"
+                            class="border rounded px-2 py-1 w-full text-xs" />
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="font-bold text-xs mb-1 block">Correo Empresa</label>
+                        <input type="email" wire:model="proveedorEditar.correo_electronico_empresa"
+                            class="border rounded px-2 py-1 w-full text-xs" />
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="font-bold text-xs mb-1 block">Correo Encargado</label>
+                        <input type="email" wire:model="proveedorEditar.correo_electronico_encargado"
+                            class="border rounded px-2 py-1 w-full text-xs" />
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="font-bold text-xs mb-1 block">País</label>
+                        <select wire:model="proveedorEditar.pais" class="border rounded px-2 py-1 w-full text-xs">
+                            <option value="">Seleccione...</option>
+                            <option value="peru">Perú</option>
+                            <option value="colombia">Colombia</option>
+                        </select>
+                    </div>
+
+                    <!-- Dirección -->
+                    <div class="mb-2">
+                        <label class="font-bold text-xs mb-1 block">Tipo de Calle</label>
+                        <input type="text" wire:model="proveedorEditar.direccion.tipo_calle"
+                            class="border rounded px-2 py-1 w-full text-xs" />
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="font-bold text-xs mb-1 block">Nombre de Calle</label>
+                        <input type="text" wire:model="proveedorEditar.direccion.nombre_calle"
+                            class="border rounded px-2 py-1 w-full text-xs" />
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="font-bold text-xs mb-1 block">Número</label>
+                        <input type="text" wire:model="proveedorEditar.direccion.numero"
+                            class="border rounded px-2 py-1 w-full text-xs" />
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="font-bold text-xs mb-1 block">Zona</label>
+                        <input type="text" wire:model="proveedorEditar.direccion.zona"
+                            class="border rounded px-2 py-1 w-full text-xs" />
+                    </div>
+                    <div class="mb-2">
+                        <label class="font-bold text-xs mb-1 block">Codigo Postal</label>
+                        <input type="text" wire:model="proveedorEditar.direccion.codigo_postal"
+                            class="border rounded px-2 py-1 w-full text-xs" />
+                    </div>
+                    <div class="mb-2">
+                        <label class="font-bold text-xs mb-1 block">Referencia</label>
+                        <input type="text" wire:model="proveedorEditar.direccion.referencia"
+                            class="border rounded px-2 py-1 w-full text-xs" />
+                    </div>
+                    <!-- Botones -->
+                    <div class="flex justify-end mt-4">
+                        <button type="button" wire:click="$set('modalEditar', false)"
+                            class="bg-gray-500 hover:bg-gray-600 text-white px-3 py-1 rounded text-xs mr-2">Cancelar</button>
+                        <button type="submit"
+                            class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs">Guardar
+                            cambios</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    @endif
+    <x-loader />
 </x-panel>

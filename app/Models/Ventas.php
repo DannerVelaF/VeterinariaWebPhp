@@ -10,8 +10,9 @@ class Ventas extends Model
 
     const CREATED_AT = 'fecha_registro';
     const UPDATED_AT = 'fecha_actualizacion';
-
+    protected $primaryKey = 'id_venta';
     protected $fillable = [
+        "id_venta",
         "fecha_venta",
         "subtotal",
         "total",
@@ -27,15 +28,15 @@ class Ventas extends Model
 
     public function cliente()
     {
-        return $this->belongsTo(Clientes::class, "id_cliente", "id");
+        return $this->belongsTo(Clientes::class, "id_cliente");
     }
     public function trabajador()
     {
-        return $this->belongsTo(Trabajador::class, "id_trabajador", "id");
+        return $this->belongsTo(Trabajador::class, "id_trabajador");
     }
 
     public function detalleVentas()
     {
-        return $this->hasMany(DetalleVentas::class, 'id_venta', 'id');
+        return $this->hasMany(DetalleVentas::class, "id_venta");
     }
 }

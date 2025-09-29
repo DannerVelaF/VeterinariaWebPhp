@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('direcciones', function (Blueprint $table) {
-            $table->id();
+            $table->id("id_direccion");
             $table->string('zona')->nullable();
             $table->string('tipo_calle')->nullable();
             $table->string('nombre_calle');

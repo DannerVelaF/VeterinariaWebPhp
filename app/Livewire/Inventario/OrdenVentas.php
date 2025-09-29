@@ -18,7 +18,7 @@ class Salidas extends Component
     use WithPagination;
 
     public $productos = [];
-    public $producto_id = null;
+    public $id_producto = null;
     public $productoSeleccionado = null;
     public $ubicacion = "mostrador";
     public $motivo = "";
@@ -44,7 +44,7 @@ class Salidas extends Component
     {
         $this->productosOV = [];
         $this->clienteOV = null;
-        $this->producto_id = null;
+        $this->id_producto = null;
         $this->productoSeleccionado = null;
         $this->cantidad = '';
 
@@ -83,7 +83,7 @@ class Salidas extends Component
             ->map(function ($detalle) {
                 return [
                     'id' => $detalle->producto->id,
-                    'detalle_venta_id' => $detalle->id,
+                    'id_detalle_venta' => $detalle->id,
                     'nombre' => $detalle->producto->nombre_producto . ' (' . $detalle->producto->unidad->nombre . ')',
                     'precio_venta' => $detalle->precio_unitario,
                     'cantidad' => $detalle->cantidad,
@@ -96,7 +96,7 @@ class Salidas extends Component
     public function updatedProductoId($value)
     {
         $this->productoSeleccionado = collect($this->productosOV)
-            ->firstWhere('detalle_venta_id', $value);
+            ->firstWhere('id_detalle_venta', $value);
 
         if ($this->productoSeleccionado) {
             $this->cantidad = $this->productoSeleccionado['cantidad'];
@@ -108,7 +108,7 @@ class Salidas extends Component
     public function registrarSalida()
     {
         $this->validate([
-            "producto_id" => "required|exists:detalle_ventas,id",
+            "id_producto" => "required|exists:detalle_ventas,id",
             'cantidad' => 'required|numeric|min:0.01|max:999999999.99',
             'ubicacion' => 'required|in:almacen,mostrador',
             "motivo" => "required|max:1000",
@@ -118,7 +118,7 @@ class Salidas extends Component
             DB::transaction(function () {
                 // Obtener el producto
                 $producto = Producto::find($this->productoSeleccionado['id']);
-                
+
                 // Verificar stock disponible
                 if ($producto->stock_actual < $this->cantidad) {
                     throw new Exception('Stock insuficiente. Stock disponible: ' . $producto->stock_actual);
@@ -132,9 +132,9 @@ class Salidas extends Component
                 }
 
                 // Buscar lotes disponibles (FIFO - Primero en entrar, primero en salir)
-                $lotesDisponibles = Lotes::where('producto_id', $this->productoSeleccionado['id'])
+                $lotesDisponibles = Lotes::where('id_producto', $this->productoSeleccionado['id'])
                     ->where('estado', 'activo')
-                    ->where(function($query) {
+                    ->where(function ($query) {
                         if ($this->ubicacion === 'almacen') {
                             $query->where('cantidad_almacenada', '>', 0);
                         } else {
@@ -150,8 +150,8 @@ class Salidas extends Component
                 foreach ($lotesDisponibles as $lote) {
                     if ($cantidadRestante <= 0) break;
 
-                    $cantidadDisponible = $this->ubicacion === 'almacen' 
-                        ? $lote->cantidad_almacenada 
+                    $cantidadDisponible = $this->ubicacion === 'almacen'
+                        ? $lote->cantidad_almacenada
                         : $lote->cantidad_mostrada;
 
                     $cantidadAUsar = min($cantidadRestante, $cantidadDisponible);
@@ -160,7 +160,7 @@ class Salidas extends Component
                     InventarioMovimiento::create([
                         "tipo_movimiento" => "salida",
                         "cantidad_movimiento" => $cantidadAUsar,
-                        "stock_resultante" => $this->ubicacion === 'almacen' 
+                        "stock_resultante" => $this->ubicacion === 'almacen'
                             ? $lote->cantidad_almacenada - $cantidadAUsar
                             : $lote->cantidad_mostrada - $cantidadAUsar,
                         "fecha_movimiento" => now(),
@@ -170,7 +170,7 @@ class Salidas extends Component
                         "ubicacion" => $this->ubicacion,
                         "motivo" => $this->motivo,
                         "movimentable_type" => DetalleVenta::class,
-                        "movimentable_id" => $this->productoSeleccionado['detalle_venta_id'],
+                        "movimentable_id" => $this->productoSeleccionado['id_detalle_venta'],
                     ]);
 
                     // Actualizar el lote
@@ -182,7 +182,7 @@ class Salidas extends Component
 
                     // Actualizar cantidad total del lote
                     $lote->decrement('cantidad_total', $cantidadAUsar);
-                    
+
                     // Si el lote se agota, marcarlo como inactivo
                     if ($lote->cantidad_total <= 0) {
                         $lote->update(['estado' => 'inactivo']);
@@ -197,7 +197,7 @@ class Salidas extends Component
                 }
 
                 // Actualizar el detalle de venta
-                $detalle = DetalleVenta::find($this->productoSeleccionado['detalle_venta_id']);
+                $detalle = DetalleVenta::find($this->productoSeleccionado['id_detalle_venta']);
                 $detalle->estado = 'entregado';
                 $detalle->save();
 
@@ -236,7 +236,7 @@ class Salidas extends Component
     public function resetForm()
     {
         $this->ordenVenta = "";
-        $this->producto_id = null;
+        $this->id_producto = null;
         $this->productoSeleccionado = null;
         $this->ubicacion = "mostrador";
         $this->cantidad = "";
@@ -255,7 +255,7 @@ class Salidas extends Component
             ];
         }
 
-        $lotes = Lotes::where('producto_id', $this->productoSeleccionado['id'])
+        $lotes = Lotes::where('id_producto', $this->productoSeleccionado['id'])
             ->where('estado', 'activo')
             ->get();
 

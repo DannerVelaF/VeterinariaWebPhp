@@ -12,15 +12,16 @@ class EstadoTrabajadores extends Model
     const UPDATED_AT = 'fecha_actualizacion';
 
     protected $table = 'estado_trabajadores';
-
+    protected $primaryKey = 'id_estado_trabajador';
     protected $fillable = [
-        'nombre',
+        'id_estado_trabajador',
+        'nombre_estado_trabajador',
         'fecha_registro',
         'fecha_actualizacion',
     ];
 
     public function trabajadores()
     {
-        return $this->hasMany(Trabajador::class);
+        return $this->hasMany(Trabajador::class, "id_trabajador");
     }
 }

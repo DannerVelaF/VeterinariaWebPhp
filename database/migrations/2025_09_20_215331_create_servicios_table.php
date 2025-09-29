@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('servicios', function (Blueprint $table) {
-            $table->id();
+            $table->id("id_servicio");
             $table->string("nombre_servicio");
             $table->text("descripcion");
             $table->integer("duracion_estimada");
@@ -20,7 +20,7 @@ return new class extends Migration
             $table->enum("estado", ["activo", "inactivo"])->default("activo");
 
             $table->unsignedBigInteger("id_categoria_servicio");
-            $table->foreign("id_categoria_servicio")->references("id")->on("categoria_servicios");
+            $table->foreign("id_categoria_servicio")->references("id_categoria_servicio")->on("categoria_servicios");
 
             $table->timestamp("fecha_registro")->useCurrent();
             $table->timestamp("fecha_actualizacion")->nullable();

@@ -10,11 +10,12 @@ class PuestoTrabajador extends Model
 
     const CREATED_AT = 'fecha_registro';
     const UPDATED_AT = 'fecha_actualizacion';
-
+    protected $primaryKey = 'id_puesto_trabajo';
     protected $table = 'puesto_trabajadores'; // opcional, ya no sería necesario
 
     protected $fillable = [
-        'nombre',
+        'id_puesto_trabajo',
+        'nombre_puesto',
         'descripcion',
         'estado',
         'fecha_registro',
@@ -23,6 +24,6 @@ class PuestoTrabajador extends Model
 
     public function trabajadores()
     {
-        return $this->hasMany(Trabajador::class, "id_puesto_trabajo", "id");
+        return $this->hasMany(Trabajador::class, "id_trabajador");
     }
 }
