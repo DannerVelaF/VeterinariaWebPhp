@@ -45,7 +45,7 @@ class Persona extends Model
 
     public function trabajador()
     {
-        return $this->hasOne(Trabajador::class, "id_trabajador");
+        return $this->hasOne(Trabajador::class, "id_persona");
     }
     public function user()
     {

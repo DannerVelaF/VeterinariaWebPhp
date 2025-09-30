@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('categoria_productos', function (Blueprint $table) {
             $table->id("id_categoria_producto");
-            $table->string("nombre_categoria");
+            $table->string("nombre_categoria_producto");
             $table->text("descripcion")->nullable();
             $table->enum('estado', ['activo', 'inactivo'])->default('activo');
             $table->timestamp("fecha_registro")->useCurrent();

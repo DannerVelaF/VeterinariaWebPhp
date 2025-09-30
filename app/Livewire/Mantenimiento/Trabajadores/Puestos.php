@@ -23,7 +23,7 @@ class Puestos extends Component
             $validatedData = Validator::make(
                 ['puesto' => $this->puesto],
                 [
-                    'puesto.nombre' => 'required|string|max:150|unique:puesto_trabajadores,nombre',
+                    'puesto.nombre' => 'required|string|max:150|unique:puesto_trabajadores,nombre_puesto',
                     'puesto.descripcion' => 'nullable|string|max:255',
                 ],
                 [
@@ -35,7 +35,10 @@ class Puestos extends Component
             )->validate();
 
             // Guardar en BD
-            $puesto = PuestoTrabajador::create($this->puesto);
+            $puesto = PuestoTrabajador::create([
+                'nombre_puesto' => $this->puesto['nombre'],
+                'descripcion'   => $this->puesto['descripcion'],
+            ]);
 
             DB::commit();
 

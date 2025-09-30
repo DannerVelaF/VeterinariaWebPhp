@@ -21,13 +21,14 @@ class TrabajadorRequest extends FormRequest
             'persona.apellido_paterno' => 'required|string|max:255',
             'persona.apellido_materno' => 'required|string|max:255',
             'persona.fecha_nacimiento' => 'required|date',
+            'persona.fecha_nacimiento' => 'required|date|before_or_equal:' . now()->subYears(18)->format('Y-m-d'),
             'persona.sexo' => 'required|in:M,F,Otro',
             'persona.correo_electronico_personal' => 'nullable|email|max:255',
             'persona.correo_electronico_secundario' => 'nullable|email|max:255',
             'persona.numero_telefono_personal' => 'nullable|string|max:20',
             'persona.numero_telefono_secundario' => 'nullable|string|max:20',
             'persona.nacionalidad' => 'nullable|string|max:100',
-            'persona.id_tipo_documento' => 'required|exists:tipo_documentos,id',
+            'persona.id_tipo_documento' => 'required|exists:tipo_documentos,id_tipo_documento',
 
             // Dirección
             'direccion.tipo_calle' => 'required|string|max:50',
@@ -39,8 +40,8 @@ class TrabajadorRequest extends FormRequest
             'trabajador.fecha_salida' => 'nullable|date',
             'trabajador.salario' => 'required|numeric|min:0',
             'trabajador.numero_seguro_social' => 'nullable|string|max:50',
-            'trabajador.id_puesto_trabajo' => 'required|exists:puesto_trabajadores,id',
-            'trabajador.id_estado_trabajador' => 'required|exists:estado_trabajadores,id',
+            'trabajador.id_puesto_trabajo' => 'required|exists:puesto_trabajadores,id_puesto_trabajo',
+            'trabajador.id_estado_trabajador' => 'required|exists:estado_trabajadores,id_estado_trabajador',
 
         ];
     }
@@ -56,6 +57,7 @@ class TrabajadorRequest extends FormRequest
             'persona.apellido_materno.required' => 'El apellido materno es obligatorio.',
             'persona.fecha_nacimiento.required' => 'La fecha de nacimiento es obligatoria.',
             'persona.fecha_nacimiento.date'     => 'La fecha de nacimiento no es válida.',
+            'persona.fecha_nacimiento.before_or_equal' => 'La persona debe ser mayor de 18 años.',
             'persona.sexo.required'             => 'Debe seleccionar un sexo.',
             'persona.sexo.in'                   => 'El sexo seleccionado no es válido.',
             'persona.id_tipo_documento.required' => 'Debe seleccionar un tipo de documento.',

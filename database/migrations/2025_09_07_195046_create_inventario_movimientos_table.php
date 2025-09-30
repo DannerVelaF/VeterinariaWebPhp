@@ -23,7 +23,7 @@ return new class extends Migration
             $table->unsignedBigInteger("id_trabajador");
             $table->foreign("id_trabajador")->references("id_trabajador")->on("trabajadores");
 
-            $table->morphs('movimentable');
+            $table->morphs('movimiento_asociado');
 
             $table->timestamp("fecha_movimiento");
             $table->timestamp("fecha_registro")->useCurrent();

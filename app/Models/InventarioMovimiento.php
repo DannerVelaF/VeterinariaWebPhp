@@ -23,8 +23,8 @@ class InventarioMovimiento extends Model
         "id_trabajador",
         "id_lote",
         "ubicacion",
-        "movimentable_type",
-        "movimentable_id",
+        "tipo_movimiento_asociado",
+        "id_movimiento_asociado",
         "fecha_actualizacion",
         "fecha_registro",
     ];
@@ -44,7 +44,7 @@ class InventarioMovimiento extends Model
         return $this->belongsTo(Lotes::class, "id_lote");
     }
 
-    public function movimentable()
+    public function movimientoAsociado()
     {
         return $this->morphTo();
     }

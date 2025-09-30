@@ -300,8 +300,8 @@ class Salidas extends Component
                 "id_trabajador" => $trabajador->id_trabajador,
                 "ubicacion" => $ubicacion,
                 "motivo_salida" => $motivoFinal ?? 'Sin motivo especificado',
-                "movimentable_type"    => DetalleVentas::class,
-                "movimentable_id"      => $detalleVenta->id_detalle_venta,
+                "tipo_movimiento_asociado"    => DetalleVentas::class,
+                "id_movimiento_asociado"      => $detalleVenta->id_detalle_venta,
             ]);
 
             $cantidadRestante -= $cantidadAUsar;

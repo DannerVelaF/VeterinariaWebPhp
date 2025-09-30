@@ -346,17 +346,25 @@
                     </div>
 
                     <div class="flex flex-col">
-                        <label>Correo</label>
+                        <label>Correo personal</label>
                         <input type="email" wire:model="persona.correo_electronico_personal"
                             class="border rounded px-2 py-1">
                     </div>
-
                     <div class="flex flex-col">
-                        <label>Teléfono</label>
+                        <label>Correo secundario</label>
+                        <input type="email" wire:model="persona.correo_electronico_secundario"
+                            class="border rounded px-2 py-1">
+                    </div>
+                    <div class="flex flex-col">
+                        <label>Teléfono personal</label>
                         <input type="text" wire:model="persona.numero_telefono_personal"
                             class="border rounded px-2 py-1">
                     </div>
-
+                    <div class="flex flex-col">
+                        <label>Teléfono Secundario</label>
+                        <input type="text" wire:model="persona.numero_telefono_secundario"
+                            class="border rounded px-2 py-1">
+                    </div>
                     <!-- Información Laboral -->
                     <div class="col-span-2 font-bold text-gray-700 mt-4 flex gap-2"><svg
                             xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"

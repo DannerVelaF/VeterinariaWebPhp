@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('categoria_servicios', function (Blueprint $table) {
             $table->id("id_categoria_servicio");
-            $table->string("nombre_categoria");
+            $table->string("nombre_categoria_servicio");
             $table->text("descripcion");
             $table->enum("estado", ["activo", "inactivo"])->default("activo");
             $table->timestamp("fecha_registro")->useCurrent();

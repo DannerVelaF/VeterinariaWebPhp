@@ -187,8 +187,8 @@ class Entradas extends Component
                     "id_lote"           => $lote->id_lote,
                     "id_trabajador"     => $trabajador->id_trabajador,
                     "ubicacion"         => $this->ubicacion,
-                    "movimentable_type" => DetalleCompra::class,
-                    "movimentable_id"    => $this->lote['id_detalle_compra'],
+                    "tipo_movimiento_asociado" => DetalleCompra::class,
+                    "id_movimiento_asociado"    => $this->lote['id_detalle_compra'],
                 ]);
 
                 $detalle = DetalleCompra::find($this->lote['id_detalle_compra']);

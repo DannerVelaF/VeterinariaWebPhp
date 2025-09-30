@@ -54,7 +54,7 @@ final class ProductoTable extends PowerGridComponent
             })
             ->add('codigo_barras')
             ->add('fecha_registro')
-            ->add('categoria_nombre', fn($producto) => $producto->categoria_producto?->nombre_categoria)
+            ->add('categoria_nombre', fn($producto) => $producto->categoria_producto?->nombre_categoria_producto)
             ->add('proveedor_nombre', fn($producto) => $producto->proveedor?->nombre_proveedor);
     }
 
@@ -67,7 +67,7 @@ final class ProductoTable extends PowerGridComponent
                 ->sortable(),
             Column::make('Unidad', 'unidad_nombre')->sortable(),
             Column::make('Codigo barras', 'codigo_barras')->sortable(),
-            Column::make('Categoría', 'categoria_nombre', 'categoria_producto.nombre'),
+            Column::make('Categoría', 'categoria_nombre'),
             Column::make('Proveedor', 'proveedor_nombre'),
             Column::make('Fecha creación', 'fecha_registro')->sortable(),
             Column::make('Estado', 'estado_boolean')

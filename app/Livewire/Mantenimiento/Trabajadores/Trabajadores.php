@@ -131,7 +131,7 @@ class Trabajadores extends Component
 
 
             $persona = Persona::create(array_merge($this->persona, [
-                'id_direccion' => $direccion->id
+                'id_direccion' => $direccion->id_direccion
             ]));
 
 
@@ -188,7 +188,6 @@ class Trabajadores extends Component
                 'apellido_materno' => $this->persona['apellido_materno'],
                 'fecha_nacimiento' => $this->persona['fecha_nacimiento'],
                 'sexo' => $this->persona['sexo'],
-                'correo' => $this->persona['correo'],
                 'nacionalidad' => $this->persona['nacionalidad'],
                 'id_tipo_documento' => $this->persona['id_tipo_documento'],
                 'id_direccion' => $this->persona['id_direccion'],

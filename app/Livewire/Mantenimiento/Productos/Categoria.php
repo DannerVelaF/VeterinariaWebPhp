@@ -84,7 +84,7 @@ class Categoria extends Component
         DB::transaction(function () {
             // Actualizar persona
             $this->categoriaSeleccionado->update([
-                'nombre_categoria' => $this->categoriaEditar['nombre_categoria'],
+                'nombre_categoria_producto' => $this->categoriaEditar['nombre_categoria'],
                 'descripcion' => $this->categoriaEditar['descripcion'],
                 'fecha_actualizacion' => now(),
             ]);

@@ -16,6 +16,7 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class Registro extends Component
 {
+    public $IGV = 0.18;
     public $codigoOrden = '';
     public $productos = [];
     public $proveedores = [];
@@ -255,5 +256,18 @@ class Registro extends Component
         return response()->streamDownload(function () use ($pdf) {
             echo $pdf->output();
         }, 'reporte_compras.pdf');
+    }
+
+    public function exportarPdfOrdenCompra()
+    {
+        $compra = Compra::with(['proveedor', 'detalleCompra.producto'])->find($this->compraSeleccionada->id_compra);
+        $IGV = $this->IGV;
+
+        $pdf = Pdf::loadView('exports.ordenCompra_pdf', compact('compra', 'IGV'))
+            ->setPaper('a4', 'portrait'); // opcional
+
+        return response()->streamDownload(function () use ($pdf) {
+            echo $pdf->output();
+        },  'orden_compra.pdf');
     }
 }
