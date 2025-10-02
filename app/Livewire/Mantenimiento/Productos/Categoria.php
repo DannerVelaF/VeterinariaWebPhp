@@ -40,7 +40,7 @@ class Categoria extends Component
         try {
             DB::transaction(function () use ($validatedData, &$categoria) {
                 $categoria = CategoriaProducto::create([
-                    'nombre_categoria' => $validatedData['categoria']['nombre_categoria'],
+                    'nombre_categoria_producto' => $validatedData['categoria']['nombre_categoria'],
                     'descripcion' => $validatedData['categoria']['descripcion'] ?? null,
                 ]);
             });
@@ -71,7 +71,7 @@ class Categoria extends Component
         $this->categoriaSeleccionado = CategoriaProducto::findOrFail($categoriaId);
         $this->categoriaEditar = [
             'id_categoria_producto' => $categoriaId,
-            'nombre_categoria' => $this->categoriaSeleccionado->nombre_categoria,
+            'nombre_categoria_producto' => $this->categoriaSeleccionado->nombre_categoria_producto,
             'descripcion' => $this->categoriaSeleccionado->descripcion,
         ];
         $this->modalEditar = true;

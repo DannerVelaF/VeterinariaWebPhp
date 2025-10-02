@@ -12,10 +12,20 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('estado_trabajadores', function (Blueprint $table) {
-            $table->id("id_estado_trabajador");
-            $table->string("nombre_estado_trabajador");
-            $table->timestamp("fecha_registro")->useCurrent();
-            $table->timestamp("fecha_actualizacion")->nullable();
+            $table->id("id_estado_trabajador")
+                ->comment("Llave primaria. Identificador único de cada estado de trabajador.");
+
+            $table->string("nombre_estado_trabajador", 100)
+                ->unique()
+                ->comment("Nombre del estado del trabajador.");
+
+            $table->timestamp("fecha_registro")
+                ->useCurrent()
+                ->comment("Fecha en que se creó el registro.");
+
+            $table->timestamp("fecha_actualizacion")
+                ->nullable()
+                ->comment("Fecha de la última actualización del registro.");
         });
     }
 

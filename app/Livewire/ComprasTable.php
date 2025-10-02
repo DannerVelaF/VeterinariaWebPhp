@@ -62,7 +62,13 @@ final class ComprasTable extends PowerGridComponent
             '<span class="capitalize">' . $compra->estado . '</span>')
             ->add('cantidad_total')
             ->add('total')
-            ->add("usuario", fn($compra) => $compra->trabajador->persona->user->usuario)
+            ->add(
+                "usuario",
+                fn($compra) =>
+                $compra->trabajador && $compra->trabajador->persona && $compra->trabajador->persona->user
+                    ? $compra->trabajador->persona->user->usuario
+                    : '-'
+            )
             ->add('proveedor', fn($compra) => $compra->proveedor->nombre_proveedor);
     }
 

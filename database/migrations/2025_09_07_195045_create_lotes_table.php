@@ -12,27 +12,58 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('lotes', function (Blueprint $table) {
-            $table->id("id_lote");
+            $table->id("id_lote")
+                ->comment("Llave primaria. Identificador único del lote de productos.");
 
-            $table->unsignedBigInteger("id_producto");
-            $table->foreign("id_producto")->references("id_producto")->on("productos");
+            $table->unsignedBigInteger("id_producto")
+                ->comment("Llave foránea hacia la tabla productos. Indica a qué producto pertenece el lote.");
+            $table->foreign("id_producto")
+                ->references("id_producto")
+                ->on("productos")
+                ->onDelete("restrict");
 
-            $table->string("codigo_lote");
+            $table->string("codigo_lote", 50)
+                ->unique()
+                ->comment("Código único del lote. Máximo 50 caracteres.");
 
-            $table->decimal("cantidad_mostrada", 12, 2)->nullable();
-            $table->decimal("cantidad_almacenada", 12, 2)->nullable();
-            $table->decimal("cantidad_vendida", 12, 2)->nullable();
+            $table->decimal("cantidad_mostrada", 12, 2)
+                ->nullable()
+                ->comment("Cantidad del lote que se muestra en la vitrina o área de venta. Puede ser nula.");
 
-            $table->decimal("precio_compra", 12, 2)->nullable(); // Precio de compra al proveedor registrado
+            $table->decimal("cantidad_almacenada", 12, 2)
+                ->nullable()
+                ->comment("Cantidad del lote que se almacena en el almacén. Puede ser nula.");
 
-            $table->date("fecha_recepcion");
-            $table->date("fecha_vencimiento")->nullable();
+            $table->decimal("cantidad_vendida", 12, 2)
+                ->nullable()
+                ->comment("Cantidad del lote que ha sido vendida. Puede ser nula.");
 
-            $table->enum("estado", ["activo", "vendido", "devuelto"])->default("activo");
-            $table->text("observacion")->nullable();
+            $table->decimal("precio_compra", 12, 2)
+                ->nullable()
+                ->comment("Precio de compra al proveedor registrado. Puede ser nulo si no aplica.");
 
-            $table->timestamp("fecha_registro")->useCurrent();
-            $table->timestamp("fecha_actualizacion")->nullable();
+            $table->date("fecha_recepcion")
+                ->comment("Fecha en que se recibió el lote del proveedor.");
+
+            $table->date("fecha_vencimiento")
+                ->nullable()
+                ->comment("Fecha de vencimiento del lote, si aplica. Puede ser nula.");
+
+            $table->enum("estado", ["activo", "vendido", "devuelto"])
+                ->default("activo")
+                ->comment("Estado actual del lote. Valores: activo, vendido, devuelto.");
+
+            $table->text("observacion")
+                ->nullable()
+                ->comment("Observaciones adicionales del lote. Campo opcional.");
+
+            $table->timestamp("fecha_registro")
+                ->useCurrent()
+                ->comment("Fecha de creación del registro del lote.");
+
+            $table->timestamp("fecha_actualizacion")
+                ->nullable()
+                ->comment("Fecha de la última actualización del registro.");
         });
     }
 

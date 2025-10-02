@@ -23,11 +23,11 @@ class DatabaseSeeder extends Seeder
         // User::factory(10)->create();
 
         $estados = [
-            ['nombre' => 'Activo'],
-            ['nombre' => 'Inactivo'],
-            ['nombre' => 'Vacaciones'],
-            ['nombre' => 'Licencia'],
-            ['nombre' => 'Suspendido'],
+            ['nombre_estado_trabajador' => 'Activo'],
+            ['nombre_estado_trabajador' => 'Inactivo'],
+            ['nombre_estado_trabajador' => 'Vacaciones'],
+            ['nombre_estado_trabajador' => 'Licencia'],
+            ['nombre_estado_trabajador' => 'Suspendido'],
         ];
 
         foreach ($estados as $estado) {
@@ -35,20 +35,22 @@ class DatabaseSeeder extends Seeder
         }
 
 
-        $ubigeo = \App\Models\Ubigeo::create([
-            'codigo_ubigeo' => '150101',
-            'departamento' => 'Lima',
-            'provincia' => 'Lima',
-            'distrito' => 'Lima',
-        ]);
+        $ubigeo = \App\Models\Ubigeo::firstOrCreate(
+            ['codigo_ubigeo' => '150101'], // campos únicos
+            [ // valores por defecto
+                'departamento' => 'Lima',
+                'provincia' => 'Lima',
+                'distrito' => 'Lima',
+            ]
+        );
 
         PuestoTrabajador::create([
-            'nombre' => 'Puesto 1',
+            'nombre_puesto' => 'Puesto 1',
         ]);
 
         // Crear un tipo de documento
         $tipoDocumento = Tipo_documento::create([
-            'nombre' => 'DNI',
+            'nombre_tipo_documento' => 'DNI',
         ]);
 
         // Crear dirección de ejemplo (requerida por la FK)

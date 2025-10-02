@@ -83,7 +83,8 @@
                             class="border rounded px-2 py-1 focus:outline-none focus:ring focus:ring-blue-300 @error('producto.id_categoria_producto') border-red-500 @enderror">
                             <option value="">-- Seleccione una categoría --</option>
                             @foreach ($categorias as $cate)
-                                <option value="{{ $cate->id_categoria_producto }}">{{ $cate->nombre_categoria }}
+                                <option value="{{ $cate->id_categoria_producto }}">
+                                    {{ $cate->nombre_categoria_producto }}</option>
                                 </option>
                             @endforeach
                         </select>
@@ -220,7 +221,8 @@
                             class="border rounded px-2 py-1 focus:ring focus:ring-blue-300">
                             <option value="">-- Seleccione categoría --</option>
                             @foreach ($categorias as $cate)
-                                <option value="{{ $cate->id_categoria_producto }}">{{ $cate->nombre_categoria }}
+                                <option value="{{ $cate->id_categoria_producto }}">
+                                    {{ $cate->nombre_categoria_producto }}
                                 </option>
                             @endforeach
                         </select>

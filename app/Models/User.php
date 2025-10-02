@@ -76,8 +76,9 @@ class User extends Authenticatable
         return $this->belongsTo(Roles::class, 'id_rol');
     }
 
-    public function permisos()
+    public function tienePermiso($permiso)
     {
-        return $this->rol()->with('permisos');
+        return $this->rol
+            && $this->rol->permisos->where('nombre_permiso', $permiso)->isNotEmpty();
     }
 }

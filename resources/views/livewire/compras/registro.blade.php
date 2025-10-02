@@ -96,7 +96,9 @@
                         <p class="font-medium text-gray-600 text-sm">Gestiona las órdenes de compra a proveedores</p>
                     </div>
                     <div class="flex gap-2">
-                        <x-exports />
+                        @if (auth()->user()->tienePermiso('compras.exportar'))
+                            <x-exports />
+                        @endif
                         <button wire:click="openModal"
                             class="inline-flex items-center gap-2 px-4 py-2 h-10 bg-gray-500 hover:bg-gray-700 transition text-white rounded-lg font-medium">
                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"

@@ -12,23 +12,55 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('ventas', function (Blueprint $table) {
-            $table->id("id_venta");
-            $table->date("fecha_venta");
-            $table->decimal("subtotal", 12, 2);
-            $table->decimal("total", 12, 2);
-            $table->decimal("descuento", 12, 2);
-            $table->decimal("impuesto", 12, 2);
-            $table->text("observacion")->nullable();
-            $table->enum("estado", ["pendiente", "entregado", "cancelado"]);
+            $table->id("id_venta")
+                ->comment("Llave primaria. Identificador único de la venta.");
 
-            $table->unsignedBigInteger("id_cliente");
-            $table->foreign("id_cliente")->references("id_cliente")->on("clientes")->onDelete("cascade");
+            $table->date("fecha_venta")
+                ->comment("Fecha en que se realizó la venta.");
 
-            $table->unsignedBigInteger("id_trabajador");
-            $table->foreign("id_trabajador")->references("id_trabajador")->on("trabajadores")->onDelete("cascade");
+            $table->decimal("subtotal", 12, 2)
+                ->comment("Subtotal de la venta antes de descuentos e impuestos.");
 
-            $table->timestamp("fecha_registro")->useCurrent();
-            $table->timestamp("fecha_actualizacion")->nullable();
+            $table->decimal("descuento", 12, 2)
+                ->default(0)
+                ->comment("Monto de descuento aplicado a la venta.");
+
+            $table->decimal("impuesto", 12, 2)
+                ->default(0)
+                ->comment("Monto de impuestos aplicado a la venta.");
+
+            $table->decimal("total", 12, 2)
+                ->comment("Monto total de la venta después de descuentos e impuestos.");
+
+            $table->text("observacion")
+                ->nullable()
+                ->comment("Observaciones adicionales sobre la venta.");
+
+            $table->enum("estado", ["pendiente", "entregado", "cancelado"])
+                ->default("pendiente")
+                ->comment("Estado de la venta. Valores: pendiente, entregado, cancelado.");
+
+            $table->unsignedBigInteger("id_cliente")
+                ->comment("Llave foránea hacia la tabla clientes. Indica el cliente asociado a la venta.");
+            $table->foreign("id_cliente")
+                ->references("id_cliente")
+                ->on("clientes")
+                ->onDelete("cascade");
+
+            $table->unsignedBigInteger("id_trabajador")
+                ->comment("Llave foránea hacia la tabla trabajadores. Indica el trabajador que realizó la venta.");
+            $table->foreign("id_trabajador")
+                ->references("id_trabajador")
+                ->on("trabajadores")
+                ->onDelete("cascade");
+
+            $table->timestamp("fecha_registro")
+                ->useCurrent()
+                ->comment("Fecha de creación del registro de la venta.");
+
+            $table->timestamp("fecha_actualizacion")
+                ->nullable()
+                ->comment("Fecha de la última actualización del registro.");
         });
     }
 

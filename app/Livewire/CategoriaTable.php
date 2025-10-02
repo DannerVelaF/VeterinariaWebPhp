@@ -45,7 +45,7 @@ final class CategoriaTable extends PowerGridComponent
     {
         return PowerGrid::fields()
             ->add('id_categoria_producto')
-            ->add('nombre_categoria')
+            ->add('nombre_categoria_producto')
             ->add('descripccion')
             ->add('estado')
             ->add("estado")
@@ -59,7 +59,7 @@ final class CategoriaTable extends PowerGridComponent
     {
         return [
             Column::make('Id', 'id_categoria_producto'),
-            Column::make('Nombre', 'nombre_categoria')
+            Column::make('Nombre', 'nombre_categoria_producto')
                 ->sortable()
                 ->searchable()
                 ->editOnClick(),

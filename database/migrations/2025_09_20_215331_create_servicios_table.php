@@ -12,18 +12,41 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('servicios', function (Blueprint $table) {
-            $table->id("id_servicio");
-            $table->string("nombre_servicio");
-            $table->text("descripcion");
-            $table->integer("duracion_estimada");
-            $table->decimal("precio_unitario", 12, 2);
-            $table->enum("estado", ["activo", "inactivo"])->default("activo");
+            $table->id("id_servicio")
+                ->comment("Llave primaria. Identificador único del servicio.");
 
-            $table->unsignedBigInteger("id_categoria_servicio");
-            $table->foreign("id_categoria_servicio")->references("id_categoria_servicio")->on("categoria_servicios");
+            $table->string("nombre_servicio", 100)
+                ->unique()
+                ->comment("Nombre del servicio. Máximo 100 caracteres. Debe ser único.");
 
-            $table->timestamp("fecha_registro")->useCurrent();
-            $table->timestamp("fecha_actualizacion")->nullable();
+            $table->text("descripcion")
+                ->nullable()
+                ->comment("Descripción detallada del servicio. Campo opcional.");
+
+            $table->integer("duracion_estimada")
+                ->comment("Duración estimada del servicio en minutos.");
+
+            $table->decimal("precio_unitario", 12, 2)
+                ->comment("Precio unitario del servicio.");
+
+            $table->enum("estado", ["activo", "inactivo"])
+                ->default("activo")
+                ->comment("Estado del servicio. Valores: activo o inactivo.");
+
+            $table->unsignedBigInteger("id_categoria_servicio")
+                ->comment("Llave foránea hacia la tabla categoria_servicios.");
+            $table->foreign("id_categoria_servicio")
+                ->references("id_categoria_servicio")
+                ->on("categoria_servicios")
+                ->onDelete("restrict");
+
+            $table->timestamp("fecha_registro")
+                ->useCurrent()
+                ->comment("Fecha de creación del registro del servicio.");
+
+            $table->timestamp("fecha_actualizacion")
+                ->nullable()
+                ->comment("Fecha de la última actualización del registro.");
         });
     }
 

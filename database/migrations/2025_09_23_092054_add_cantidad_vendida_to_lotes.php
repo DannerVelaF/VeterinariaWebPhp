@@ -9,11 +9,14 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-    public function up()
+    public function up(): void
     {
         Schema::table('lotes', function (Blueprint $table) {
-            if (!Schema::hasColumn('lotes','cantidad_vendida')) {
-                $table->decimal('cantidad_vendida', 12, 2)->default(0)->after('cantidad_total');
+            if (!Schema::hasColumn('lotes', 'cantidad_vendida')) {
+                $table->decimal('cantidad_vendida', 12, 2)
+                    ->default(0)
+                    ->after('cantidad_almacenada')
+                    ->comment('Cantidad de unidades vendidas del lote');
             }
         });
     }
@@ -24,7 +27,9 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('lotes', function (Blueprint $table) {
-            //
+            if (Schema::hasColumn('lotes', 'cantidad_vendida')) {
+                $table->dropColumn('cantidad_vendida');
+            }
         });
     }
 };

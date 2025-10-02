@@ -12,11 +12,23 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('clientes', function (Blueprint $table) {
-            $table->id("id_cliente");
-            $table->unsignedBigInteger("id_persona");
-            $table->foreign("id_persona")->references("id_persona")->on("personas");
-            $table->timestamp("fecha_registro")->useCurrent();
-            $table->timestamp("fecha_actualizacion")->nullable();
+            $table->id("id_cliente")
+                ->comment("Llave primaria. Identificador único del cliente.");
+
+            $table->unsignedBigInteger("id_persona")
+                ->comment("Llave foránea hacia la tabla personas. Indica los datos personales asociados al cliente.");
+            $table->foreign("id_persona")
+                ->references("id_persona")
+                ->on("personas")
+                ->onDelete("restrict");
+
+            $table->timestamp("fecha_registro")
+                ->useCurrent()
+                ->comment("Fecha en que se creó el registro del cliente.");
+
+            $table->timestamp("fecha_actualizacion")
+                ->nullable()
+                ->comment("Fecha de la última actualización del registro.");
         });
     }
 

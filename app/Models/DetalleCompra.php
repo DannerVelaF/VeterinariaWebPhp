@@ -39,4 +39,10 @@ class DetalleCompra extends Model
     {
         return $this->morphMany(InventarioMovimiento::class, 'movimentable');
     }
+
+
+    public function estadoDetalleCompra()
+    {
+        return $this->belongsTo(EstadoDetalleCompra::class, "id_estado_detalle_compra");
+    }
 }

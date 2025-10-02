@@ -12,24 +12,55 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('detalle_ventas', function (Blueprint $table) {
-            $table->id("id_detalle_venta");
-            $table->integer("cantidad");
-            $table->decimal("precio_unitario", 12, 2);
-            $table->decimal("subtotal", 12, 2);
-            $table->enum("tipo_item", ["producto", "servicio"]);
-            $table->string('motivo_salida')->nullable();
+            $table->id("id_detalle_venta")
+                ->comment("Llave primaria. Identificador único del detalle de venta.");
 
-            $table->unsignedBigInteger("id_venta");
-            $table->foreign("id_venta")->references("id_venta")->on("ventas")->onDelete("cascade");
+            $table->integer("cantidad")
+                ->comment("Cantidad de unidades vendidas del producto o servicio.");
 
-            $table->unsignedBigInteger("id_producto")->nullable();
-            $table->foreign("id_producto")->references("id_producto")->on("productos")->onDelete("cascade");
+            $table->decimal("precio_unitario", 12, 2)
+                ->comment("Precio unitario del producto o servicio.");
 
-            $table->unsignedBigInteger("id_servicio")->nullable();
-            $table->foreign("id_servicio")->references("id_servicio")->on("servicios")->onDelete("cascade");
+            $table->decimal("subtotal", 12, 2)
+                ->comment("Subtotal de este ítem (cantidad * precio_unitario).");
 
-            $table->timestamp("fecha_registro")->useCurrent();
-            $table->timestamp("fecha_actualizacion")->nullable();
+            $table->enum("tipo_item", ["producto", "servicio"])
+                ->comment("Tipo de ítem vendido: producto o servicio.");
+
+            $table->string('motivo_salida', 255)
+                ->nullable()
+                ->comment("Motivo de salida del producto. Campo opcional, aplicable para productos.");
+
+            $table->unsignedBigInteger("id_venta")
+                ->comment("Llave foránea hacia la tabla ventas. Indica a qué venta pertenece el detalle.");
+            $table->foreign("id_venta")
+                ->references("id_venta")
+                ->on("ventas")
+                ->onDelete("cascade");
+
+            $table->unsignedBigInteger("id_producto")
+                ->nullable()
+                ->comment("Llave foránea hacia la tabla productos. Se usa si el ítem es un producto.");
+            $table->foreign("id_producto")
+                ->references("id_producto")
+                ->on("productos")
+                ->onDelete("cascade");
+
+            $table->unsignedBigInteger("id_servicio")
+                ->nullable()
+                ->comment("Llave foránea hacia la tabla servicios. Se usa si el ítem es un servicio.");
+            $table->foreign("id_servicio")
+                ->references("id_servicio")
+                ->on("servicios")
+                ->onDelete("cascade");
+
+            $table->timestamp("fecha_registro")
+                ->useCurrent()
+                ->comment("Fecha de creación del detalle de venta.");
+
+            $table->timestamp("fecha_actualizacion")
+                ->nullable()
+                ->comment("Fecha de la última actualización del registro.");
         });
     }
 

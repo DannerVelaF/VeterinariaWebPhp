@@ -91,7 +91,7 @@ class Productos extends Component
         $categoria = CategoriaProducto::find($this->producto['id_categoria_producto']);
 
         $prefijo = $categoria
-            ? $this->generarPrefijoCategoria($categoria->nombre_categoria)
+            ? $this->generarPrefijoCategoria($categoria->nombre_categoria_producto)
             : 'XX';
 
         do {

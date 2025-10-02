@@ -12,11 +12,24 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('permisos', function (Blueprint $table) {
-            $table->id("id_permiso");
-            $table->string('nombre_permiso')->unique();
-            $table->enum('estado', ['activo', 'inactivo'])->default('activo');
-            $table->timestamp("fecha_registro")->useCurrent();
-            $table->timestamp("fecha_actualizacion")->nullable();
+            $table->id("id_permiso")
+                ->comment("Llave primaria. Identificador único del permiso.");
+
+            $table->string('nombre_permiso', 100)
+                ->unique()
+                ->comment("Nombre del permiso, por ejemplo: 'crear_usuario', 'editar_producto'.");
+
+            $table->enum('estado', ['activo', 'inactivo'])
+                ->default('activo')
+                ->comment("Estado del permiso: activo o inactivo.");
+
+            $table->timestamp("fecha_registro")
+                ->useCurrent()
+                ->comment("Fecha de creación del permiso.");
+
+            $table->timestamp("fecha_actualizacion")
+                ->nullable()
+                ->comment("Fecha de la última actualización del permiso.");
         });
     }
 

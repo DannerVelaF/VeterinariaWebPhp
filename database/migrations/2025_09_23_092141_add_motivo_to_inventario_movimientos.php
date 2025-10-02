@@ -9,11 +9,14 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-    public function up()
+    public function up(): void
     {
         Schema::table('inventario_movimientos', function (Blueprint $table) {
-            if (!Schema::hasColumn('inventario_movimientos','motivo')) {
-                $table->text('motivo')->nullable()->after('ubicacion');
+            if (!Schema::hasColumn('inventario_movimientos', 'motivo')) {
+                $table->text('motivo')
+                    ->nullable()
+                    ->after('ubicacion')
+                    ->comment('Motivo del movimiento de inventario (opcional)');
             }
         });
     }
@@ -24,7 +27,9 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('inventario_movimientos', function (Blueprint $table) {
-            //
+            if (Schema::hasColumn('inventario_movimientos', 'motivo')) {
+                $table->dropColumn('motivo');
+            }
         });
     }
 };

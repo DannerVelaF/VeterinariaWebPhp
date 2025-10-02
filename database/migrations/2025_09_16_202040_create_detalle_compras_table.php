@@ -12,20 +12,52 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('detalle_compras', function (Blueprint $table) {
-            $table->id("id_detalle_compra");
+            $table->id("id_detalle_compra")
+                ->comment("Llave primaria. Identificador único del detalle de compra.");
 
-            $table->unsignedBigInteger("id_compra");
-            $table->foreign("id_compra")->references("id_compra")->on("compras");
+            // Relación con compra
+            $table->unsignedBigInteger("id_compra")
+                ->comment("Llave foránea hacia la tabla compras. Indica a qué compra pertenece este detalle.");
+            $table->foreign("id_compra")
+                ->references("id_compra")
+                ->on("compras")
+                ->onDelete("cascade");
 
-            $table->unsignedBigInteger('id_producto');
-            $table->foreign("id_producto")->references("id_producto")->on("productos");
-            $table->enum("estado", ["pendiente", "recibido", "pagado", "cancelado"])->default("pendiente");
-            $table->decimal("cantidad", 12, 2);
-            $table->decimal("precio_unitario", 12, 2);
-            $table->decimal("sub_total", 12, 2);
+            // Relación con producto
+            $table->unsignedBigInteger('id_producto')
+                ->comment("Llave foránea hacia la tabla productos. Producto comprado en este detalle.");
+            $table->foreign("id_producto")
+                ->references("id_producto")
+                ->on("productos")
+                ->onDelete("restrict");
 
-            $table->timestamp("fecha_registro")->useCurrent();
-            $table->timestamp("fecha_actualizacion")->nullable();
+            /* $table->enum("estado", ["pendiente", "recibido", "pagado", "cancelado"])
+                ->default("pendiente")
+                ->comment("Estado del detalle de compra. Valores: pendiente, recibido, pagado, cancelado.");
+*/
+            $table->unsignedBigInteger("id_estado_detalle_compra")
+                ->comment("Llave foránea hacia la tabla estado_compras. Indica el estado del detalle de compra.");
+            $table->foreign("id_estado_detalle_compra")
+                ->references("id_estado_detalle_compra")
+                ->on("estado_detalle_compras")
+                ->onDelete("restrict");
+
+            $table->decimal("cantidad", 12, 2)
+                ->comment("Cantidad del producto comprada en este detalle.");
+
+            $table->decimal("precio_unitario", 12, 2)
+                ->comment("Precio unitario del producto en esta compra.");
+
+            $table->decimal("sub_total", 12, 2)
+                ->comment("Subtotal del detalle de compra: cantidad * precio_unitario.");
+
+            $table->timestamp("fecha_registro")
+                ->useCurrent()
+                ->comment("Fecha de creación del registro del detalle de compra.");
+
+            $table->timestamp("fecha_actualizacion")
+                ->nullable()
+                ->comment("Fecha de la última actualización del registro.");
         });
     }
 

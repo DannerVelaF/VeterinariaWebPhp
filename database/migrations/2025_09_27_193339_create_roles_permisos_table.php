@@ -12,13 +12,30 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('roles_permisos', function (Blueprint $table) {
-            $table->id("id_rol_permiso");
-            $table->unsignedBigInteger("id_rol"); 
-            $table->foreign("id_rol")->references("id_rol")->on("roles");
-            $table->unsignedBigInteger("id_permiso");
-            $table->foreign("id_permiso")->references("id_permiso")->on("permisos");
-            $table->timestamp("fecha_registro")->useCurrent();
-            $table->timestamp("fecha_actualizacion")->nullable();
+            $table->id("id_rol_permiso")
+                ->comment("Llave primaria. Identificador único de la relación rol-permiso.");
+
+            $table->unsignedBigInteger("id_rol")
+                ->comment("Llave foránea hacia la tabla roles. Indica el rol asociado.");
+            $table->foreign("id_rol")
+                ->references("id_rol")
+                ->on("roles")
+                ->onDelete("cascade");
+
+            $table->unsignedBigInteger("id_permiso")
+                ->comment("Llave foránea hacia la tabla permisos. Indica el permiso asignado.");
+            $table->foreign("id_permiso")
+                ->references("id_permiso")
+                ->on("permisos")
+                ->onDelete("cascade");
+
+            $table->timestamp("fecha_registro")
+                ->useCurrent()
+                ->comment("Fecha de creación del registro de relación rol-permiso.");
+
+            $table->timestamp("fecha_actualizacion")
+                ->nullable()
+                ->comment("Fecha de la última actualización del registro.");
         });
     }
 

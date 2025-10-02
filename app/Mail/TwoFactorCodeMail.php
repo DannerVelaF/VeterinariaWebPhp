@@ -37,7 +37,14 @@ class TwoFactorCodeMail extends Mailable
     public function build()
     {
         return $this->subject('Tu código de verificación')
-            ->view('mails.two-factor-code');
+            ->view('mails.two-factor-code')
+            ->with([
+                'code' => $this->code,
+                // 'logo' will be set in withSwiftMessage below
+            ])
+            ->withSwiftMessage(function ($message) {
+                $message->embed(public_path('images/logo.jpg'));
+            });
     }
 
     /**

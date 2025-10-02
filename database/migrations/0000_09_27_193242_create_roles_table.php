@@ -12,12 +12,24 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('roles', function (Blueprint $table) {
-            $table->id('id_rol')->comment('Llave primaria de la tabla roles');
-            $table->string('nombre_rol')->unique()->comment('Nombre del rol');
-            $table->enum('estado', ['activo', 'inactivo'])->default('activo')->comment("Estado actual del rol");
-            $table->timestamp('fecha_registro')->useCurrent()->comment(" Fecha del registro realizado");
-            $table->timestamp('fecha_actualizacion')->nullable()->comment("Fecha de la actulización / 
-modificacion del registro");
+            $table->id('id_rol')
+                ->comment('Llave primaria de la tabla roles. Identificador único del rol.');
+
+            $table->string('nombre_rol', 100)
+                ->unique()
+                ->comment('Nombre del rol (ejemplo: Administrador, Supervisor, Usuario). Longitud máxima: 100 caracteres.');
+
+            $table->enum('estado', ['activo', 'inactivo'])
+                ->default('activo')
+                ->comment("Estado actual del rol. Valores permitidos: 'activo', 'inactivo'.");
+
+            $table->timestamp('fecha_registro')
+                ->useCurrent()
+                ->comment("Fecha de creación del registro. Se genera automáticamente al insertar.");
+
+            $table->timestamp('fecha_actualizacion')
+                ->nullable()
+                ->comment("Fecha de la última actualización/modificación del registro. Puede ser nula si nunca se actualizó.");
         });
     }
 

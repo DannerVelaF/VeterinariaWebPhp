@@ -12,12 +12,28 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('categoria_servicios', function (Blueprint $table) {
-            $table->id("id_categoria_servicio");
-            $table->string("nombre_categoria_servicio");
-            $table->text("descripcion");
-            $table->enum("estado", ["activo", "inactivo"])->default("activo");
-            $table->timestamp("fecha_registro")->useCurrent();
-            $table->timestamp("fecha_actualizacion")->nullable();
+            $table->id("id_categoria_servicio")
+                ->comment("Llave primaria. Identificador único de la categoría de servicio.");
+
+            $table->string("nombre_categoria_servicio", 100)
+                ->unique()
+                ->comment("Nombre de la categoría de servicio. Máximo 100 caracteres. Debe ser único.");
+
+            $table->text("descripcion")
+                ->nullable()
+                ->comment("Descripción detallada de la categoría de servicio. Campo opcional.");
+
+            $table->enum("estado", ["activo", "inactivo"])
+                ->default("activo")
+                ->comment("Estado de la categoría de servicio. Valores: activo o inactivo.");
+
+            $table->timestamp("fecha_registro")
+                ->useCurrent()
+                ->comment("Fecha en que se creó el registro.");
+
+            $table->timestamp("fecha_actualizacion")
+                ->nullable()
+                ->comment("Fecha de la última actualización del registro.");
         });
     }
 

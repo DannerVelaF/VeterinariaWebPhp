@@ -12,13 +12,31 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('razas', function (Blueprint $table) {
-            $table->id("id_raza");
-            $table->unsignedBigInteger("id_especie");
-            $table->foreign("id_especie")->references("id_especie")->on("especies");
-            $table->string("nombre_raza");
-            $table->text("descripcion");
-            $table->timestamp("fecha_registro")->useCurrent();
-            $table->timestamp("fecha_actualizacion")->nullable();
+            $table->id("id_raza")
+                ->comment("Llave primaria. Identificador único de la raza.");
+
+            $table->unsignedBigInteger("id_especie")
+                ->comment("Llave foránea hacia la tabla especies. Indica a qué especie pertenece la raza.");
+            $table->foreign("id_especie")
+                ->references("id_especie")
+                ->on("especies")
+                ->onDelete("restrict");
+
+            $table->string("nombre_raza", 100)
+                ->unique()
+                ->comment("Nombre de la raza. Máximo 100 caracteres. Debe ser único dentro del sistema.");
+
+            $table->text("descripcion")
+                ->nullable()
+                ->comment("Descripción detallada de la raza. Campo opcional.");
+
+            $table->timestamp("fecha_registro")
+                ->useCurrent()
+                ->comment("Fecha de creación del registro de la raza.");
+
+            $table->timestamp("fecha_actualizacion")
+                ->nullable()
+                ->comment("Fecha de la última actualización del registro.");
         });
     }
 
