@@ -31,9 +31,20 @@ return new class extends Migration
             $table->integer("stock_resultante")
                 ->comment("Stock resultante luego de aplicar este movimiento.");
 
-            $table->enum("ubicacion", ["almacen", "mostrador"])
+            /* $table->enum("ubicacion", ["almacen", "mostrador"])
                 ->default("almacen")
-                ->comment("Ubicación del stock afectado. Valores: almacen o mostrador.");
+                ->comment("Ubicación del stock afectado. Valores: almacen o mostrador."); */
+
+            $table->unsignedBigInteger("id_tipo_ubicacion")
+                ->comment("Llave foránea a la ubicación del stock afectado.");
+            $table->foreign("id_tipo_ubicacion")
+                ->references("id_tipo_ubicacion")
+                ->on("tipo_ubicacion")
+                ->onDelete("restrict");
+            
+            $table->text("motivo")
+                ->nullable()
+                ->comment("Motivo o descripción del movimiento de inventario.");
 
             $table->unsignedBigInteger("id_lote")
                 ->nullable()

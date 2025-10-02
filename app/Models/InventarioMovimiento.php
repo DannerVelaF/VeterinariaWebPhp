@@ -18,7 +18,7 @@ class InventarioMovimiento extends Model
         "id_tipo_movimiento",
         "cantidad_movimiento",
         "stock_resultante",
-        "ubicacion",
+        "id_tipo_ubicacion",
         "motivo",
         "id_lote",
         "id_trabajador",
@@ -52,5 +52,10 @@ class InventarioMovimiento extends Model
     public function tipoMovimiento()
     {
         return $this->belongsTo(TipoMovimiento::class, 'id_tipo_movimiento');
+    }
+
+    public function tipoUbicacion()
+    {
+        return $this->belongsTo(TipoUbicacion::class, 'id_tipo_ubicacion');
     }
 }
