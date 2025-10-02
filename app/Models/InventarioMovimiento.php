@@ -15,18 +15,18 @@ class InventarioMovimiento extends Model
     protected $table = "inventario_movimientos";
     protected $fillable = [
         "id_inventario_movimiento",
-        "tipo_movimiento",
+        "id_tipo_movimiento",
         "cantidad_movimiento",
         "stock_resultante",
-        "fecha_movimiento",
-        "fecha_registro",
-        "id_trabajador",
-        "id_lote",
         "ubicacion",
+        "motivo",
+        "id_lote",
+        "id_trabajador",
         "tipo_movimiento_asociado",
         "id_movimiento_asociado",
-        "fecha_actualizacion",
+        "fecha_movimiento",
         "fecha_registro",
+        "fecha_actualizacion",
     ];
 
     protected $casts = [
@@ -47,5 +47,10 @@ class InventarioMovimiento extends Model
     public function movimientoAsociado()
     {
         return $this->morphTo();
+    }
+
+    public function tipoMovimiento()
+    {
+        return $this->belongsTo(TipoMovimiento::class, 'id_tipo_movimiento');
     }
 }

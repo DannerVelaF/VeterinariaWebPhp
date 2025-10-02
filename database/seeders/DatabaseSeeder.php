@@ -49,9 +49,13 @@ class DatabaseSeeder extends Seeder
         ]);
 
         // Crear un tipo de documento
-        $tipoDocumento = Tipo_documento::create([
-            'nombre_tipo_documento' => 'DNI',
-        ]);
+        $tipoDocumento = Tipo_documento::firstOrCreate(
+            ['nombre_tipo_documento' => 'DNI'],
+            [
+                'fecha_registro' => now(),
+                'fecha_actualizacion' => now(),
+            ]
+        );
 
         // Crear dirección de ejemplo (requerida por la FK)
         $direccion = Direccion::create([
@@ -66,7 +70,7 @@ class DatabaseSeeder extends Seeder
 
         // Crear persona
         $persona = Persona::create([
-            "numero_documento" => 12345678,
+            "numero_documento" => 12345655,
             'nombre' => 'Juan',
             'apellido_paterno' => 'Pérez',
             'apellido_materno' => 'Gómez',

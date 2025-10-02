@@ -16,7 +16,7 @@ class UserSeeder extends Seeder
     public function run(): void
     {
         $p =  Persona::create([
-            'numero_documento' => 12345678,
+            'numero_documento' => 12345677,
             'nombre' => 'Eberth',
             'apellido_paterno' => 'x',
             'apellido_materno' => 'x',

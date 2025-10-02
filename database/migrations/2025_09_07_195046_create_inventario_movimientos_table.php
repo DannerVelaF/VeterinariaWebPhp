@@ -15,9 +15,15 @@ return new class extends Migration
             $table->id("id_inventario_movimiento")
                 ->comment("Llave primaria del movimiento de inventario. Identificador único.");
 
-            $table->enum("tipo_movimiento", ["ajuste", "entrada", "salida"])
+            /* $table->enum("tipo_movimiento", ["ajuste", "entrada", "salida"])
                 ->default("entrada")
-                ->comment("Tipo de movimiento de inventario. Valores: ajuste, entrada, salida.");
+                ->comment("Tipo de movimiento de inventario. Valores: ajuste, entrada, salida."); */
+            $table->unsignedBigInteger("id_tipo_movimiento")
+                ->comment("Llave foránea al tipo de movimiento de inventario.");
+            $table->foreign("id_tipo_movimiento")
+                ->references("id_tipo_movimiento")
+                ->on("tipo_movimientos")
+                ->onDelete("restrict");
 
             $table->integer("cantidad_movimiento")
                 ->comment("Cantidad de productos que entran o salen en este movimiento.");

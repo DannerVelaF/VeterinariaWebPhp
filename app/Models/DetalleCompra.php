@@ -16,8 +16,10 @@ class DetalleCompra extends Model
         "id_detalle_compra",
         "id_compra",
         "id_producto",
+        // FALTA EL DETALLE DEL ESTADO DE LA COMPRA
+        "id_estado_detalle_compra",
         "cantidad",
-        "estado",
+        // "estado",
         "precio_unitario",
         "sub_total",
         "fecha_registro",
