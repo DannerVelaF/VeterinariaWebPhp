@@ -39,10 +39,17 @@ class Roles extends Component
                 ]);
             });
 
+            // ✅ Guardar en sesión para detectar en el otro componente
+            session()->put('roles_updated', true);
+
             session()->flash('success', 'Rol creado correctamente.');
+
             $this->reset('nombreRol');
             $this->roles = Rol::all();
+
+            $this->dispatch('roles-created-global'); // Notificar a otros componentes
             $this->dispatch('rolesUpdated');
+
         } catch (\Exception $e) {
             Log::error('Error al crear el rol', ['error' => $e->getMessage()]);
             session()->flash('error', 'Hubo un problema al crear el rol.');
@@ -58,7 +65,11 @@ class Roles extends Component
 
             session()->flash('success', 'Estado actualizado correctamente.');
             $this->roles = Rol::all();
+
+            // ✅ DISPARAR EL MISMO EVENTO GLOBAL cuando cambia el estado
+            $this->dispatch('roles-created-global');
             $this->dispatch('rolesUpdated');
+
         } catch (\Exception $e) {
             Log::error('Error al cambiar estado del rol', ['error' => $e->getMessage()]);
             session()->flash('error', 'No se pudo cambiar el estado.');
@@ -86,13 +97,22 @@ class Roles extends Component
         try {
             $this->rolSeleccionado->permisos()->sync($this->permisosSeleccionados);
             $this->modalPermisos = false;
+
             session()->flash('success', 'Permisos actualizados correctamente.');
+
+            $this->dispatch('roles-created-global');
             $this->dispatch('rolesUpdated');
+
         } catch (\Exception $e) {
             session()->flash('error', 'Error al actualizar permisos: ' . $e->getMessage());
         }
     }
 
+    #[\Livewire\Attributes\On('rolesCreated')]
+    public function handleRolesCreated(): void
+    {
+        $this->refresh(); // Recargar datos
+    }
 
     #[\Livewire\Attributes\On('permisosUpdated')]
     public function refresh()

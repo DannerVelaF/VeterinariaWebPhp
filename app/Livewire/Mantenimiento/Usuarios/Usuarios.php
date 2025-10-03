@@ -12,7 +12,12 @@ use Livewire\Component;
 
 class Usuarios extends Component
 {
-    protected $listeners = ['abrirModalRol', "rolesUpdated"];
+    protected $listeners = [
+        'abrirModalRol', 
+        'rolesUpdated', 
+        'roles-created-global' => 'cargarDatos', // Escuchar evento global
+    ];
+
     public $usernameEdit;
     public $passwordEdit;
     public $estadoEdit;
@@ -38,9 +43,17 @@ class Usuarios extends Component
 
     public function mount()
     {
+        $this->cargarDatos();
+    }
+    
+
+    // ✅ MÉTODO PARA CARGAR LOS DATOS
+    public function cargarDatos()
+    {
         $this->trabajadores = Trabajador::whereHas('estadoTrabajador', function ($q) {
             $q->where('nombre_estado_trabajador', 'activo');
         })->get();
+        
         $this->roles = Roles::where('estado', 'activo')->get();
     }
 
@@ -101,10 +114,24 @@ class Usuarios extends Component
         $this->modalRol = true;
     }
 
+    /* // ✅ ACTUALIZAR ROLES CUANDO SE CREA UNO NUEVO
+    #[\Livewire\Attributes\On('rolesCreated')]
+    public function actualizarRoles()
+    {
+        $this->roles = Roles::where('estado', 'activo')->get();
+    } */
+
     #[\Livewire\Attributes\On('rolesUpdated')]
     public function refresh()
     {
-        $this->roles = Roles::where('estado', 'activo')->get();
+        //$this->roles = Roles::where('estado', 'activo')->get();
+        $this->cargarDatos();
+
+        // ✅ Forzar carga de datos cada vez que se monte el componente
+        if (session()->has('roles_updated')) {
+            $this->cargarDatos();
+            session()->forget('roles_updated');
+        }
     }
 
     public function guardarRol()
