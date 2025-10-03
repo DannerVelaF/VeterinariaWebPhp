@@ -63,8 +63,15 @@ class Usuarios extends Component
         $this->validate([
             'trabajadorSeleccionado' => 'required|exists:trabajadores,id_trabajador',
             'username' => 'required|string|unique:usuarios,usuario',
-            'password' => 'required|string|min:6',
+            'password' => [
+                'required',
+                'string',
+                'min:8',
+                'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/',
+            ],
             'rolSeleccionado' => 'required|exists:roles,id_rol',
+        ], [
+            'password.regex' => 'La contraseña debe contener al menos una letra mayúscula, una minúscula, un número y un carácter especial.',
         ]);
 
         $trabajador = Trabajador::find($this->trabajadorSeleccionado);
