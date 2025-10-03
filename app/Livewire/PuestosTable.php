@@ -99,7 +99,7 @@ final class PuestosTable extends PowerGridComponent
     {
         $this->js('alert(' . $rowId . ')');
     }
-
+    
 
     public function onUpdatedEditable(string|int $id, string $field, string $value): void
     {
@@ -131,6 +131,17 @@ final class PuestosTable extends PowerGridComponent
         ];
     }
 
+    #[\Livewire\Attributes\On('puestosUpdated')]
+    public function refreshTable(): void
+    {
+        $this->refresh(); // <- Método de PowerGrid que recarga la data
+    }
+
+    #[\Livewire\Attributes\On('pg:eventRefresh-default')]
+    public function handleRefresh(): void
+    {
+        $this->fillData();
+    }
     /*
     public function actionRules($row): array
     {

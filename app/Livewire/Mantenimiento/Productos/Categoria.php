@@ -14,7 +14,7 @@ class Categoria extends Component
     public $categoriaSeleccionado;
     public $categoriaEditar = [
         'id_categoria_producto' => null,
-        'nombre_categoria' => '',
+        'nombre_categoria_producto' => '',
         'descripcion' => '',
     ];
 
@@ -60,7 +60,7 @@ class Categoria extends Component
     public function resetForm()
     {
         $this->categoria = [
-            'nombre' => '',
+            'nombre_categoria' => '',
             'descripcion' => '',
         ];
     }
@@ -81,18 +81,41 @@ class Categoria extends Component
     {
         if (!$this->categoriaSeleccionado) return;
 
-        DB::transaction(function () {
-            // Actualizar persona
-            $this->categoriaSeleccionado->update([
-                'nombre_categoria_producto' => $this->categoriaEditar['nombre_categoria'],
-                'descripcion' => $this->categoriaEditar['descripcion'],
-                'fecha_actualizacion' => now(),
-            ]);
-        });
+        // ✅ Agregar validación para la edición
+        $validatedData = $this->validate([
+            'categoriaEditar.nombre_categoria_producto' => 'required|string|max:255',
+            'categoriaEditar.descripcion' => 'nullable|string|max:1000',
+        ]);
 
+        try {   
+            DB::transaction(function () use ($validatedData) {
+                // Actualizar categoria
+                $this->categoriaSeleccionado->update([
+                    'nombre_categoria_producto' => $validatedData['categoriaEditar']['nombre_categoria_producto'],
+                    'descripcion' => $validatedData['categoriaEditar']['descripcion'],
+                    'fecha_actualizacion' => now(),
+                ]);
+            });
+
+             $this->modalEditar = false;
+            session()->flash('success', '✅ Categoria actualizada correctamente.');
+            $this->dispatch('categoriaUpdated');
+
+        } catch (\Exception $e) {
+            session()->flash('error', '❌ Error al actualizar la categoria: ' . $e->getMessage());
+            Log::error('Error al actualizar categoria', ['error' => $e->getMessage()]);
+        }
+    }
+
+    public function cerrarModal()
+    {
         $this->modalEditar = false;
-        session()->flash('success', '✅ Trabajador actualizado correctamente.');
-        $this->dispatch('trabajadoresUpdated');
+        $this->categoriaSeleccionado = null;
+        $this->categoriaEditar = [
+            'id_categoria_producto' => null,
+            'nombre_categoria_producto' => '',
+            'descripcion' => '',
+        ];
     }
 
     public function render()

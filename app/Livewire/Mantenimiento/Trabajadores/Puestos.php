@@ -44,7 +44,10 @@ class Puestos extends Component
 
             session()->flash('success', '✅ Puesto registrado correctamente');
             $this->resetForm();
+
+            // Para actualizar la lista de puestos automáticamente
             $this->dispatch('puestosUpdated');
+            
         } catch (\Exception $e) {
             DB::rollBack();
 

@@ -1,5 +1,5 @@
-<x-panel title="Gestión de Productos">
-    <x-tabs :tabs="['listado' => '📋 Detalle productos registrados', 'registro' => '➕ Registrar nuevo producto']" default="listado">
+<x-panel title="Gestión de Categorías de Productos" class="max-w-7xl mx-auto">
+    <x-tabs :tabs="['listado' => '📋 Detalle categorias registrados', 'registro' => '➕ Registrar nueva categoría']" default="listado">
         <!-- TAB 1: LISTADO -->
         <x-tab name="listado">
             <div class="p-4">
@@ -68,7 +68,7 @@
                             </p>
                         @enderror
                         <div class="text-right text-xs text-gray-500 mt-1">
-                            {{ strlen($categoria['descripcion']) }}/1000 caracteres
+                            {{ strlen($categoria['descripcion']) }}/300 caracteres
                         </div>
                     </div>
 
@@ -80,7 +80,7 @@
                         </button>
                         <button type="submit"
                             class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-xs font-bold transition-colors">
-                            Registrar Producto
+                            Registrar Categoria
                         </button>
                     </div>
                 </form>
@@ -100,12 +100,19 @@
                         <path
                             d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" />
                         <path d="m15 5 4 4" />
-                    </svg>Editar Categoria</h2>
+                    </svg>Editar Categoría</h2>
+
+                    <!-- Mensajes de error en edición -->
+                @if (session()->has('error'))
+                    <div class="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded text-xs">
+                        {{ session('error') }}
+                    </div>
+                @endif
 
                 <form wire:submit.prevent="guardarEdicion" class="grid grid-cols-2 gap-4 text-xs">
                     <div class="flex flex-col col-span-2">
-                        <label class="font-bold mb-1">Nombre cateogira</label>
-                        <input type="text" wire:model="categoriaEditar.nombre_categoria"
+                        <label class="font-bold mb-1">Nombre categoría</label>
+                        <input type="text" wire:model="categoriaEditar.nombre_categoria_producto"
                             class="border rounded px-2 py-1 focus:ring focus:ring-blue-300">
                     </div>
 

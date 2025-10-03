@@ -1,5 +1,5 @@
 <x-panel title="Gestión de puestos">
-    <x-tabs :tabs="['listado' => '📋 Detalle trabajadores registrados', 'registro' => '➕ Registrar nuevo trabajador']" default="listado">
+    <x-tabs :tabs="['listado' => '📋 Detalle de puestos registrados', 'registro' => '➕ Registrar nuevo puesto de trabajo']" default="listado">
         <x-tab name="listado">
             <div class="p-4">
                 <livewire:puestos-table />

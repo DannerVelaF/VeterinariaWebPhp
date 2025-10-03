@@ -100,6 +100,18 @@ final class CategoriaTable extends PowerGridComponent
         $this->js('alert(' . $rowId . ')');
     }
 
+    #[\Livewire\Attributes\On('categoriaUpdated')]
+    public function refreshTable(): void
+    {
+        $this->refresh(); // <- Método de PowerGrid que recarga la data
+    }
+
+    #[\Livewire\Attributes\On('pg:eventRefresh-default')]
+    public function handleRefresh(): void
+    {
+        $this->fillData();
+    }
+
     public function actions(CategoriaProducto $row): array
     {
         return [
@@ -115,6 +127,7 @@ final class CategoriaTable extends PowerGridComponent
         CategoriaProducto::find($id)->update([
             $field => $value
         ]);
+        $this->dispatch('categoriaUpdated');
     }
 
     public function onUpdatedToggleable(string|int $id, string $field, string $value): void
