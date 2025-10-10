@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Livewire\Mantenimiento\Productos;
+namespace App\Livewire\Mantenimiento\Servicios;
 
-use App\Models\CategoriaProducto;
+use App\Models\CategoriaServicio;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Livewire\Component;
@@ -12,21 +12,23 @@ class Categoria extends Component
 
     public $modalEditar = false;
     public $categoriaSeleccionado;
-    
-    public $categoriaEditar = [
-        'id_categoria_producto' => null,
-        'nombre_categoria_producto' => '',
-        'descripcion' => '',
-    ];
 
     public $categoria = [
-        'nombre_categoria' => '',
+        'nombre_categoria_servicio' => '',
         'descripcion' => '',
     ];
 
+    public $categoriaEditar = [
+        'id_categoria_servicio' => null,
+        'nombre_categoria_servicio' => '',
+        'descripcion' => '',
+    ];
+
+    
+
     public $mensajes = [
-        'categoria.nombre_categoria.required' => 'El nombre de la categoria es obligatorio.',
-        'categoria.nombre_categoria.max' => 'El nombre no puede tener más de 255 caracteres.',
+        'categoria.nombre_categoria_servicio.required' => 'El nombre de la categoria es obligatorio.',
+        'categoria.nombre_categoria_servicio.max' => 'El nombre no puede tener más de 100 caracteres.',
         'categoria.descripcion.max' => 'La descripción no puede tener más de 1000 caracteres.',
     ];
 
@@ -34,14 +36,14 @@ class Categoria extends Component
     {
         // Validación
         $validatedData = $this->validate([
-            'categoria.nombre_categoria' => 'required|string|max:255',
+            'categoria.nombre_categoria_servicio' => 'required|string|max:255',
             'categoria.descripcion' => 'nullable|string|max:1000',
         ]);
 
         try {
-            DB::transaction(function () use ($validatedData, &$categoria) {
-                $categoria = CategoriaProducto::create([
-                    'nombre_categoria_producto' => $validatedData['categoria']['nombre_categoria'],
+            DB::transaction(function () use ($validatedData) {
+                CategoriaServicio::create([
+                    'nombre_categoria_servicio' => $validatedData['categoria']['nombre_categoria_servicio'],
                     'descripcion' => $validatedData['categoria']['descripcion'] ?? null,
                 ]);
             });
@@ -57,11 +59,10 @@ class Categoria extends Component
         }
     }
 
-
     public function resetForm()
     {
         $this->categoria = [
-            'nombre_categoria' => '',
+            'nombre_categoria_servicio' => '',
             'descripcion' => '',
         ];
     }
@@ -69,39 +70,41 @@ class Categoria extends Component
     #[\Livewire\Attributes\On('abrirModalCategoria')]
     public function abrirModalEditar($categoriaId)
     {
-        $this->categoriaSeleccionado = CategoriaProducto::findOrFail($categoriaId);
+        $this->categoriaSeleccionado = CategoriaServicio::findOrFail($categoriaId);
+
         $this->categoriaEditar = [
-            'id_categoria_producto' => $categoriaId,
-            'nombre_categoria_producto' => $this->categoriaSeleccionado->nombre_categoria_producto,
+            'id_categoria_servicio' => $categoriaId,
+            'nombre_categoria_servicio' => $this->categoriaSeleccionado->nombre_categoria_servicio,
             'descripcion' => $this->categoriaSeleccionado->descripcion,
         ];
+
         $this->modalEditar = true;
     }
 
     public function guardarEdicion()
-    {
-        if (!$this->categoriaSeleccionado) return;
-
-        // ✅ Agregar validación para la edición
-        $validatedData = $this->validate([
-            'categoriaEditar.nombre_categoria_producto' => 'required|string|max:255',
+    {        
+        if (! $this->categoriaSeleccionado) return;
+    
+        // Validación
+        $validated = $this->validate([
+            'categoriaEditar.nombre_categoria_servicio' => 'required|string|max:255',
             'categoriaEditar.descripcion' => 'nullable|string|max:1000',
         ]);
 
-        try {   
-            DB::transaction(function () use ($validatedData) {
-                // Actualizar categoria
+        try {
+            DB::transaction(function () use ($validated) {
+
                 $this->categoriaSeleccionado->update([
-                    'nombre_categoria_producto' => $validatedData['categoriaEditar']['nombre_categoria_producto'],
-                    'descripcion' => $validatedData['categoriaEditar']['descripcion'],
+                    'nombre_categoria_servicio' => $validated['categoriaEditar']['nombre_categoria_servicio'],
+                    'descripcion' => $validated['categoriaEditar']['descripcion'] ?? null,
                     'fecha_actualizacion' => now(),
                 ]);
             });
 
-             $this->modalEditar = false;
-            session()->flash('success', '✅ Categoria actualizada correctamente.');
+            // Si llegamos aquí, todo se guardó correctamente
+            session()->flash('success', '✅ Categoria actualizada con éxito');
+            $this->modalEditar = false;
             $this->dispatch('categoriaUpdated');
-
         } catch (\Exception $e) {
             session()->flash('error', '❌ Error al actualizar la categoria: ' . $e->getMessage());
             Log::error('Error al actualizar categoria', ['error' => $e->getMessage()]);
@@ -113,14 +116,14 @@ class Categoria extends Component
         $this->modalEditar = false;
         $this->categoriaSeleccionado = null;
         $this->categoriaEditar = [
-            'id_categoria_producto' => null,
-            'nombre_categoria_producto' => '',
+            'id_categoria_servicio' => null,
+            'nombre_categoria_servicio' => '',
             'descripcion' => '',
         ];
     }
 
     public function render()
     {
-        return view('livewire.mantenimiento.productos.categoria');
+        return view('livewire.mantenimiento.servicios.categoria');
     }
 }

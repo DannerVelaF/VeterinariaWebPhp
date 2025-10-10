@@ -15,7 +15,7 @@ class CategoriaServicio extends Model
     protected $primaryKey = 'id_categoria_servicio';
     protected $fillable = [
         'id_categoria_servicio',
-        'nombre_categoria',
+        'nombre_categoria_servicio',
         'descripcion',
         'estado',
         'fecha_registro',
