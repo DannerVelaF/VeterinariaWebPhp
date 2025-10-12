@@ -50,11 +50,11 @@ class Categoria extends Component
 
             // Si llegamos aquí, todo se guardó correctamente
             $this->dispatch('categoriaRegistrado');
-            session()->flash('success', 'Categoria registrada con éxito');
+            session()->flash('success', '✅ Categoria registrada con éxito');
             $this->resetForm();
             $this->dispatch('categoriaUpdated');
         } catch (\Exception $e) {
-            session()->flash('error', 'Error al registrar la categoria: ' . $e->getMessage());
+            session()->flash('error', '❌Error al registrar la categoria: ' . $e->getMessage());
             Log::error('Error al registrar categoria', ['error' => $e->getMessage()]);
         }
     }

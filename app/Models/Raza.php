@@ -15,8 +15,10 @@ class Raza extends Model
 
     protected $fillable = [
         'id_raza',
+        'id_especie',
         'nombre_raza',
         'descripcion',
+        'estado',
         'fecha_registro',
         'fecha_actualizacion',
     ];
