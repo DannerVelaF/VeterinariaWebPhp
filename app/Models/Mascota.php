@@ -11,6 +11,7 @@ class Mascota extends Model
     const CREATED_AT = 'fecha_registro';
     const UPDATED_AT = 'fecha_actualizacion';
     protected $primaryKey = 'id_mascota';
+    protected $table = 'mascotas';
     protected $fillable = [
         'id_mascota',
         'id_cliente',
@@ -21,6 +22,7 @@ class Mascota extends Model
         'color_primario',
         'peso_actual',
         'observacion',
+        'estado',
         'fecha_registro',
         'fecha_actualizacion',
     ];

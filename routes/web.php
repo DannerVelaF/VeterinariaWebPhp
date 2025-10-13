@@ -6,6 +6,10 @@ use App\Livewire\Auth\TwoFactorAuthentication;
 use App\Livewire\Mantenimiento\Productos\Registro as MantenimientoProductos;
 use App\Livewire\Mantenimiento\Trabajadores\Registro as MantenimientoTrabajadores;
 use App\Livewire\Mantenimiento\Usuarios\Registro as MantenimientoUsuarios;
+Use App\Livewire\Mantenimiento\Servicios\Registro as MantenimientoServicios;
+
+Use App\Livewire\Mantenimiento\Mascotas\Registro as MantenimientoMascotas;
+
 use App\Livewire\Inventario\Registro as RegistrarInventario;
 use App\Livewire\Compras\Registro as RegistroCompras;
 use App\Livewire\Mantenimiento\Clientes\Registro as RegistroClientes;
@@ -51,5 +55,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/productos', MantenimientoProductos::class)->name('productos');
         Route::get('/trabajadores', MantenimientoTrabajadores::class)->name('trabajadores');
         Route::get('/usuarios', MantenimientoUsuarios::class)->name('usuarios');
+        Route::get('/servicios', MantenimientoServicios::class)->name('servicios');
+        Route::get('/mascotas', MantenimientoMascotas::class)->name('mascotas');
+
     });
 });

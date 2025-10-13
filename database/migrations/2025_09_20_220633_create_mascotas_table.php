@@ -48,6 +48,10 @@ return new class extends Migration
                 ->nullable()
                 ->comment("Observaciones adicionales sobre la mascota. Campo opcional.");
 
+            $table->enum("estado", ["activo", "inactivo"])
+                ->default("activo")
+                ->comment("Estado de la mascota. Valores: activo o inactivo.");
+
             $table->timestamp("fecha_registro")
                 ->useCurrent()
                 ->comment("Fecha de creación del registro de la mascota.");

@@ -11,6 +11,7 @@ class Especie extends Model
     const CREATED_AT = 'fecha_registro';
     const UPDATED_AT = 'fecha_actualizacion';
     protected $primaryKey = 'id_especie';
+    protected $table = 'especies';
     protected $fillable = [
         'id_especie',
         'nombre_especie',
