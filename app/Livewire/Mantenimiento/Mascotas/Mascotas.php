@@ -53,6 +53,31 @@ class Mascotas extends Component
 
     /** 🔍 Búsqueda automática de clientes */
     public function updatedBuscarCliente($valor)
+{
+    if (strlen($valor) >= 2) {
+        $this->resultadosClientes = Clientes::join('personas', 'clientes.id_persona', '=', 'personas.id_persona')
+            ->where(function ($query) use ($valor) {
+                $query->where('personas.nombre', 'like', "%{$valor}%")
+                    ->orWhere('personas.apellido_paterno', 'like', "%{$valor}%")
+                    ->orWhere('personas.apellido_materno', 'like', "%{$valor}%")
+                    ->orWhere('personas.numero_documento', 'like', "%{$valor}%");
+            })
+            ->select(
+                'clientes.id_cliente',
+                'personas.nombre',
+                'personas.apellido_paterno',
+                'personas.apellido_materno',
+                'personas.numero_documento as dni',
+                'personas.numero_telefono_personal as telefono',
+                'personas.correo_electronico_personal as correo'
+            )
+            ->limit(10)
+            ->get();
+    } else {
+        $this->resultadosClientes = [];
+    }
+}
+    /* public function updatedBuscarCliente($valor)
     {
         if (strlen($valor) >= 2) {
             $this->resultadosClientes = Clientes::join('personas', 'clientes.id_persona', '=', 'personas.id_persona')
@@ -76,7 +101,7 @@ class Mascotas extends Component
         } else {
             $this->resultadosClientes = [];
         }
-    }
+    } */
 
     /** 🧭 Seleccionar cliente */
     public function seleccionarCliente($idCliente)
@@ -103,6 +128,11 @@ class Mascotas extends Component
     {
         $this->clienteSeleccionado = null;
         $this->mascota['id_cliente'] = '';
+    }
+
+    public function buscarClientes()
+    {
+        $this->updatedBuscarCliente($this->buscarCliente);
     }
 
     /** 🧮 Calcular edad automáticamente */
@@ -132,6 +162,7 @@ class Mascotas extends Component
             'mascota.id_cliente' => 'required|exists:clientes,id_cliente',
             'mascota.id_raza' => 'required|exists:razas,id_raza',
             'mascota.nombre_mascota' => 'required|string|max:150',
+            'mascota.nombre_mascota' => 'required|string|max:150|regex:/^[\pL\s\-]+$/u',
             'mascota.fecha_nacimiento' => 'nullable|date',
             'mascota.sexo' => 'nullable|in:Macho,Hembra',
             'mascota.color_primario' => 'nullable|string|max:100',
@@ -160,6 +191,7 @@ class Mascotas extends Component
 
             $this->resetForm();
             session()->flash('success', '🐕 Mascota registrada con éxito.');
+            $this->dispatch('scrollToTop');
         } catch (Exception $e) {
             Log::error('Error al registrar mascota', ['error' => $e->getMessage()]);
             session()->flash('error', 'Error al registrar la mascota: ' . $e->getMessage());
@@ -176,6 +208,7 @@ class Mascotas extends Component
             $this->mascota['id_cliente'] = $cliente->id_cliente;
         }
         session()->flash('success', 'Formulario listo para registrar otra mascota 🐾');
+        $this->dispatch('scrollToTop');
     }
 
     /** 🧹 Limpiar formulario */
