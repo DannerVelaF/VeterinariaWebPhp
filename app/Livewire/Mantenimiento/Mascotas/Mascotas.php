@@ -5,7 +5,7 @@ namespace App\Livewire\Mantenimiento\Mascotas;
 use App\Models\Mascota;
 use App\Models\Raza;
 use App\Models\Clientes;
-use App\Models\Especie;
+//use App\Models\Especie;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Livewire\Component;
@@ -21,7 +21,7 @@ class Mascotas extends Component
 
     public $mascota = [
         'id_cliente' => '',
-        'id_especie' => '',
+        //'id_especie' => '',
         'id_raza' => '',
         'nombre_mascota' => '',
         'fecha_nacimiento' => '',
@@ -35,7 +35,7 @@ class Mascotas extends Component
     public $resultadosClientes = [];
     public $clienteSeleccionado = null;
     public $razas = [];
-    public $especies = [];
+    //public $especies = [];
 
     public $edad_meses = null;
     public $edad_humana = null;
@@ -43,7 +43,7 @@ class Mascotas extends Component
     public function mount()
     {
         $this->razas = Raza::where('estado', 'activo')->get();
-        $this->especies = Especie::where('estado', 'activo')->get();
+       // $this->especies = Especie::where('estado', 'activo')->get();
     }
 
     public function refreshData()
@@ -216,7 +216,7 @@ class Mascotas extends Component
     {
         $this->mascota = [
             'id_cliente' => $limpiarCliente ? '' : $this->mascota['id_cliente'],
-            'id_especie' => '',
+            //'id_especie' => '',
             'id_raza' => '',
             'nombre_mascota' => '',
             'fecha_nacimiento' => '',
@@ -238,7 +238,7 @@ class Mascotas extends Component
     {
         return view('livewire.mantenimiento.mascotas.mascotas', [
             'razas' => $this->razas,
-            'especies' => $this->especies,
+            //'especies' => $this->especies,
             'edad_meses' => $this->edad_meses,
             'edad_humana' => $this->edad_humana,
         ]);

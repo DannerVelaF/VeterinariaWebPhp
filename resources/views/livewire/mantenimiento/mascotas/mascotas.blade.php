@@ -206,22 +206,7 @@
                         @enderror
                     </div>
 
-                    <!-- ESPECIE -->
-                    <div class="flex flex-col">
-                        <label class="font-semibold mb-1">Especie <span class="text-red-500">*</span></label>
-                        <select 
-                            wire:model="mascota.id_especie"
-                            class="border rounded px-3 py-2 focus:ring focus:ring-blue-300 @error('mascota.id_especie') border-red-500 @enderror"
-                        >
-                            <option value="">Seleccione especie</option>
-                            @foreach($especies as $especie)
-                                <option value="{{ $especie->id_especie }}">{{ $especie->nombre_especie }}</option>
-                            @endforeach
-                        </select>
-                        @error('mascota.id_especie')
-                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                        @enderror
-                    </div>
+                    
 
                     <!-- RAZA -->
                     <div class="flex flex-col">
@@ -271,6 +256,22 @@
                             class="border rounded px-3 py-2 focus:ring focus:ring-blue-300"
                         >
                     </div>
+
+                    <!-- NOMBRE -->
+                    <div class="flex flex-col">
+                        <label class="font-semibold mb-1">Color Primario</span></label>
+                        <input 
+                            type="text" 
+                            wire:model="mascota.color_primario"
+                            placeholder="Ej. Negro, Blanco, Marrón..."
+                            class="border rounded px-3 py-2 focus:ring focus:ring-blue-300 @error('mascota.color_primario') border-red-500 @enderror"
+                        >
+                        @error('mascota.color_primario')
+                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    
 
                     <!-- OBSERVACIONES -->
                     <div class="flex flex-col col-span-2">
