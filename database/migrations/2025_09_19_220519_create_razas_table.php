@@ -30,6 +30,10 @@ return new class extends Migration
                 ->nullable()
                 ->comment("Descripción detallada de la raza. Campo opcional.");
 
+            $table->enum("estado", ["activo", "inactivo"])
+                ->default("activo")
+                ->comment("Estado de la raza. Valores: activo o inactivo.");
+
             $table->timestamp("fecha_registro")
                 ->useCurrent()
                 ->comment("Fecha de creación del registro de la raza.");

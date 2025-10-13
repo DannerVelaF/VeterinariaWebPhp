@@ -2,88 +2,87 @@
 
 namespace App\Livewire\Mantenimiento\Mascotas;
 
-use App\Models\Raza;
+use App\Http\Requests\RazaRequest;
 use App\Models\Especie;
+use App\Models\Raza;
 use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Livewire\Component;
+use Illuminate\Support\Str;
 
 class Razas extends Component
 {
-    protected $listeners = ['especiesUpdated' => 'refreshData', 'razaRegistrada' => '$refresh'];
+
+    protected $listeners = [
+        'especiesUpdated' => 'refreshData',
+    ];
 
     public $raza = [
-        'id_especie' => '',
-        'nombre_raza' => '',
-        'descripcion' => '',
+        "nombre_raza" => "",
+        "descripcion" => "",
+        "id_especie" => "",
     ];
 
     public $especies = [];
     public $modalEditar = false;
-
+    public $razaSeleccionado;
+    
     public $razaEditar = [
         'id_raza' => null,
         'nombre_raza' => '',
         'descripcion' => '',
         'id_especie' => '',
-    ];
+    ]; // array para editar
 
     public function mount()
     {
-        $this->especies = Especie::all();
+        $this->especies = Especie::orderBy('nombre_especie', 'asc')->get();
     }
 
     #[\Livewire\Attributes\On('especiesUpdated')]
     public function refreshData()
     {
-        $this->especies = Especie::all();
+        $this->especies = Especie::where('estado', 'activo')->get();
     }
 
-    public $mensajes = [
+    public $messajes = [
         'raza.nombre_raza.required' => 'El nombre de la raza es obligatorio.',
-        'raza.nombre_raza.max' => 'El nombre no puede tener más de 255 caracteres.',
-        'raza.nombre_raza.unique' => 'Esta raza ya existe.',
-        'raza.descripcion.max' => 'La descripción no puede tener más de 500 caracteres.',
+        'raza.nombre_raza.max' => 'El nombre no puede tener más de 100 caracteres.',
+        'raza.descripcion.max' => 'La descripción no puede tener más de 1000 caracteres.',
         'raza.id_especie.required' => 'Debe seleccionar una especie.',
         'raza.id_especie.exists' => 'La especie seleccionada no es válida.',
     ];
 
-    /**
-     * Guardar una nueva raza
-     */
-    public function guardar()
+    public function guardarRaza()
     {
         $validatedData = $this->validate([
-            'raza.nombre_raza' => 'required|string|max:255|unique:razas,nombre_raza',
-            'raza.descripcion' => 'nullable|string|max:500',
+            'raza.nombre_raza' => 'required|string|max:100',
+            'raza.descripcion' => 'nullable|string|max:1000',
             'raza.id_especie' => 'required|exists:especies,id_especie',
         ]);
 
         try {
             DB::transaction(function () use ($validatedData) {
-                $raza = Raza::create([
+                Raza::create([
                     'nombre_raza' => $validatedData['raza']['nombre_raza'],
                     'descripcion' => $validatedData['raza']['descripcion'] ?? null,
                     'id_especie' => $validatedData['raza']['id_especie'],
-                    'fecha_registro' => now(),
                 ]);
             });
 
+            // Si llegamos aquí, todo se guardó correctamente
             $this->dispatch('razaRegistrada');
-            session()->flash('success', '✅ Raza registrada correctamente.');
+            session()->flash('success', '✅ Raza registrada con éxito');
             $this->resetForm();
-            $this->dispatch('razaUpdated');
-        } catch (Exception $e) {
-            Log::error('Error al registrar la raza', ['error' => $e->getMessage()]);
-            session()->flash('error', 'Error al registrar la raza: ' . $e->getMessage());
+            $this->dispatch('razasUpdated');
+        } catch (\Exception $e) {
+            session()->flash('error', '❌ Error al registrar la raza: ' . $e->getMessage());
+            Log::error('Error al registrar raza', ['error' => $e->getMessage()]);
         }
     }
 
-    /**
-     * Resetear formulario
-     */
     public function resetForm()
     {
         $this->raza = [
@@ -91,31 +90,30 @@ class Razas extends Component
             'descripcion' => '',
             'id_especie' => '',
         ];
-        $this->mount();
     }
 
-    #[\Livewire\Attributes\On('editarRaza')]
-    public function editarRaza($razaId)
+    #[\Livewire\Attributes\On('abrirModalRaza')]
+    public function abrirModalEditar($razaId)
     {
-        $raza = Raza::findOrFail($razaId);
+        $this->razaSeleccionado = Raza::findOrFail($razaId);
+
         $this->razaEditar = [
-            'id_raza' => $raza->id_raza,
-            'nombre_raza' => $raza->nombre_raza,
-            'descripcion' => $raza->descripcion,
-            'id_especie' => $raza->id_especie,
+            'id_raza' => $this->razaSeleccionado->id_raza,
+            'nombre_raza' => $this->razaSeleccionado->nombre_raza,
+            'descripcion' => $this->razaSeleccionado->descripcion,
+            'id_especie' => $this->razaSeleccionado->id_especie,
         ];
+
         $this->modalEditar = true;
     }
 
-    public function actualizarRaza()
+    public function guardarEdicion()
     {
-        if (!$this->razaEditar['id_raza']) return;
-
         $validatedData = Validator::make($this->razaEditar, [
-            'nombre_raza' => 'required|string|max:255|unique:razas,nombre_raza,' . $this->razaEditar['id_raza'] . ',id_raza',
-            'descripcion' => 'nullable|string|max:500',
+            'nombre_raza' => 'required|string|max:100',
+            'descripcion' => 'nullable|string|max:1000',
             'id_especie' => 'required|exists:especies,id_especie',
-        ], $this->mensajes)->validate();
+        ])->validate();
 
         try {
             DB::transaction(function () use ($validatedData) {
@@ -127,22 +125,37 @@ class Razas extends Component
                 ]);
             });
 
-            session()->flash('success', '✅ Raza actualizada correctamente.');
+            // Si llegamos aquí, todo se guardó correctamente
+            session()->flash('success', '✅ Raza actualizada con éxito');
             $this->modalEditar = false;
-            $this->dispatch('razaUpdated');
-            $this->dispatch('razaRegistrada');
-            $this->resetForm();
-            $this->dispatch('razaUpdated');
+            $this->dispatch('razasUpdated');
         } catch (Exception $e) {
-            Log::error('Error al actualizar la raza', ['error' => $e->getMessage()]);
-            session()->flash('error', 'Error al actualizar la raza: ' . $e->getMessage());
+            session()->flash('error', '❌ Error al actualizar la raza: ' . $e->getMessage());
+            Log::error('Error al actualizar raza', ['error' => $e->getMessage()]);
         }
+    }
+
+    public function cerrarModlal()
+    {
+        $this->modalEditar = false;
+        $this->razaSeleccionado = null;
+        $this->razaEditar = [
+            'id_raza' => null,
+            'nombre_raza' => '',
+            'descripcion' => '',
+            'id_especie' => '',
+        ];
+    }
+
+    public function especie($especieId)
+    {
+        $especie = Especie::find($especieId);
+        return $especie ? $especie->nombre_especie : 'Especie no encontrada';
     }
 
     public function render()
     {
-        return view('livewire.mantenimiento.mascotas.razas', [
-            'razas' => Raza::with('especie')->orderBy('nombre_raza')->get(),
-        ]);
+        $razas = Raza::with('especie')->get();
+        return view('livewire.mantenimiento.mascotas.razas', compact('razas'));
     }
 }
