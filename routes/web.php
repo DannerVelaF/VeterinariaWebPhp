@@ -56,7 +56,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/trabajadores', MantenimientoTrabajadores::class)->name('trabajadores');
         Route::get('/usuarios', MantenimientoUsuarios::class)->name('usuarios');
         Route::get('/servicios', MantenimientoServicios::class)->name('servicios');
-        Route::get('/mascotas', MantenimientoMascotas::class)->name('razas');
+        Route::get('/mascotas', MantenimientoMascotas::class)->name('mascotas');
 
     });
 });

@@ -26,6 +26,7 @@ class Servicios extends Component
     public $categorias = [];
 
     public $modalEditar = false;
+    
     public $servicioEditar = [
         'id_servicio' => null,
         'nombre_servicio' => '',
