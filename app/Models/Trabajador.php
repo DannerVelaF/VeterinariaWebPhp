@@ -47,4 +47,11 @@ class Trabajador extends Model
     {
         return $this->hasMany(Compra::class, "id_trabajador");
     }
+
+    public function turnos()
+    {
+        return $this->belongsToMany(Turnos::class, 'trabajador_turnos', 'id_trabajador', 'id_turno')
+            ->withPivot('fecha_inicio', 'fecha_fin')
+            ->withTimestamps();
+    }
 }

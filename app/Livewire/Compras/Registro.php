@@ -5,6 +5,7 @@ namespace App\Livewire\Compras;
 use App\Exports\CompraConDetalleExport;
 use App\Models\Compra;
 use App\Models\DetalleCompra;
+use App\Models\EstadoDetalleCompra;
 use App\Models\Producto;
 use App\Models\Proveedor;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -133,6 +134,7 @@ class Registro extends Component
             "proveedorSeleccionado" => "required|exists:proveedores,id_proveedor",
             "compra.numero_factura" => "required|string|max:255",
             "compra.fecha_compra" => "required|date",
+            "compra.fecha_compra" => "required|date|before_or_equal:today",
             "compra.observacion" => "max:1000",
             "detalleCompra.*.id_producto" => "required|exists:productos,id_producto",
             "detalleCompra.*.cantidad" => "required|numeric|min:0.01",
@@ -146,6 +148,8 @@ class Registro extends Component
                     $total += $detalle['precio_unitario'] * $detalle['cantidad'];
                     $cantidad_total += $detalle['cantidad'];
                 }
+
+                $estadoPendiente = EstadoDetalleCompra::where('nombre_estado_detalle_compra', 'pendiente')->first();
 
                 $compra = Compra::create([
                     "id_proveedor" => $this->proveedorSeleccionado,
@@ -168,6 +172,7 @@ class Registro extends Component
                         "cantidad" => $detalle['cantidad'],
                         "precio_unitario" => $detalle['precio_unitario'],
                         "sub_total" => $detalle['precio_unitario'] * $detalle['cantidad'],
+                        "id_estado_detalle_compra" => $estadoPendiente->id_estado_detalle_compra,
                     ]);
                 }
 

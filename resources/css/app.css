@@ -11,8 +11,7 @@
 @source '../../vendor/power-components/livewire-powergrid/src/Themes/Tailwind.php';
 @source '../../vendor/power-components/livewire-powergrid/resources/views/**/*.php';
 @import 'flatpickr/dist/flatpickr.min.css';
-
-@custom-variant dark (&:where(.dark, .dark *));
+@import '../../vendor/livewire/flux/dist/flux.css';
 
 @theme {
   --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif,

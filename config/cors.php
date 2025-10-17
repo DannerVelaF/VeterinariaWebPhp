@@ -6,7 +6,7 @@ return [
 
   'allowed_methods' => ['*'],
 
-  'allowed_origins' => ['http://localhost:5173'], // o tu dominio del front
+  'allowed_origins' => ['http://localhost:5174'], // o tu dominio del front
 
   'allowed_origins_patterns' => [],
 

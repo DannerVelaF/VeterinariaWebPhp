@@ -47,4 +47,9 @@ class Compra extends Model
     {
         return $this->belongsTo(User::class, "id_usuario_aprobador", "id_usuario");
     }
+
+    public function estadoCompra()
+    {
+        return $this->belongsTo(EstadoCompras::class, "id_estado_compra");
+    }
 }

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\Ventas\VentasController;
 use App\Http\Middleware\VerifyToken;
 use App\Mail\ConfirmarCorreoMail;
 use Illuminate\Http\Request;
@@ -36,6 +37,9 @@ Route::prefix('/v1')->group(function () {
         Route::post('/registro', [AuthController::class, "registro"]);
         Route::post("/login", [AuthController::class, "inicioSesion"]);
     });
+
+    Route::get('/ventas', [VentasController::class, "registrarVenta"]);
+
 
     Route::middleware([VerifyToken::class])->group(function () {});
 });

@@ -13,8 +13,8 @@ use Livewire\Component;
 class Usuarios extends Component
 {
     protected $listeners = [
-        'abrirModalRol', 
-        'rolesUpdated', 
+        'abrirModalRol',
+        'rolesUpdated',
         'roles-created-global' => 'cargarDatos', // Escuchar evento global
     ];
 
@@ -45,7 +45,7 @@ class Usuarios extends Component
     {
         $this->cargarDatos();
     }
-    
+
 
     // ✅ MÉTODO PARA CARGAR LOS DATOS
     public function cargarDatos()
@@ -53,7 +53,7 @@ class Usuarios extends Component
         $this->trabajadores = Trabajador::whereHas('estadoTrabajador', function ($q) {
             $q->where('nombre_estado_trabajador', 'activo');
         })->get();
-        
+
         $this->roles = Roles::where('estado', 'activo')->get();
     }
 
@@ -67,12 +67,13 @@ class Usuarios extends Component
                 'required',
                 'string',
                 'min:8',
-                'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/',
+                'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/',
             ],
             'rolSeleccionado' => 'required|exists:roles,id_rol',
         ], [
             'password.regex' => 'La contraseña debe contener al menos una letra mayúscula, una minúscula, un número y un carácter especial.',
         ]);
+
 
         $trabajador = Trabajador::find($this->trabajadorSeleccionado);
 
