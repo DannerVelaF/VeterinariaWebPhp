@@ -30,6 +30,8 @@ class Productos extends Component
         "ruta_imagen" => "",
         "id_categoria_producto" => "",
         "id_proveedor" => "",
+        "id_unidad" => "",
+        "precio_unitario" => "",
     ];
 
     public $categorias = [];
@@ -46,6 +48,7 @@ class Productos extends Component
         'id_proveedor' => '',
         'id_unidad' => '',
         'ruta_imagen' => null,
+        'precio_unitario' => '',
     ]; // array para editar
     public $imagenEditar;
 
@@ -132,10 +135,16 @@ class Productos extends Component
 
             // Si llegamos aquí, todo se guardó correctamente
             $this->dispatch('productoRegistrado');
-            session()->flash('success', '✅ Producto registrado con éxito. Código de: ' . $this->codigoBarras);
+            $this->dispatch(
+                'notify',
+                title: 'Success',
+                description: 'Producto registrado correctamente.',
+                type: 'success'
+            );
             $this->resetForm();
         } catch (Exception $e) {
-            session()->flash('error', 'Error al registrar el producto: ' . $e->getMessage());
+            $this->dispatch('notify', title: 'Error', description: 'Error al registrar el producto: ' . $e->getMessage(), type: 'error');
+            Log::error('Error al registrar el producto', ['error' => $e->getMessage()]);
         }
     }
 
@@ -212,11 +221,11 @@ class Productos extends Component
             });
 
             $this->dispatch('productoRegistrado'); // refresca tabla
-            session()->flash('success', '✅ Producto actualizado correctamente.');
+            $this->dispatch('notify', title: 'Success', description: '✅ Producto actualizado correctamente.', type: 'success');
             $this->modalEditar = false;
         } catch (Exception $e) {
             Log::error('Error al actualizar el producto', ['error' => $e->getMessage()]);
-            session()->flash('error', 'Error al actualizar el producto: ' . $e->getMessage());
+            $this->dispatch('notify', title: 'Error', description: 'Error al actualizar el producto: ' . $e->getMessage(), type: 'error');
         }
     }
 

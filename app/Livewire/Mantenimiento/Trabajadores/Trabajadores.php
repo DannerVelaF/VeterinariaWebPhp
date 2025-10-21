@@ -140,7 +140,8 @@ class Trabajadores extends Component
 
             DB::commit();
 
-            session()->flash('success', '✅ Trabajador registrado correctamente');
+            $this->dispatch('notify', title: 'Success', description: 'Trabajador registrado correctamente.', type: 'success');
+
             Log::info('Trabajador registrado con éxito', [
                 'id_persona' => $persona->id_persona,
                 'id_trabajador' => $trabajador->id_trabajador
@@ -150,7 +151,8 @@ class Trabajadores extends Component
         } catch (\Exception $e) {
             DB::rollBack();
 
-            session()->flash('error', '❌ Error al registrar el trabajador: ' . $e->getMessage());
+            $this->dispatch('notify', title: 'Error', description: 'Error al registrar trabajador.', type: 'error');
+
             Log::error('Error al registrar trabajador', [
                 'error' => $e->getMessage(),
                 'persona' => $this->persona,
@@ -222,7 +224,7 @@ class Trabajadores extends Component
         });
 
         $this->modalEditar = false;
-        session()->flash('success', '✅ Trabajador actualizado correctamente.');
+        $this->dispatch('notify', title: 'Success', description: 'Trabajador actualizado correctamente.', type: 'success');
         $this->dispatch('trabajadoresUpdated');
     }
 
@@ -253,15 +255,16 @@ class Trabajadores extends Component
                     $this->persona['apellido_paterno'] = $data['first_last_name'];
                     $this->persona['apellido_materno'] = $data['second_last_name'];
                     $this->persona['nacionalidad'] = "Peruana";
-                    session()->flash('success', '✅ Datos cargados desde RENIEC.');
+                    $this->dispatch('notify', title: 'Success', description: 'Datos cargados desde RENIEC.', type: 'success');
                 } else {
-                    session()->flash('error', 'No se encontró información para este DNI.');
+                    $this->dispatch('notify', title: 'Error', description: 'No se encontró información para este DNI.', type: 'error');
                 }
             } else {
-                session()->flash('error', 'Error al consultar el DNI ' . $dni . '. Intente nuevamente.');
+                $this->dispatch('notify', title: 'Error', description: 'Error al consultar el DNI ' . $dni . '. Intente nuevamente.', type: 'error');
             }
         } catch (\Exception $e) {
-            session()->flash('error', 'Error al conectar con la API: ' . $e->getMessage());
+            $this->dispatch('notify', title: 'Error', description: 'Error al conectar con la API: ' . $e->getMessage(), type: 'error');
+            Log::error('Error al conectar con la API', ['error' => $e->getMessage()]);
         }
     }
 

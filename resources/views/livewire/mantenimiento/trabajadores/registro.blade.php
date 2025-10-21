@@ -1,5 +1,4 @@
-<div>
-    <p>Mantenimiento de tablas</p>
+<div class="bg-white">
     <x-tabs :tabs="['trabajadores' => 'Trabajadores', 'puestos' => 'Puestos', 'ubigeos' => 'Ubigeos', 'turnos' => 'Turnos']" default="trabajadores">
         <!-- TAB 1: TRABAJAOORES -->
         <x-tab name="trabajadores">

@@ -4,6 +4,7 @@ namespace App\Livewire\Mantenimiento\Productos;
 
 use Illuminate\Support\Facades\DB;
 use App\Models\Unidades as UnidadesModel;
+use Illuminate\Support\Facades\Log;
 use Livewire\Component;
 
 class Unidades extends Component
@@ -32,9 +33,10 @@ class Unidades extends Component
             $this->unidades = UnidadesModel::all(); // refrescar lista
             $this->nombre = null;
             $this->dispatch('unidadesUpdated');
-            session()->flash('success', 'Unidad registrada con éxito');
+            $this->dispatch('notify', title: 'Success', description: 'Unidad creada correctamente.', type: 'success');
         } catch (\Exception $e) {
-            session()->flash('error', 'Error al registrar la unidad: ' . $e->getMessage());
+            $this->dispatch('notify', title: 'Error', description: 'Error al crear la unidad: ' . $e->getMessage(), type: 'error');
+            Log::error('Error al crear la unidad', ['error' => $e->getMessage()]);
         }
     }
 
@@ -47,9 +49,10 @@ class Unidades extends Component
 
             $this->unidades = UnidadesModel::all(); // refrescar lista
             $this->dispatch('unidadesUpdated');
-            session()->flash('success', 'Unidad eliminada con éxito');
+            $this->dispatch('notify', title: 'Success', description: 'Unidad eliminada correctamente.', type: 'success');
         } catch (\Exception $e) {
-            session()->flash('error', 'Error al eliminar la unidad: ' . $e->getMessage());
+            $this->dispatch('notify', title: 'Error', description: 'Error al eliminar la unidad: ' . $e->getMessage(), type: 'error');
+            Log::error('Error al eliminar la unidad', ['error' => $e->getMessage()]);
         }
     }
 

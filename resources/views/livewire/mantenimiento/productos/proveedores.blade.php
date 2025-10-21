@@ -1,4 +1,8 @@
-<x-panel title="Gestión de Proveedores">
+<x-panel title="Gestión de proveedores" :breadcrumbs="[
+    ['label' => 'Inicio', 'href' => '/', 'icon' => 'home'],
+    ['label' => 'Productos', 'href' => route('mantenimiento.productos'), 'icon' => 'ellipsis-horizontal'],
+    ['label' => 'Gestión de proveedores', 'href' => route('mantenimiento.productos.proveedores')],
+]">
     <x-tabs :tabs="['listado' => '📋 Detalle proveedores registrados', 'registro' => '➕ Registrar nuevo proveedor']" default="listado">
         <!-- TAB 1: LISTADO -->
         <x-tab name="listado">
@@ -42,18 +46,6 @@
                     </div>
 
                     <div class="flex flex-col">
-                        <label for="nombre" class="font-bold mb-1">Nombre <span class="text-red-500">*</span></label>
-                        <input readonly type="text" id="nombre" name="nombre"
-                            class="border rounded px-2 py-1 focus:outline-none focus:ring focus:ring-blue-300 @error('proveedor.nombre_proveedor') border-red-500 @enderror"
-                            placeholder="Nombre del proveedor" wire:model="proveedor.nombre_proveedor">
-                        @error('proveedor.nombre')
-                            <p class="text-red-500 text-xs italic mt-1">
-                                {{ $message }}
-                            </p>
-                        @enderror
-                    </div>
-
-                    <div class="flex flex-col">
                         <label for="ruc" class="font-bold mb-1">RUC <span class="text-red-500">*</span></label>
                         <div class="flex items-center">
                             <input type="text" id="ruc" name="ruc" maxlength="11"
@@ -65,6 +57,18 @@
                             </button>
                         </div>
                         @error('proveedor.ruc')
+                            <p class="text-red-500 text-xs italic mt-1">
+                                {{ $message }}
+                            </p>
+                        @enderror
+                    </div>
+
+                    <div class="flex flex-col">
+                        <label for="nombre" class="font-bold mb-1">Nombre <span class="text-red-500">*</span></label>
+                        <input @readonly($proveedorEncontrado) type="text" id="nombre" name="nombre"
+                            class="border rounded px-2 py-1 focus:outline-none focus:ring focus:ring-blue-300 @error('proveedor.nombre_proveedor') border-red-500 @enderror"
+                            placeholder="Nombre del proveedor" wire:model="proveedor.nombre_proveedor">
+                        @error('proveedor.nombre')
                             <p class="text-red-500 text-xs italic mt-1">
                                 {{ $message }}
                             </p>
@@ -388,5 +392,24 @@
             </div>
         </div>
     @endif
+
+    @push('scripts')
+        <script>
+            Livewire.on('notify', (data) => {
+                Swal.fire({
+                    title: data.title,
+                    text: data.description,
+                    icon: data.type,
+                    timer: 2500,
+                    showConfirmButton: false,
+                    customClass: {
+                        popup: 'rounded-lg',
+                        title: 'text-lg font-semibold',
+                        htmlContainer: 'text-sm'
+                    }
+                });
+            });
+        </script>
+    @endpush
     <x-loader />
 </x-panel>

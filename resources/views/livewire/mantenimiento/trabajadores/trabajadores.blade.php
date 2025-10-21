@@ -1,4 +1,8 @@
-<x-panel title="Gestión de trabajadores">
+<x-panel title="Gestión de trabajadores" :breadcrumbs="[
+    ['label' => 'Inicio', 'href' => '/', 'icon' => 'home'],
+    ['label' => 'Mantenimiento', 'href' => '#'],
+    ['label' => 'Gestión de trabajadores'],
+]">
     <x-tabs :tabs="['listado' => '📋 Detalle trabajadores registrados', 'registro' => '➕ Registrar nuevo trabajador']" default="listado">
         <!-- TAB 1: LISTADO -->
         <x-tab name="listado">
@@ -454,5 +458,23 @@
         </div>
     @endif
 
+    @push('scripts')
+        <script>
+            Livewire.on('notify', (data) => {
+                Swal.fire({
+                    title: data.title,
+                    text: data.description,
+                    icon: data.type,
+                    timer: 2500,
+                    showConfirmButton: false,
+                    customClass: {
+                        popup: 'rounded-lg',
+                        title: 'text-lg font-semibold',
+                        htmlContainer: 'text-sm'
+                    }
+                });
+            });
+        </script>
+    @endpush
     <x-loader />
 </x-panel>

@@ -12,7 +12,7 @@ class Categoria extends Component
 
     public $modalEditar = false;
     public $categoriaSeleccionado;
-    
+
     public $categoriaEditar = [
         'id_categoria_producto' => null,
         'nombre_categoria_producto' => '',
@@ -48,11 +48,11 @@ class Categoria extends Component
 
             // Si llegamos aquí, todo se guardó correctamente
             $this->dispatch('categoriaRegistrado');
-            session()->flash('success', 'Categoria registrada con éxito');
+            $this->dispatch('notify', title: 'Success', description: 'Categoria creada correctamente.', type: 'success');
             $this->resetForm();
             $this->dispatch('categoriaUpdated');
         } catch (\Exception $e) {
-            session()->flash('error', 'Error al registrar la categoria: ' . $e->getMessage());
+            $this->dispatch('notify', title: 'Error', description: 'Error al registrar la categoria. ', type: 'error');
             Log::error('Error al registrar categoria', ['error' => $e->getMessage()]);
         }
     }
@@ -88,7 +88,7 @@ class Categoria extends Component
             'categoriaEditar.descripcion' => 'nullable|string|max:1000',
         ]);
 
-        try {   
+        try {
             DB::transaction(function () use ($validatedData) {
                 // Actualizar categoria
                 $this->categoriaSeleccionado->update([
@@ -98,12 +98,11 @@ class Categoria extends Component
                 ]);
             });
 
-             $this->modalEditar = false;
-            session()->flash('success', '✅ Categoria actualizada correctamente.');
+            $this->modalEditar = false;
+            $this->dispatch('notify', title: 'Success', description: 'Categoria actualizada correctamente.', type: 'success');
             $this->dispatch('categoriaUpdated');
-
         } catch (\Exception $e) {
-            session()->flash('error', '❌ Error al actualizar la categoria: ' . $e->getMessage());
+            $this->dispatch('notify', title: 'Error', description: 'Error al actualizar la categoria.', type: 'error');
             Log::error('Error al actualizar categoria', ['error' => $e->getMessage()]);
         }
     }

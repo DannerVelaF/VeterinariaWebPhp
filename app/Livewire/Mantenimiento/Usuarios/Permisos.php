@@ -31,14 +31,14 @@ class Permisos extends Component
                 ]);
             });
 
-            session()->flash('success', 'Permiso creado correctamente.');
+            $this->dispatch('notify', title: 'Success', description: 'Permiso creado correctamente.', type: 'success');
             $this->reset('nombrePermiso');
             $this->permisos = Permiso::all();
             $this->dispatch("permisosUpdated");
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error al crear permiso', ['error' => $e->getMessage()]);
-            session()->flash('error', 'Hubo un problema al crear el permiso.');
+            $this->dispatch('notify', title: 'Error', description: 'Hubo un problema al crear el permiso.', type: 'error');
         }
     }
 
@@ -49,12 +49,12 @@ class Permisos extends Component
             $permiso->estado = $permiso->estado === 'activo' ? 'inactivo' : 'activo';
             $permiso->save();
 
-            session()->flash('success', 'Estado actualizado correctamente.');
+            $this->dispatch('notify', title: 'Success', description: 'Estado actualizado correctamente.', type: 'success');
             $this->permisos = Permiso::all();
             $this->dispatch("permisosUpdated");
         } catch (\Exception $e) {
             Log::error('Error al cambiar estado del permiso', ['error' => $e->getMessage()]);
-            session()->flash('error', 'No se pudo cambiar el estado.');
+            $this->dispatch('notify', title: 'Error', description: 'No se pudo cambiar el estado.', type: 'error');
         }
     }
     #[\Livewire\Attributes\On('rolesUpdated')]

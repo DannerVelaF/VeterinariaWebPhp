@@ -5,6 +5,7 @@ namespace App\Livewire\Compras;
 use App\Exports\CompraConDetalleExport;
 use App\Models\Compra;
 use App\Models\DetalleCompra;
+use App\Models\EstadoCompras;
 use App\Models\EstadoDetalleCompra;
 use App\Models\Producto;
 use App\Models\Proveedor;
@@ -93,18 +94,21 @@ class Registro extends Component
     {
         try {
             DB::transaction(function () {
+
+                $estadoOrdenAprobado = EstadoCompras::where('nombre_estado_compra', 'aprobado')->first();
+
                 $compra = $this->compraSeleccionada;
-                $compra->estado = "aprobado";
+                $compra->id_estado_compra = $estadoOrdenAprobado->id_estado_compra;
                 $compra->id_usuario_aprobador = auth()->user()->persona->id_persona;
                 $compra->save();
             });
 
-            session()->flash('success', '✅ Compra aprobada correctamente ✅');
+            $this->dispatch('notify', title: 'Success', description: 'Compra aprobada correctamente.', type: 'success');
             $this->reset(["compraSeleccionada", "detalleCompra", "proveedorSeleccionado", "codigoOrden", "proveedores"]);
             $this->showModalDetalle = false;
             $this->dispatch('comprasUpdated');
         } catch (\Exception $e) {
-            session()->flash('error', 'Error al registrar la compra: ' . $e->getMessage());
+            $this->dispatch('notify', title: 'Error', description: 'Error al aprobar la compra: ' . $e->getMessage(), type: 'error');
             Log::error('Error al registrar la compra', ['error' => $e->getMessage()]);
         }
     }
@@ -112,18 +116,22 @@ class Registro extends Component
     public function rechazarCompra()
     {
         try {
+
+
             DB::transaction(function () {
+                $estadoOrdenCancelado = EstadoCompras::where('nombre_estado_compra', 'cancelado')->first();
+
                 $compra = $this->compraSeleccionada;
-                $compra->estado = "cancelado";
+                $compra->id_estado_compra = $estadoOrdenCancelado->id_estado_compra;
                 $compra->save();
             });
 
-            session()->flash('success', '❌ Compra rechazada correctamente ❌');
+            $this->dispatch('notify', title: 'Success', description: '❌ Compra rechazada correctamente ❌', type: 'success');
             $this->reset(["compraSeleccionada", "detalleCompra", "proveedorSeleccionado", "codigoOrden", "proveedores"]);
             $this->showModalDetalle = false;
             $this->dispatch('comprasUpdated');
         } catch (\Exception $e) {
-            session()->flash('error', 'Error al rechazar la compra: ' . $e->getMessage());
+            $this->dispatch('notify', title: 'Error', description: 'Error al rechazar la compra: ' . $e->getMessage(), type: 'error');
             Log::error('Error al rechazar la compra', ['error' => $e->getMessage()]);
         }
     }
@@ -150,7 +158,7 @@ class Registro extends Component
                 }
 
                 $estadoPendiente = EstadoDetalleCompra::where('nombre_estado_detalle_compra', 'pendiente')->first();
-
+                $estadoOrdenPendiente = EstadoCompras::where('nombre_estado_compra', 'pendiente')->first();
                 $compra = Compra::create([
                     "id_proveedor" => $this->proveedorSeleccionado,
                     "id_trabajador" => auth()->user()->persona->trabajador->id_trabajador,
@@ -159,7 +167,7 @@ class Registro extends Component
                     "fecha_compra" => $this->compra['fecha_compra'],
                     "cantidad_total" => $cantidad_total,
                     "fecha_actualizacion" => now(),
-                    "estado" => "pendiente",
+                    "id_estado_compra" => $estadoOrdenPendiente->id_estado_compra,
                     'total' => $total,
                     "observacion" => $this->compra['observacion'],
                     "fecha_registro" => now(),
@@ -183,10 +191,10 @@ class Registro extends Component
                 $this->closeModal();
             });
             $this->mount();
-            session()->flash('success', 'Orden de compra registrada correctamente ✅');
+            $this->dispatch('notify', title: 'Success', description: 'Orden de compra registrada correctamente ✅', type: 'success');
             $this->dispatch('comprasUpdated');
         } catch (\Exception $e) {
-            session()->flash('error', 'Error al registrar el proveedor: ' . $e->getMessage());
+            $this->dispatch('notify', title: 'Error', description: 'Error al registrar el proveedor: ' . $e->getMessage(), type: 'error');
             Log::error('Error al registrar la compra', ['error' => $e->getMessage()]);
         }
     }

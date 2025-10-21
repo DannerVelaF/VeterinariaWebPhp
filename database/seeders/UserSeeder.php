@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Persona;
+use App\Models\Roles;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -15,6 +16,14 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {
+
+        $rol =  Roles::create([
+            'nombre_rol' => 'Administrador',
+            'fecha_creacion' => now(),
+            'fecha_modificacion' => now(),
+            'estado' => 'activo',
+        ]);
+
         $p =  Persona::create([
             'numero_documento' => 12345677,
             'nombre' => 'Eberth',
@@ -36,6 +45,7 @@ class UserSeeder extends Seeder
             'password_hash' => Hash::make('eberth'),
             'estado' => 'activo',
             'id_persona' => $p->id,
+            'rol_id' => $rol->id,
         ]);
     }
 }

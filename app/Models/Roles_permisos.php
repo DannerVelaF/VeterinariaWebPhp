@@ -7,6 +7,10 @@ use Illuminate\Database\Eloquent\Model;
 class Roles_permisos extends Model
 {
 
+    public $timestamps = true;
+    const CREATED_AT = 'fecha_registro';
+    const UPDATED_AT = 'fecha_actualizacion';
+
     protected $fillable = [
         'id_rol',
         'id_permiso',

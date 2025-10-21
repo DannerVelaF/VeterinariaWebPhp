@@ -1,4 +1,8 @@
-<x-panel title="Gestión de turnos y horarios">
+<x-panel title="Gestión de puestos" :breadcrumbs="[
+    ['label' => 'Inicio', 'href' => '/', 'icon' => 'home'],
+    ['label' => 'Trabajadores', 'href' => route('mantenimiento.trabajadores'), 'icon' => 'ellipsis-horizontal'],
+    ['label' => 'Gestión de turnos', 'href' => route('mantenimiento.trabajadores.turnos')],
+]">
 
     <x-tabs :tabs="['turnos' => '📋 Turnos', 'asignar' => '➕ Asignar horario']" default="turnos">
 

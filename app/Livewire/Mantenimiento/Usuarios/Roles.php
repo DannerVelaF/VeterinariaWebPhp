@@ -4,6 +4,7 @@ namespace App\Livewire\Mantenimiento\Usuarios;
 
 use App\Models\Permiso;
 use App\Models\Roles as Rol;
+use App\Models\User;
 use Livewire\Component;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -42,14 +43,13 @@ class Roles extends Component
             // ✅ Guardar en sesión para detectar en el otro componente
             session()->put('roles_updated', true);
 
-            session()->flash('success', 'Rol creado correctamente.');
+            $this->dispatch('notify', title: 'Success', description: 'Rol creado correctamente.', type: 'success');
 
             $this->reset('nombreRol');
             $this->roles = Rol::all();
 
             $this->dispatch('roles-created-global'); // Notificar a otros componentes
             $this->dispatch('rolesUpdated');
-
         } catch (\Exception $e) {
             Log::error('Error al crear el rol', ['error' => $e->getMessage()]);
             session()->flash('error', 'Hubo un problema al crear el rol.');
@@ -63,16 +63,22 @@ class Roles extends Component
             $rol->estado = $rol->estado === 'activo' ? 'inactivo' : 'activo';
             $rol->save();
 
-            session()->flash('success', 'Estado actualizado correctamente.');
+
+            $usuarios = User::where('id_rol', $id)->get();
+            foreach ($usuarios as $usuario) {
+                $usuario->update(['id_rol' => null]);
+            }
+
+            $this->dispatch('notify', title: 'Success', description: 'Estado actualizado correctamente.', type: 'success');
+
             $this->roles = Rol::all();
 
             // ✅ DISPARAR EL MISMO EVENTO GLOBAL cuando cambia el estado
             $this->dispatch('roles-created-global');
             $this->dispatch('rolesUpdated');
-
         } catch (\Exception $e) {
             Log::error('Error al cambiar estado del rol', ['error' => $e->getMessage()]);
-            session()->flash('error', 'No se pudo cambiar el estado.');
+            $this->dispatch('notify', title: 'Error', description: 'No se pudo cambiar el estado.', type: 'error');
         }
     }
 
@@ -98,11 +104,11 @@ class Roles extends Component
             $this->rolSeleccionado->permisos()->sync($this->permisosSeleccionados);
             $this->modalPermisos = false;
 
-            session()->flash('success', 'Permisos actualizados correctamente.');
+            $this->dispatch('notify', title: 'Success', description: 'Permisos guardados correctamente.', type: 'success');
+
 
             $this->dispatch('roles-created-global');
             $this->dispatch('rolesUpdated');
-
         } catch (\Exception $e) {
             session()->flash('error', 'Error al actualizar permisos: ' . $e->getMessage());
         }

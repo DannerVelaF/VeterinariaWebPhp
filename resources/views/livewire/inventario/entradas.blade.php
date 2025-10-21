@@ -1,5 +1,8 @@
-<div class="">
-
+<x-panel title="Gestión de entradas de inventario" :breadcrumbs="[
+    ['label' => 'Inicio', 'href' => '/', 'icon' => 'home'],
+    ['label' => 'Inventario', 'href' => '#'],
+    ['label' => 'Entradas'],
+]">
     <x-tabs :tabs="['registro' => 'Registar entradas', 'detalle' => 'Listado de entradas']" default="registro">
         <x-tab name="registro">
             @if (session()->has('success'))
@@ -247,4 +250,4 @@
         </x-tab>
     </x-tabs>
     <x-loader />
-</div>
+</x-panel>

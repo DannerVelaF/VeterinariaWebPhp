@@ -3,6 +3,7 @@
 namespace App\Livewire\Ventas;
 
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Session;
 use Livewire\Component;
 
@@ -15,6 +16,7 @@ class RegistroVenta extends Component
         $this->user = Auth::user();
 
         if (!$this->user) {
+            Log::info('Usuario no autenticado');
             return redirect()->route('login');
         }
     }

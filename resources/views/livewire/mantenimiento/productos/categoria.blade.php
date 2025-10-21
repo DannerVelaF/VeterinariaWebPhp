@@ -1,4 +1,8 @@
-<x-panel title="Gestión de Categorías de Productos" class="max-w-7xl mx-auto">
+<x-panel title="Gestión de proveedores" :breadcrumbs="[
+    ['label' => 'Inicio', 'href' => '/', 'icon' => 'home'],
+    ['label' => 'Productos', 'href' => route('mantenimiento.productos'), 'icon' => 'ellipsis-horizontal'],
+    ['label' => 'Gestión de categorias', 'href' => route('mantenimiento.productos.proveedores')],
+]">
     <x-tabs :tabs="['listado' => '📋 Detalle categorias registrados', 'registro' => '➕ Registrar nueva categoría']" default="listado">
         <!-- TAB 1: LISTADO -->
         <x-tab name="listado">
@@ -102,7 +106,7 @@
                         <path d="m15 5 4 4" />
                     </svg>Editar Categoría</h2>
 
-                    <!-- Mensajes de error en edición -->
+                <!-- Mensajes de error en edición -->
                 @if (session()->has('error'))
                     <div class="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded text-xs">
                         {{ session('error') }}
@@ -132,5 +136,24 @@
             </div>
         </div>
     @endif
+
+    @push('scripts')
+        <script>
+            Livewire.on('notify', (data) => {
+                Swal.fire({
+                    title: data.title,
+                    text: data.description,
+                    icon: data.type,
+                    timer: 2500,
+                    showConfirmButton: false,
+                    customClass: {
+                        popup: 'rounded-lg',
+                        title: 'text-lg font-semibold',
+                        htmlContainer: 'text-sm'
+                    }
+                });
+            });
+        </script>
+    @endpush
     <x-loader />
 </x-panel>

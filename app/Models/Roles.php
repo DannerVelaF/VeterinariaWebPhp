@@ -27,4 +27,14 @@ class Roles extends Model
     {
         return $this->belongsToMany(Permiso::class, 'roles_permisos', 'id_rol', 'id_permiso');
     }
+
+    public function modulos()
+    {
+        return $this->belongsToMany(
+            Modulo::class,
+            'modulo_roles',
+            'id_rol',      // FK en tabla pivote hacia roles
+            'id_modulo'    // FK en tabla pivote hacia modulos
+        )->withTimestamps();
+    }
 }

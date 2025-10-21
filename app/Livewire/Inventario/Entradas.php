@@ -8,6 +8,7 @@ use App\Models\InventarioMovimiento;
 use App\Models\Lotes;
 use App\Models\Producto;
 use App\Models\Proveedor;
+use App\Models\TipoMovimiento;
 use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -38,7 +39,6 @@ class Entradas extends Component
         "precio_compra" => "",
         "codigo_lote" => "",
     ];
-    public $top10entradas = [];
 
     public bool $showModal = false;
     public bool $showModalDetalle = false;
@@ -56,7 +56,8 @@ class Entradas extends Component
         if (!$this->lote['fecha_recepcion']) {
             $this->lote['fecha_recepcion'] = now()->format('Y-m-d');
         }
-        $this->top10entradas = InventarioMovimiento::where("tipo_movimiento", "entrada")->orderBy("fecha_movimiento", "desc")->limit(10)->get();
+
+        $tipoEntrad = TipoMovimiento::where("nombre_tipo_movimiento", "entrada")->first();
     }
 
     public function buscarOrdenCompra()
@@ -148,7 +149,7 @@ class Entradas extends Component
         $this->validate([
             "id_producto"             => "required|exists:detalle_compras,id_detalle_compra",
             'lote.cantidad_total'     => 'required|numeric|min:0.01|max:999999999.99',
-            'lote.fecha_recepcion'    => 'required|date',
+            'lote.fecha_recepcion'    => 'required|date|after:today',
             'lote.fecha_vencimiento' => 'nullable|date|after:lote.fecha_recepcion',
             "lote.observacion"        => "max:1000",
             'lote.precio_compra'      => 'required|numeric|min:0.01',
@@ -187,6 +188,7 @@ class Entradas extends Component
                     "id_lote"           => $lote->id_lote,
                     "id_trabajador"     => $trabajador->id_trabajador,
                     "ubicacion"         => $this->ubicacion,
+                    "id_tipo_movimiento" => TipoMovimiento::where("nombre_tipo_movimiento", "entrada")->first()->id_tipo_movimiento,
                     "tipo_movimiento_asociado" => DetalleCompra::class,
                     "id_movimiento_asociado"    => $this->lote['id_detalle_compra'],
                 ]);

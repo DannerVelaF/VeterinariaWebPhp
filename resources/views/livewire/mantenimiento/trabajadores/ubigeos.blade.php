@@ -1,4 +1,8 @@
-<x-panel title="Gestión de Ubigeos">
+<x-panel title="Gestión de puestos" :breadcrumbs="[
+    ['label' => 'Inicio', 'href' => '/', 'icon' => 'home'],
+    ['label' => 'Trabajadores', 'href' => route('mantenimiento.trabajadores'), 'icon' => 'ellipsis-horizontal'],
+    ['label' => 'Gestión de ubigeos', 'href' => route('mantenimiento.trabajadores.ubigeos')],
+]">
     <x-tabs :tabs="['importar' => '📁 Importar Ubigeos']" default="importar">
         <!-- TAB: IMPORTAR -->
         <x-tab name="importar">
@@ -188,5 +192,24 @@
             </div>
         </x-tab>
     </x-tabs>
+    
+    @push('scripts')
+        <script>
+            Livewire.on('notify', (data) => {
+                Swal.fire({
+                    title: data.title,
+                    text: data.description,
+                    icon: data.type,
+                    timer: 2500,
+                    showConfirmButton: false,
+                    customClass: {
+                        popup: 'rounded-lg',
+                        title: 'text-lg font-semibold',
+                        htmlContainer: 'text-sm'
+                    }
+                });
+            });
+        </script>
+    @endpush
     <x-loader />
 </x-panel>

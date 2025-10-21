@@ -27,8 +27,7 @@ final class TrabajadorTable extends PowerGridComponent
         $this->estados = EstadoTrabajadores::pluck('nombre_estado_trabajador', 'id_estado_trabajador')->toArray() ?? [];
 
         return [
-            PowerGrid::header()
-                ->showSearchInput(),
+            PowerGrid::header(),
             PowerGrid::footer()
                 ->showPerPage()
                 ->showRecordCount(),

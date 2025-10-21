@@ -1,4 +1,8 @@
-<x-panel title="Gestión de Productos">
+<x-panel title="Gestión de productos" :breadcrumbs="[
+    ['label' => 'Inicio', 'href' => '/', 'icon' => 'home'],
+    ['label' => 'Mantenimiento', 'href' => '#'],
+    ['label' => 'Gestión de productos'],
+]">
     <x-tabs :tabs="['listado' => '📋 Detalle productos registrados', 'registro' => '➕ Registrar nuevo producto']" default="listado">
         <!-- TAB 1: LISTADO -->
         <x-tab name="listado">
@@ -69,6 +73,18 @@
                                 @endforeach
                             </select>
                             @error('producto.id_unidad')
+                                <p class="text-red-500 text-xs italic mt-1">
+                                    {{ $message }}
+                                </p>
+                            @enderror
+                        </div>
+                        <div class="flex flex-col">
+                            <label for="unidad" class="font-bold mb-1">Precio unitario <span
+                                    class="text-red-500">*</span></label>
+                            <input type="text" id="precio_unitario" name="precio_unitario" maxlength="255"
+                                class="border rounded px-2 py-1 focus:outline-none focus:ring focus:ring-blue-300 @error('producto.precio_unitario') border-red-500 @enderror"
+                                placeholder="Precio unitario" wire:model="producto.precio_unitario">
+                            @error('producto.precio_unitario')
                                 <p class="text-red-500 text-xs italic mt-1">
                                     {{ $message }}
                                 </p>
@@ -146,7 +162,8 @@
                                     fill="none" viewBox="0 0 24 24">
                                     <circle class="opacity-25" cx="12" cy="12" r="10"
                                         stroke="currentColor" stroke-width="4"></circle>
-                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z">
+                                    </path>
                                 </svg>
                                 <span class="text-gray-600 text-xs">Cargando...</span>
                             </div>
@@ -297,6 +314,25 @@
             </div>
         </div>
     @endif
+
+    @push('scripts')
+        <script>
+            Livewire.on('notify', (data) => {
+                Swal.fire({
+                    title: data.title,
+                    text: data.description,
+                    icon: data.type,
+                    timer: 2500,
+                    showConfirmButton: false,
+                    customClass: {
+                        popup: 'rounded-lg',
+                        title: 'text-lg font-semibold',
+                        htmlContainer: 'text-sm'
+                    }
+                });
+            });
+        </script>
+    @endpush
 
     <div wire:loading wire:target="guardar | actualizarProducto"
         @if ($imagenProducto) style="display:none;" @endif>

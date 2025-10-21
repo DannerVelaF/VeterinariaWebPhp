@@ -1,4 +1,8 @@
-<x-panel title="Gestión de Usuarios">
+<x-panel title="Gestión de Usuarios" :breadcrumbs="[
+    ['label' => 'Inicio', 'href' => '/', 'icon' => 'home'],
+    ['label' => 'Mantenimiento', 'href' => '#'],
+    ['label' => 'Usuarios'],
+]">
     <x-tabs :tabs="['listado' => '📋 Detalle usuarios registrados', 'registro' => '➕ Registrar nuevo usuario']" default="listado">
         <!-- TAB 1: LISTADO -->
         <x-tab name="listado">
@@ -121,6 +125,9 @@
                 <div class="flex flex-col mb-3">
                     <label>Nombre de usuario</label>
                     <input type="text" wire:model="usernameEdit" class="border rounded px-2 py-1">
+                    @error('usernameEdit')
+                        <p class="text-red-500 text-xs">{{ $message }}</p>
+                    @enderror
                 </div>
 
                 <!-- Reset Password -->
@@ -128,6 +135,9 @@
                     <label>Nueva contraseña (opcional)</label>
                     <input type="password" wire:model="passwordEdit" class="border rounded px-2 py-1">
                     <small class="text-gray-500">Si no deseas cambiarla, deja este campo vacío</small>
+                    @error('passwordEdit')
+                        <p class="text-red-500 text-xs">{{ $message }}</p>
+                    @enderror
                 </div>
 
                 <!-- Rol -->
@@ -138,6 +148,9 @@
                         @foreach ($roles as $rol)
                             <option value="{{ $rol->id_rol }}">{{ $rol->nombre_rol }}</option>
                         @endforeach
+                        @error('rolNuevo')
+                            <p class="text-red-500 text-xs">{{ $message }}</p>
+                        @enderror
                     </select>
                 </div>
 
@@ -148,6 +161,9 @@
                         <option value="activo">Activo</option>
                         <option value="inactivo">Inactivo</option>
                     </select>
+                    @error('estadoEdit')
+                        <p class="text-red-500 text-xs">{{ $message }}</p>
+                    @enderror
                 </div>
 
                 <!-- Botones -->

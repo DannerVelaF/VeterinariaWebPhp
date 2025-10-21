@@ -3,8 +3,11 @@
 namespace App\Livewire\Auth;
 
 use App\Mail\TwoFactorCodeMail;
+use App\Models\modulo;
+use App\Models\modulo_roles;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Session;
 use Livewire\Component;
@@ -16,8 +19,6 @@ class TwoFactorAuthentication extends Component
     public $inputCode;
     public $alertMessage = null;
     public $alertType = null;
-
-
 
     public function mount()
     {
@@ -54,8 +55,7 @@ class TwoFactorAuthentication extends Component
             // Registrar último login
             $this->user->ultimo_login = now();
             $this->user->save();
-
-            return redirect()->route('ventas');
+            return redirect()->route('inicio');
         } else {
             $this->alertMessage = "Código incorrecto, intente nuevamente.";
             $this->alertType = "error";

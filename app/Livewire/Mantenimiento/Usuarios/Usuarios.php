@@ -67,10 +67,15 @@ class Usuarios extends Component
                 'required',
                 'string',
                 'min:8',
-                'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/',
+                'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\d\s]).{8,}$/',
             ],
             'rolSeleccionado' => 'required|exists:roles,id_rol',
         ], [
+            "username.unique" => "El usuario ya existe.",
+            "username.required" => "El campo 'Usuario' es requerido.",
+            "password.required" => "El campo 'Contraseña' es requerido.",
+            "trabajadorSeleccionado.required" => "El campo 'Trabajador' es requerido.",
+            "rolSeleccionado.required" => "El campo 'Rol' es requerido.",
             'password.regex' => 'La contraseña debe contener al menos una letra mayúscula, una minúscula, un número y un carácter especial.',
         ]);
 
@@ -100,11 +105,11 @@ class Usuarios extends Component
                     $user->givePermissionTo($this->permisosSeleccionados);
                 }
 
-                session()->flash('success', 'Usuario registrado correctamente.');
+                $this->dispatch('notify', title: 'Success', description: 'Usuario registrado correctamente.', type: 'success');
                 $this->reset(['trabajadorSeleccionado', 'username', 'password', 'rolSeleccionado', 'permisosSeleccionados']);
             });
         } catch (\Exception $e) {
-            session()->flash('error', 'Error al registrar el usuario: ' . $e->getMessage());
+            $this->dispatch('notify', title: 'Error', description: 'Error al registrar el usuario: ' . $e->getMessage(), type: 'error');
             Log::error('Error al crear usuario', ['error' => $e->getMessage()]);
         }
     }
@@ -145,8 +150,20 @@ class Usuarios extends Component
     public function guardarRol()
     {
         if (!$this->usuarioSeleccionado) return;
+        if (!empty($this->passwordEdit)) {
+            $rules['passwordEdit'] = [
+                'string',
+                'min:8',
+                'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\d\s]).{8,}$/',
+            ];
+            $messages['passwordEdit.min'] = 'La contraseña debe tener al menos 8 caracteres.';
+            $messages['passwordEdit.regex'] = 'La contraseña debe contener al menos una letra mayúscula, una minúscula, un número y un carácter especial.';
+        }
+
+        $this->validate($rules, $messages);
 
         try {
+
             $data = [
                 'usuario' => $this->usernameEdit,
                 'id_rol' => $this->rolNuevo,
@@ -161,10 +178,10 @@ class Usuarios extends Component
             $this->usuarioSeleccionado->update($data);
 
             $this->modalRol = false;
-            session()->flash('success', '✅ Usuario actualizado correctamente.');
+            $this->dispatch('notify', title: 'Success', description: 'Usuario actualizado correctamente.', type: 'success');
             $this->dispatch("userUpdated");
         } catch (\Exception $e) {
-            session()->flash('error', '❌ Error al actualizar el usuario: ' . $e->getMessage());
+            $this->dispatch('notify', title: 'Error', description: 'Error al actualizar el usuario: ' . $e->getMessage(), type: 'error');
             Log::error('Error al actualizar usuario', ['error' => $e->getMessage()]);
         }
     }

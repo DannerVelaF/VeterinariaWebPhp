@@ -63,6 +63,7 @@ class Proveedores extends Component
     public $departamentoSeleccionado = '';
     public $provinciaSeleccionada = '';
     public $modalEditar = false;
+    public $proveedorEncontrado = true;
     public $proveedorSeleccionado;
     public $proveedorEditar = [
         'id_proveedor' => null,
@@ -146,11 +147,12 @@ class Proveedores extends Component
             });
 
             // Si llegamos aquí, todo se guardó correctamente
-            session()->flash('success', 'Proveedor registrado con éxito');
+            $this->dispatch('notify', title: 'Success', description: 'Proveedor creado correctamente.', type: 'success');
+            $this->proveedorEncontrado = true;
             $this->resetForm();
             $this->dispatch('proveedoresUpdated');
         } catch (\Exception $e) {
-            session()->flash('error', 'Error al registrar el proveedor: ' . $e->getMessage());
+            $this->dispatch('notify', title: 'Error', description: 'Error al registrar el proveedor.', type: 'error');
             Log::error('Error al registrar proveedor', ['error' => $e->getMessage()]);
         }
     }
@@ -160,7 +162,7 @@ class Proveedores extends Component
         $ruc = $this->proveedor['ruc'];
 
         if (strlen($ruc) !== 11) {
-            session()->flash('error', 'El RUC debe tener 11 dígitos.');
+            $this->dispatch('notify', title: 'Error', description: 'El RUC debe tener exactamente 11 dígitos.', type: 'error');
             return;
         }
 
@@ -171,25 +173,28 @@ class Proveedores extends Component
                 'Authorization' => "Bearer " . env("DECOLECTA_API_KEY"),
             ])->withOptions(['verify' => false])
                 ->get("https://api.decolecta.com/v1/sunat/ruc", [
-                    
+
                     'numero' => $ruc
                 ]);
 
 
-                
+
             if ($response->successful()) {
                 $data = $response->json();
                 if (!empty($data['razon_social'])) {
                     $this->proveedor['nombre_proveedor'] = $data['razon_social'];
-                    session()->flash('success', 'Razón social cargada desde SUNAT.');
+                    $this->dispatch('notify', title: 'Success', description: 'Razón social cargada desde SUNAT.', type: 'success');
                 } else {
-                    session()->flash('error', 'No se encontró la razón social para este RUC.');
+                    $this->dispatch('notify', title: 'Error', description: 'No se encontró la razón social para este RUC.', type: 'error');
+                    $this->proveedorEncontrado = false;
                 }
             } else {
-                session()->flash('error', 'Error al consultar el RUC. Intente nuevamente.');
+                $this->dispatch('notify', title: 'Error', description: 'Error al consultar el RUC. Intente nuevamente.', type: 'error');
+                $this->proveedorEncontrado = false;
             }
         } catch (\Exception $e) {
-            session()->flash('error', 'Error al conectar con la API: ' . $e->getMessage());
+            $this->dispatch('notify', title: 'Error', description: 'Error al conectar con la API: ' . $e->getMessage(), type: 'error');
+            $this->proveedorEncontrado = false;
         }
     }
     #[\Livewire\Attributes\On('editarProveedor')]
@@ -250,11 +255,12 @@ class Proveedores extends Component
                 ]);
             });
 
-            session()->flash('success', 'Proveedor actualizado correctamente.');
+            $this->dispatch('notify', title: 'Success', description: 'Proveedor actualizado correctamente.', type: 'success');
             $this->modalEditar = false;
             $this->emit('proveedoresUpdated'); // Para refrescar la tabla
         } catch (\Exception $e) {
-            session()->flash('error', 'Error al actualizar el proveedor: ' . $e->getMessage());
+            $this->dispatch('notify', title: 'Error', description: 'Error al actualizar el proveedor: ' . $e->getMessage(), type: 'error');
+            Log::error('Error al actualizar proveedor', ['error' => $e->getMessage()]);
         }
     }
 

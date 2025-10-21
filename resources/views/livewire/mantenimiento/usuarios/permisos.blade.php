@@ -1,4 +1,8 @@
-<x-panel title="Gestión de Permisos">
+<x-panel title="Gestión de Permisos" :breadcrumbs="[
+    ['label' => 'Inicio', 'href' => '/', 'icon' => 'home'],
+    ['label' => 'Mantenimiento', 'href' => '#'],
+    ['label' => 'Roles'],
+]">
     <!-- Formulario de creación -->
     @if (session()->has('success'))
         <div class="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded" x-data="{ show: true }"
@@ -74,5 +78,25 @@
             @endforelse
         </tbody>
     </table>
+
+    @push('scripts')
+        <script>
+            Livewire.on('notify', (data) => {
+                Swal.fire({
+                    title: data.title,
+                    text: data.description,
+                    icon: data.type,
+                    timer: 2500,
+                    showConfirmButton: false,
+                    customClass: {
+                        popup: 'rounded-lg',
+                        title: 'text-lg font-semibold',
+                        htmlContainer: 'text-sm'
+                    }
+                });
+            });
+        </script>
+    @endpush
+
     <x-loader />
 </x-panel>

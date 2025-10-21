@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Livewire\Configuracion\Modulos;
 use App\Models\Direccion;
 use App\Models\EstadoTrabajadores;
 use App\Models\Persona;
@@ -10,6 +11,11 @@ use App\Models\Tipo_documento;
 use App\Models\Trabajador;
 use App\Models\User;
 use App\Models\Clientes;
+use App\Models\modulo;
+use App\Models\modulo_opcion;
+use App\Models\modulo_roles;
+use App\Models\Roles;
+use App\Models\Roles_permisos;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -22,6 +28,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         // User::factory(10)->create();
+
 
         $estados = [
             ['nombre_estado_trabajador' => 'Activo'],
@@ -95,12 +102,20 @@ class DatabaseSeeder extends Seeder
             "salario" => 2500.00,
         ]);
 
+        $rol =  Roles::create([
+            'nombre_rol' => 'Administrador',
+            'fecha_registro' => now(),
+            'fecha_actualizacion' => now(),
+            'estado' => 'activo',
+        ]);
+
         // Crear usuario vinculado a persona
         User::create([
-            'usuario' => 'user',
-            'contrasena' =>  Hash::make('user'),
+            'usuario' => 'danner',
+            'contrasena' =>  Hash::make('danner123456'),
             "estado" => "activo",
             "id_persona" => $persona->id_persona,
+            'id_rol' => $rol->id_rol,
         ]);
 
         // Cliente 1
@@ -192,6 +207,72 @@ class DatabaseSeeder extends Seeder
 
         Clientes::create([
             "id_persona" => $persona3->id_persona,
+            "fecha_registro" => now(),
+            "fecha_actualizacion" => now(),
+        ]);
+
+        $permisos = collect([
+            "crear-usuarios",
+            "crear-roles",
+            "crear-permisos",
+            "crear-modulos",
+            "crear-modulo-opciones",
+        ]);
+
+        foreach ($permisos as $permisoNombre) {
+            $permiso =  \App\Models\Permiso::create([
+                'nombre_permiso' => $permisoNombre,
+                'fecha_registro' => now(),
+                'fecha_actualizacion' => now(),
+                'estado' => 'activo',
+            ]);
+
+            Roles_permisos::create([
+                'id_rol' => $rol->id_rol,
+                'id_permiso' => $permiso->id_permiso,
+                'fecha_registro' => now(),
+                'fecha_actualizacion' => now(),
+            ]);
+        }
+
+
+        $modulo =  modulo::create([
+            'nombre_modulo' => 'Configuración',
+            'fecha_registro' => now(),
+            'fecha_actualizacion' => now(),
+            'estado' => 'activo',
+            'id_usuario_registro' => 1,
+        ]);
+
+        $modulo_opcion =  modulo_opcion::create([
+            'nombre_opcion' => 'Crear modulos',
+            'ruta_laravel' => 'configuracion.modulos',
+            'orden' => 1,
+            'id_modulo' => $modulo->id_modulo,
+            'id_permiso' => '4',
+            'id_opcion_padre' => null,
+            'estado' => 'activo',
+            'fecha_registro' => now(),
+            'fecha_actualizacion' => now(),
+            'id_usuario_registro' => 1,
+        ]);
+
+        $modulo_opcion =  modulo_opcion::create([
+            'nombre_opcion' => 'Crear Opciones de Módulos',
+            'ruta_laravel' => 'configuracion.opciones',
+            'orden' => 1,
+            'id_modulo' => $modulo->id_modulo,
+            'id_permiso' => '5',
+            'id_opcion_padre' => null,
+            'estado' => 'activo',
+            'fecha_registro' => now(),
+            'fecha_actualizacion' => now(),
+            'id_usuario_registro' => 1,
+        ]);
+
+        $modulo_roles = modulo_roles::create([
+            "id_modulo" => $modulo->id_modulo,
+            "id_rol" => $rol->id_rol,
             "fecha_registro" => now(),
             "fecha_actualizacion" => now(),
         ]);

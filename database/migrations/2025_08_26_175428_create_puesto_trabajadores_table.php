@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -35,6 +36,22 @@ return new class extends Migration
                 ->nullable()
                 ->comment("Fecha de la última modificación del registro.");
         });
+
+        DB::table('puesto_trabajadores')->insert([
+            'nombre_puesto' => 'Veterinario',
+            'descripcion' => 'Puesto de trabajo para veterinarios',
+            'estado' => 'activo',
+            'fecha_registro' => now(),
+            'fecha_actualizacion' => now(),
+        ]);
+
+        DB::table('puesto_trabajadores')->insert([
+            'nombre_puesto' => 'Cajero',
+            'descripcion' => 'Puesto de trabajo para cajeros',
+            'estado' => 'activo',
+            'fecha_registro' => now(),
+            'fecha_actualizacion' => now(),
+        ]);
     }
 
     /**

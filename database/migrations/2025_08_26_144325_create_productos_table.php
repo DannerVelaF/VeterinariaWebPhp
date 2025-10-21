@@ -55,6 +55,9 @@ return new class extends Migration
                 ->on('unidades')
                 ->onDelete('restrict');
 
+            $table->decimal("precio_unitario", 12, 2)
+                ->comment("Precio de unitario del producto, usado para el modulo de ventas y el ecommerce.");
+
             $table->timestamp("fecha_registro")
                 ->useCurrent()
                 ->comment("Fecha de creación del registro.");

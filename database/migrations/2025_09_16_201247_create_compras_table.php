@@ -51,9 +51,15 @@ return new class extends Migration
                 ->nullable()
                 ->comment("Observaciones adicionales sobre la compra. Campo opcional.");
 
-            $table->enum("estado", ["pendiente", "aprobado", "recibido",  "pagado", "cancelado"])
-                ->default("pendiente")
-                ->comment("Estado de la compra. Valores permitidos: pendiente, aprobado, recibido, pagado, cancelado.");
+            // $table->enum("estado", ["pendiente", "aprobado", "recibido",  "pagado", "cancelado"])
+            //     ->default("pendiente")
+            //     ->comment("Estado de la compra. Valores permitidos: pendiente, aprobado, recibido, pagado, cancelado.");
+
+            $table->unsignedBigInteger('id_estado_compra')->comment("Llave foránea al estado de la compra.");
+            $table->foreign('id_estado_compra')
+                ->references('id_estado_compra')
+                ->on('estado_compras')
+                ->onDelete('restrict');
 
             $table->unsignedBigInteger("id_usuario_aprobador")
                 ->nullable()

@@ -58,6 +58,13 @@ class Login extends Component
             return;
         }
 
+        if ($user->id_rol == null) {
+            $this->alertMessage = 'El usuario no tiene un rol asignado, no puede ingresar al sistema. Pongase en contacto con el administrador.';
+            $this->alertType = 'error';
+            return;
+        }
+
+
         // Validar contraseña sin autenticar aún
         if (!Hash::check($this->password, $user->contrasena)) {
             $this->alertMessage = 'Credenciales incorrectas.';
