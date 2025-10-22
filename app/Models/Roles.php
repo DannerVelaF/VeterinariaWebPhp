@@ -32,7 +32,7 @@ class Roles extends Model
     {
         return $this->belongsToMany(
             modulo::class,
-            'Modulo_roles',
+            'modulo_roles',
             'id_rol',      // FK en tabla pivote hacia roles
             'id_modulo'    // FK en tabla pivote hacia modulos
         )->withTimestamps();

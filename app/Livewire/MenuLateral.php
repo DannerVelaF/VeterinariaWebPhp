@@ -2,7 +2,7 @@
 
 namespace App\Livewire;
 
-use App\Models\modulo;
+use App\Models\Modulo;
 use Livewire\Component;
 
 class MenuLateral extends Component
