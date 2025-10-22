@@ -7,13 +7,13 @@ use Illuminate\Database\Eloquent\Model;
 class Modulo_opcion extends Model
 {
     public $timestamps = true;
-    public $table = 'Modulo_opciones';
-    public $primaryKey = 'id_Modulo_opcion';
+    public $table = 'modulo_opciones';
+    public $primaryKey = 'id_modulo_opcion';
     const CREATED_AT = 'fecha_registro';
     const UPDATED_AT = 'fecha_actualizacion';
 
     protected $fillable = [
-        'id_Modulo_opcion',
+        'id_modulo_opcion',
         'nombre_opcion',
         'estado',
         'id_modulo',

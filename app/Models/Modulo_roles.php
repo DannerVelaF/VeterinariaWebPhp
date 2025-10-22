@@ -7,12 +7,12 @@ use Illuminate\Database\Eloquent\Model;
 class Modulo_roles extends Model
 {
     public $timestamps = true;
-    public $primaryKey = 'id_Modulo_roles';
+    public $primaryKey = 'id_modulo_roles';
     const CREATED_AT = 'fecha_registro';
     const UPDATED_AT = 'fecha_actualizacion';
 
     protected $fillable = [
-        'id_Modulo_roles',
+        'id_modulo_roles',
         'id_modulo',
         'id_rol',
         'fecha_registro',
