@@ -6,12 +6,14 @@
 
     <div class="p-6 space-y-6">
         <!-- Header -->
+
         <div class="flex items-center justify-between">
             <div>
                 <h2 class="text-2xl font-bold text-gray-800">Opciones de Módulos</h2>
-                <p class="text-sm text-gray-600 mt-1">Administra las opciones y subopciones del menú de navegación</p>
+                <p class="text-sm text-gray-600 mt-1">
+                    Administra las opciones y subopciones del menú de navegación
+                </p>
             </div>
-
             <flux:button wire:click="abrirModal" class="bg-blue-600 hover:bg-blue-700 text-white">
                 <svg class="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>

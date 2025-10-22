@@ -31,13 +31,6 @@
                     @endif
                 @endforeach
             </flux:sidebar.group>
-        @else
-            {{-- Módulo sin opciones --}}
-            <flux:sidebar.item href="{{ route(Str::slug($modulo->nombre_modulo)) }}"
-                :current="request()->routeIs(Str::slug($modulo->nombre_modulo))" icon="folder"
-                class="capitalize hover:bg-blue-50 hover:text-blue-700 transition-colors duration-150 rounded-lg mb-1">
-                {{ $modulo->nombre_modulo }}
-            </flux:sidebar.item>
         @endif
     @endforeach
 </flux:sidebar.nav>

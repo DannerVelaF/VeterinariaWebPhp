@@ -32,14 +32,18 @@ use App\Livewire\Configuracion\ModuloOpcion;
 use App\Livewire\Inventario\Entradas;
 use App\Livewire\Mantenimiento\Configuracion\Configuracion;
 use App\Livewire\Mantenimiento\Mascotas\Clientes;
+use App\Livewire\Mantenimiento\Mascotas\Mascotas;
 use App\Livewire\Mantenimiento\Productos\Categoria;
 use App\Livewire\Mantenimiento\Productos\Productos;
 use App\Livewire\Mantenimiento\Productos\Proveedores;
 use App\Livewire\Mantenimiento\Productos\Unidades;
+use App\Livewire\Mantenimiento\Servicios\Categoria as ServiciosCategoria;
+use App\Livewire\Mantenimiento\Servicios\Servicios;
 use App\Livewire\Mantenimiento\Trabajadores\Puestos;
 use App\Livewire\Mantenimiento\Trabajadores\Trabajadores;
 use App\Livewire\Mantenimiento\Trabajadores\Turnos;
 use App\Livewire\Mantenimiento\Trabajadores\Ubigeos;
+use App\Models\CategoriaServicio;
 use App\Models\Trabajador;
 
 /*
@@ -108,11 +112,10 @@ Route::middleware('auth')->group(function () {
         });
         /*
         |--------------------------------------------------------------------------
-        | Compras y Clientes
+        | Compras 
         |--------------------------------------------------------------------------
         */
         Route::get('/compras', RegistroCompras::class)->name('compras');
-        Route::get('/clientes', Clientes::class)->name('clientes');
 
         /*
         |--------------------------------------------------------------------------
@@ -144,8 +147,16 @@ Route::middleware('auth')->group(function () {
                 Route::get('/ubigeos', Ubigeos::class)->name('mantenimiento.trabajadores.ubigeos');
             });
 
-            Route::get('/servicios', MantenimientoServicios::class)->name('servicios');
-            Route::get('/mascotas', MantenimientoMascotas::class)->name('mascotas');
+            Route::prefix("servicios")->group(function () {
+                Route::get('/', Servicios::class)->name('mantenimiento.servicios');
+                Route::get("/categorias", ServiciosCategoria::class)->name('mantenimiento.servicios.categorias');
+            });
+
+            Route::prefix("clientes")->group(function () {
+                Route::get('/', Clientes::class)->name('mantenimiento.clientes');
+                Route::get("/mascotas", Mascotas::class)->name('mantenimiento.clientes.mascotas');
+            });
+
 
             // Usuarios, roles y permisos
             Route::get('/usuarios', Usuarios::class)->name('mantenimiento.usuarios');

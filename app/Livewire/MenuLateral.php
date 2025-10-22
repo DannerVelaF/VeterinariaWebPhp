@@ -23,17 +23,11 @@ class MenuLateral extends Component
             // Obtener solo módulos del rol y opciones activas
             $modulos = $rol->modulos()
                 ->where('estado', 'activo')
-                ->whereHas('opciones', function ($query) use ($user) {
-                    $query->where('estado', 'activo')
-                        ->whereHas('permiso', function ($q) use ($user) {
-                            $q->whereIn('nombre_permiso', $user->permisos->pluck('nombre_permiso'));
-                        });
+                ->whereHas('opciones', function ($query) {
+                    $query->where('estado', 'activo');
                 })
-                ->with(['opciones' => function ($query) use ($user) {
-                    $query->where('estado', 'activo')
-                        ->whereHas('permiso', function ($q) use ($user) {
-                            $q->whereIn('nombre_permiso', $user->permisos->pluck('nombre_permiso'));
-                        });
+                ->with(['opciones' => function ($query) {
+                    $query->where('estado', 'activo');
                 }])
                 ->get();
 
@@ -41,10 +35,10 @@ class MenuLateral extends Component
             // Filtrar opciones según permisos del usuario
             $this->modulos = $modulos->map(function ($modulo) use ($user) {
                 $modulo->opciones = $modulo->opciones->filter(function ($opcion) use ($user) {
-                    return $opcion->permiso && $user->tienePermiso($opcion->permiso->nombre_permiso);
-                })->values(); // resetear claves de la colección
+                    return !$opcion->permiso || $user->tienePermiso($opcion->permiso->nombre_permiso);
+                })->values();
                 return $modulo;
-            });
+            })->filter(fn($m) => $m->opciones->count() > 0)->values();
 
             // Opcional: quitar módulos que quedaron sin opciones y no deberían mostrarse
             $this->modulos = $this->modulos->filter(function ($modulo) {
