@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Modulo extends Model
 {
     public $timestamps = true;
+    public $table = 'modulos';
     public $primaryKey = 'id_modulo';
     const CREATED_AT = 'fecha_registro';
     const UPDATED_AT = 'fecha_actualizacion';
@@ -32,7 +33,7 @@ class Modulo extends Model
     {
         return $this->belongsToMany(
             Roles::class,
-            'Modulo_roles',
+            'modulo_roles',
             'id_modulo',
             'id_rol'
         )->withTimestamps();
