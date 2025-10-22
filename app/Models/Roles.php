@@ -31,7 +31,7 @@ class Roles extends Model
     public function modulos()
     {
         return $this->belongsToMany(
-            modulo::class,
+            Modulo::class,
             'modulo_roles',
             'id_rol',      // FK en tabla pivote hacia roles
             'id_modulo'    // FK en tabla pivote hacia modulos

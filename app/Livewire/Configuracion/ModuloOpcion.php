@@ -2,7 +2,7 @@
 
 namespace App\Livewire\Configuracion;
 
-use App\Models\modulo;
+use App\Models\Modulo;
 use App\Models\Modulo_opcion;
 use App\Models\Permiso;
 use Illuminate\Support\Facades\Auth;
@@ -25,7 +25,7 @@ class ModuloOpcion extends Component
 
     public function mount()
     {
-        $this->modulos = modulo::where('estado', 'activo')->get();
+        $this->modulos = Modulo::where('estado', 'activo')->get();
         $this->permisos = Permiso::where('estado', 'activo')->get();
         $this->opcionesPadre = collect();
     }

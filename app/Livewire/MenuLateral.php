@@ -46,7 +46,7 @@ class MenuLateral extends Component
             })->values();
         } else {
             // Si es admin, obtener todos los módulos y opciones activas
-            $this->modulos = modulo::where('estado', 'activo')
+            $this->modulos = Modulo::where('estado', 'activo')
                 ->with(['opciones' => function ($query) {
                     $query->where('estado', 'activo');
                 }])

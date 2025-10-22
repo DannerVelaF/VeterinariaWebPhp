@@ -236,7 +236,7 @@ class DatabaseSeeder extends Seeder
         }
 
 
-        $modulo =  modulo::create([
+        $modulo =  Modulo::create([
             'nombre_modulo' => 'Configuración',
             'fecha_registro' => now(),
             'fecha_actualizacion' => now(),
