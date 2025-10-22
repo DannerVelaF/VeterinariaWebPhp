@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class modulo extends Model
+class Modulo extends Model
 {
     public $timestamps = true;
     public $primaryKey = 'id_modulo';

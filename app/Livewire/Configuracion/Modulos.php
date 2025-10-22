@@ -2,7 +2,7 @@
 
 namespace App\Livewire\Configuracion;
 
-use App\Models\Modulo as ModulosSistema;
+use App\Models\Modulo;
 use App\Models\Modulo_roles;
 use App\Models\Roles;
 use Illuminate\Support\Facades\Auth;
@@ -25,7 +25,7 @@ class Modulos extends Component
 
     public function mount()
     {
-        $this->modulos = ModulosSistema::with('roles')->get();
+        $this->modulos = Modulo::with('roles')->get();
         $this->roles = Roles::where('estado', 'activo')->get();
     }
 
@@ -36,7 +36,7 @@ class Modulos extends Component
         $this->reset(['nombre_modulo', 'rolesSeleccionados', 'modulo_id']);
 
         if ($moduloId) {
-            $modulo = ModulosSistema::with('roles')->find($moduloId);
+            $modulo = Modulo::with('roles')->find($moduloId);
             $this->modulo_id = $modulo->id_modulo;
             $this->nombre_modulo = $modulo->nombre_modulo;
             $this->rolesSeleccionados = $modulo->roles->pluck('id_rol')->toArray();
@@ -60,7 +60,7 @@ class Modulos extends Component
             'rolesSeleccionados' => 'required|array|min:1',
         ], $mensajes);
 
-        $modulo = $this->modulo_id ? ModulosSistema::find($this->modulo_id) : new ModulosSistema();
+        $modulo = $this->modulo_id ? Modulo::find($this->modulo_id) : new Modulo();
 
         $modulo->nombre_modulo = $this->nombre_modulo;
         $modulo->estado = 'activo';
@@ -85,7 +85,7 @@ class Modulos extends Component
     public function abrirModalRoles($moduloId)
     {
         $this->resetValidation();
-        $this->moduloSeleccionado = ModulosSistema::with('roles')->find($moduloId);
+        $this->moduloSeleccionado = Modulo::with('roles')->find($moduloId);
         $this->rolesNuevos = [];
         $this->modalRolesVisible = true;
     }
