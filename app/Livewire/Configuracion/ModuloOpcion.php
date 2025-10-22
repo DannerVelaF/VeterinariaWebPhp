@@ -3,7 +3,7 @@
 namespace App\Livewire\Configuracion;
 
 use App\Models\modulo;
-use App\Models\modulo_opcion;
+use App\Models\Modulo_opcion;
 use App\Models\Permiso;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
@@ -32,7 +32,7 @@ class ModuloOpcion extends Component
 
     public function updatedIdModulo($value)
     {
-        $this->opcionesPadre = modulo_opcion::where('id_modulo', $value)
+        $this->opcionesPadre = Modulo_opcion::where('id_modulo', $value)
             ->whereNull('id_opcion_padre')
             ->where('estado', 'activo')
             ->get();
@@ -46,7 +46,7 @@ class ModuloOpcion extends Component
 
         if ($opcionId) {
             $this->opcion_id = $opcionId;
-            $opcion = modulo_opcion::findOrFail($opcionId);
+            $opcion = Modulo_opcion::findOrFail($opcionId);
             $this->id_modulo = $opcion->id_modulo;
             $this->nombre_opcion = $opcion->nombre_opcion;
             $this->ruta_laravel = $opcion->ruta_laravel;
@@ -83,7 +83,7 @@ class ModuloOpcion extends Component
 
 
         if ($this->opcion_id) {
-            $opcion = modulo_opcion::findOrFail($this->opcion_id);
+            $opcion = Modulo_opcion::findOrFail($this->opcion_id);
             $opcion->update([
                 'id_modulo' => $this->id_modulo,
                 'nombre_opcion' => $this->nombre_opcion,
@@ -93,7 +93,7 @@ class ModuloOpcion extends Component
                 'id_opcion_padre' => $this->id_opcion_padre,
             ]);
         } else {
-            modulo_opcion::create([
+            Modulo_opcion::create([
                 'id_modulo' => $this->id_modulo,
                 'nombre_opcion' => $this->nombre_opcion,
                 'ruta_laravel' => $this->ruta_laravel,
@@ -114,7 +114,7 @@ class ModuloOpcion extends Component
 
     public function anular($opcionId)
     {
-        $opcion = modulo_opcion::findOrFail($opcionId);
+        $opcion = Modulo_opcion::findOrFail($opcionId);
         $opcion->estado = 'inactivo';
         $opcion->save();
 
@@ -139,7 +139,7 @@ class ModuloOpcion extends Component
 
     public function render()
     {
-        $opciones = modulo_opcion::with('subopciones', 'modulo', 'permiso')
+        $opciones = Modulo_opcion::with('subopciones', 'modulo', 'permiso')
             ->whereNull('id_opcion_padre')
             ->where('estado', 'activo')
             ->get();

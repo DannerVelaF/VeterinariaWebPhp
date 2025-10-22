@@ -12,8 +12,8 @@ use App\Models\Trabajador;
 use App\Models\User;
 use App\Models\Clientes;
 use App\Models\modulo;
-use App\Models\modulo_opcion;
-use App\Models\modulo_roles;
+use App\Models\Modulo_opcion;
+use App\Models\Modulo_roles;
 use App\Models\Roles;
 use App\Models\Roles_permisos;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
@@ -244,7 +244,7 @@ class DatabaseSeeder extends Seeder
             'id_usuario_registro' => 1,
         ]);
 
-        $modulo_opcion =  modulo_opcion::create([
+        $Modulo_opcion =  Modulo_opcion::create([
             'nombre_opcion' => 'Crear modulos',
             'ruta_laravel' => 'configuracion.modulos',
             'orden' => 1,
@@ -257,7 +257,7 @@ class DatabaseSeeder extends Seeder
             'id_usuario_registro' => 1,
         ]);
 
-        $modulo_opcion =  modulo_opcion::create([
+        $Modulo_opcion =  Modulo_opcion::create([
             'nombre_opcion' => 'Crear Opciones de Módulos',
             'ruta_laravel' => 'configuracion.opciones',
             'orden' => 1,
@@ -270,7 +270,7 @@ class DatabaseSeeder extends Seeder
             'id_usuario_registro' => 1,
         ]);
 
-        $modulo_roles = modulo_roles::create([
+        $Modulo_roles = Modulo_roles::create([
             "id_modulo" => $modulo->id_modulo,
             "id_rol" => $rol->id_rol,
             "fecha_registro" => now(),

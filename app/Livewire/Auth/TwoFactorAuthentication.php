@@ -4,7 +4,7 @@ namespace App\Livewire\Auth;
 
 use App\Mail\TwoFactorCodeMail;
 use App\Models\modulo;
-use App\Models\modulo_roles;
+use App\Models\Modulo_roles;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;

@@ -4,16 +4,16 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class modulo_opcion extends Model
+class Modulo_opcion extends Model
 {
     public $timestamps = true;
-    public $table = 'modulo_opciones';
-    public $primaryKey = 'id_modulo_opcion';
+    public $table = 'Modulo_opciones';
+    public $primaryKey = 'id_Modulo_opcion';
     const CREATED_AT = 'fecha_registro';
     const UPDATED_AT = 'fecha_actualizacion';
 
     protected $fillable = [
-        'id_modulo_opcion',
+        'id_Modulo_opcion',
         'nombre_opcion',
         'estado',
         'id_modulo',
@@ -28,7 +28,7 @@ class modulo_opcion extends Model
 
     public function modulo()
     {
-        return $this->belongsTo(modulo::class, "id_modulo");
+        return $this->belongsTo(Modulo::class, "id_modulo");
     }
 
     public function permiso()
@@ -38,10 +38,10 @@ class modulo_opcion extends Model
 
     public function subopciones()
     {
-        return $this->hasMany(modulo_opcion::class, 'id_opcion_padre')->with('subopciones');
+        return $this->hasMany(Modulo_opcion::class, 'id_opcion_padre')->with('subopciones');
     }
     public function padre()
     {
-        return $this->belongsTo(modulo_opcion::class, 'id_opcion_padre');
+        return $this->belongsTo(Modulo_opcion::class, 'id_opcion_padre');
     }
 }

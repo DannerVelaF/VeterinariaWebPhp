@@ -2,7 +2,7 @@
 
 namespace App\Http\Middleware;
 
-use App\Models\modulo_opcion;
+use App\Models\Modulo_opcion;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -15,7 +15,7 @@ class VerificarPermiso
         $rutaActual = $request->route()->getName();
 
         // Buscar la opción asociada a la ruta
-        $opcion = modulo_opcion::where('ruta_laravel', $rutaActual)
+        $opcion = Modulo_opcion::where('ruta_laravel', $rutaActual)
             ->where('estado', 'activo')
             ->first();
 

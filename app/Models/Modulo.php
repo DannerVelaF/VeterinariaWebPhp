@@ -23,7 +23,7 @@ class Modulo extends Model
 
     public function opciones()
     {
-        return $this->hasMany(modulo_opcion::class, 'id_modulo')
+        return $this->hasMany(Modulo_opcion::class, 'id_modulo')
             ->whereNull('id_opcion_padre') // solo las principales
             ->with('subopciones');
     }
@@ -32,7 +32,7 @@ class Modulo extends Model
     {
         return $this->belongsToMany(
             Roles::class,
-            'modulo_roles',
+            'Modulo_roles',
             'id_modulo',
             'id_rol'
         )->withTimestamps();
