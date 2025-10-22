@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Modulo_roles extends Model
 {
     public $timestamps = true;
+    public $table = 'modulo_roles';
     public $primaryKey = 'id_modulo_roles';
     const CREATED_AT = 'fecha_registro';
     const UPDATED_AT = 'fecha_actualizacion';
