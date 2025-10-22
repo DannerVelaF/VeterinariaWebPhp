@@ -158,9 +158,9 @@ class Usuarios extends Component
             ];
             $messages['passwordEdit.min'] = 'La contraseña debe tener al menos 8 caracteres.';
             $messages['passwordEdit.regex'] = 'La contraseña debe contener al menos una letra mayúscula, una minúscula, un número y un carácter especial.';
+            $this->validate($rules, $messages);
         }
 
-        $this->validate($rules, $messages);
 
         try {
 
