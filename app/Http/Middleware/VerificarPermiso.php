@@ -19,6 +19,10 @@ class VerificarPermiso
             ->where('estado', 'activo')
             ->first();
 
+        if ($user->rol->nombre_rol == "Administrador") {
+            return $next($request);
+        }
+
         // 🚫 Si no existe la opción o no tiene permiso asignado, bloquear
         if (!$opcion || !$opcion->permiso) {
             return redirect()

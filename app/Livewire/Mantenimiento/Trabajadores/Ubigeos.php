@@ -3,6 +3,7 @@
 namespace App\Livewire\Mantenimiento\Trabajadores;
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Maatwebsite\Excel\Facades\Excel;
@@ -20,7 +21,8 @@ class Ubigeos extends Component
     {
         // Validar que hay archivo
         if (!$this->archivo) {
-            session()->flash('error', 'Por favor selecciona un archivo.');
+            $this->dispatch('notify', title: 'Error', description: 'Debe seleccionar un archivo para importar.', type: 'error');
+
             return;
         }
 
@@ -36,7 +38,7 @@ class Ubigeos extends Component
             $rows = $sheet->toArray();
 
             if (count($rows) <= 1) {
-                session()->flash('error', 'El archivo está vacío o solo tiene encabezado.');
+                $this->dispatch('notify', title: 'Error', description: 'El archivo está vacío o solo tiene encabezado.', type: 'error');
                 return;
             }
 
@@ -51,10 +53,11 @@ class Ubigeos extends Component
                 ];
             }, array_slice($rows, 0, 50)); // Solo mostrar primeras 50 filas
 
-            session()->flash('success', 'Previsualización generada correctamente. Mostrando ' . count($this->preview) . ' registros.');
+            $this->dispatch('notify', title: 'Éxito', description: 'Previsualización generada correctamente. Mostrando ' . count($this->preview) . ' registros.', type: 'success');
         } catch (\Exception $e) {
-            session()->flash('error', 'Error al leer el archivo: ' . $e->getMessage());
+            $this->dispatch('notify', title: 'Error', description: 'Error al leer el archivo: ' . $e->getMessage(), type: 'error');
             $this->preview = [];
+            Log::error('Error al previsualizar ubigeos', ['error' => $e->getMessage()]);
         }
     }
 
@@ -62,14 +65,16 @@ class Ubigeos extends Component
     public function importar()
     {
         if (empty($this->preview)) {
-            session()->flash('error', 'No hay datos para importar.');
+            $this->dispatch('notify', title: 'Error', description: 'No hay datos para importar.', type: 'error');
             return;
         }
+
+        // Aumentar tiempo de ejecución temporalmente
+        ini_set('max_execution_time', 300); // 5 minutos
 
         try {
             DB::beginTransaction();
 
-            // Recargar el archivo completo para importar todos los datos
             if ($this->archivo) {
                 $filePath = $this->archivo->getRealPath();
                 $spreadsheet = IOFactory::load($filePath);
@@ -79,18 +84,30 @@ class Ubigeos extends Component
                 // Eliminar encabezado
                 array_shift($rows);
 
+                $chunkSize = 1000; // filas por bloque
                 $importados = 0;
-                foreach ($rows as $fila) {
-                    if (!empty($fila[0])) { // Solo importar si tiene código
-                        DB::table('ubigeos')->updateOrInsert(
-                            ['codigo_ubigeo' => $fila[0]],
-                            [
+
+                $chunks = array_chunk($rows, $chunkSize);
+
+                foreach ($chunks as $chunk) {
+                    $datos = [];
+                    foreach ($chunk as $fila) {
+                        if (!empty($fila[0])) {
+                            $datos[] = [
+                                'codigo_ubigeo' => $fila[0],
                                 'departamento' => $fila[1] ?? '',
                                 'provincia' => $fila[2] ?? '',
                                 'distrito' => $fila[3] ?? '',
-                            ]
+                            ];
+                        }
+                    }
+                    if (!empty($datos)) {
+                        DB::table('ubigeos')->upsert(
+                            $datos,
+                            ['codigo_ubigeo'], // clave para actualizar si ya existe
+                            ['departamento', 'provincia', 'distrito'] // columnas a actualizar
                         );
-                        $importados++;
+                        $importados += count($datos);
                     }
                 }
 
@@ -99,14 +116,16 @@ class Ubigeos extends Component
                 // Limpiar preview y archivo
                 $this->reset(['preview', 'archivo']);
 
-                session()->flash('success', "Se importaron {$importados} ubigeos correctamente.");
+                $this->dispatch('notify', title: 'Éxito', description: "Se importaron {$importados} ubigeos correctamente.", type: 'success');
                 $this->dispatch('ubigeosUpdated');
             }
         } catch (\Exception $e) {
             DB::rollBack();
-            session()->flash('error', 'Error durante la importación: ' . $e->getMessage());
+            $this->dispatch('notify', title: 'Error', description: 'Error durante la importación: ' . $e->getMessage(), type: 'error');
+            Log::error('Error al importar ubigeos', ['error' => $e->getMessage()]);
         }
     }
+
 
     // Limpiar preview cuando se cambie el archivo
     public function updatedArchivo()

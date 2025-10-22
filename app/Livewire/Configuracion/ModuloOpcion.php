@@ -70,11 +70,12 @@ class ModuloOpcion extends Component
             "orden.integer" => 'El orden de la opción debe ser un número entero.',
             'id_permiso.required' => 'El permiso es obligatorio.',
             'id_permiso.exists' => 'El permiso seleccionado no es válido.',
+            "id_modulo.required" => 'El módulo es obligatorio.',
         ];
 
         $this->validate([
             'id_modulo' => 'required|exists:modulos,id_modulo',
-            'nombre_opcion' => 'required|string|max:100|unique:modulo_opciones,nombre_opcion,' . $this->id_modulo . ',id_opcion_padre',
+            'nombre_opcion' => 'required|string|max:100',
             'ruta_laravel' => 'required|string|max:50',
             'orden' => 'required|integer',
             'id_permiso' => 'required|exists:permisos,id_permiso',
