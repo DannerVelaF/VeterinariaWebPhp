@@ -50,10 +50,17 @@ class Registro extends Component
             'fecha_compra' => now()->format('Y-m-d'),
             'observacion' => ''
         ];
-        $this->cantOrdenesPendientes = Compra::where('estado', 'pendiente')->count();
-        $this->cantOrdenesAprobadas = Compra::where('estado', 'aprobado')->count();
-        $this->cantOrdenesRecibidas = Compra::where('estado', 'recibido')->count();
-        $this->precioCompraTotal = Compra::where("estado", "recibido")->sum('total');
+
+        $pendiente = EstadoCompras::where('nombre_estado_compra', 'pendiente')->first();
+        $aprobado = EstadoCompras::where('nombre_estado_compra', 'aprobado')->first();
+        $recibido = EstadoCompras::where('nombre_estado_compra', 'recibido')->first();
+        $cancelado = EstadoCompras::where('nombre_estado_compra', 'cancelado')->first();
+
+        $this->cantOrdenesPendientes = Compra::where("id_estado_compra", $pendiente->id_estado_compra)->count();
+        $this->cantOrdenesAprobadas = Compra::where("id_estado_compra", $aprobado->id_estado_compra)->count();
+        $this->cantOrdenesRecibidas = Compra::where("id_estado_compra", $recibido->id_estado_compra)->count();
+
+        $this->precioCompraTotal = Compra::where("id_estado_compra", $recibido->id_estado_compra)->sum('total');
     }
 
     public function generarCodigoOrden()
