@@ -221,6 +221,12 @@ class Trabajadores extends Component
                 'codigo_ubigeo' => $this->direccion['codigo_ubigeo'],
                 "fecha_actualizacion" => now(),
             ]);
+
+            $this->trabajadorSeleccionado->refresh()->load('estadoTrabajador');
+
+            $this->trabajadorSeleccionado->persona->user()->update([
+                'estado' => $this->estadoNuevo == 1 ? 'activo' : 'inactivo',
+            ]);
         });
 
         $this->modalEditar = false;

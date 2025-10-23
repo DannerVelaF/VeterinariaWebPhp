@@ -59,19 +59,15 @@ final class PuestosTable extends PowerGridComponent
 
             Column::make('Nombre', 'nombre_puesto')
                 ->sortable()
-                ->searchable()
-                ->editOnClick(),
+                ->searchable(),
 
             Column::make('Descripción', 'descripcion')
                 ->sortable()
-                ->searchable()
-                ->editOnClick(),
+                ->searchable(),
 
             Column::make('Estado', 'estado')
                 ->sortable()
                 ->searchable(),
-
-
 
             Column::make('Fecha de registro', 'fecha_registro')
                 ->sortable()
@@ -99,7 +95,7 @@ final class PuestosTable extends PowerGridComponent
     {
         $this->js('alert(' . $rowId . ')');
     }
-    
+
 
     public function onUpdatedEditable(string|int $id, string $field, string $value): void
     {

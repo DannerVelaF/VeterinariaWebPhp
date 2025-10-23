@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 
 // 🔹 Auth
 use App\Livewire\Auth\Login;
+use App\Livewire\Auth\RegistroContraseña;
 use App\Livewire\Auth\TwoFactorAuthentication;
 
 // 🔹 Páginas principales
@@ -57,7 +58,7 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::get('/login/two-factor', TwoFactorAuthentication::class)->name('two.factor');
-
+Route::get('/login/primerLogin', RegistroContraseña::class)->name('primer.login');
 /*
 |--------------------------------------------------------------------------
 | Redirección base

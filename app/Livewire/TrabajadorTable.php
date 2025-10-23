@@ -3,9 +3,11 @@
 namespace App\Livewire;
 
 use App\Models\EstadoTrabajadores;
+use App\Models\PuestoTrabajador;
 use App\Models\Trabajador;
 use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 use PowerComponents\LivewirePowerGrid\Button;
 use PowerComponents\LivewirePowerGrid\Column;
 use PowerComponents\LivewirePowerGrid\Facades\Filter;
@@ -18,13 +20,20 @@ final class TrabajadorTable extends PowerGridComponent
     public string $tableName = 'trabajador-table-w4ssvw-table';
     protected $listeners = ['trabajadoresUpdated' => '$refresh'];
     public array $estados = [];
+    public array $puestos = [];
     public string $primaryKey = 'id_trabajador';
     public string $sortField = 'id_trabajador';
     public function setUp(): array
     {
         $this->showCheckBox();
 
-        $this->estados = EstadoTrabajadores::pluck('nombre_estado_trabajador', 'id_estado_trabajador')->toArray() ?? [];
+        $this->estados = EstadoTrabajadores::select('id_estado_trabajador as id', 'nombre_estado_trabajador as name')
+            ->get()
+            ->toArray();
+
+        $this->puestos = PuestoTrabajador::select('id_puesto_trabajo as id', 'nombre_puesto as name')
+            ->get()
+            ->toArray();
 
         return [
             PowerGrid::header(),
@@ -76,18 +85,15 @@ final class TrabajadorTable extends PowerGridComponent
 
             Column::make('Nombre completo', 'nombre_completo')
                 ->sortable()
-                ->searchable()
-                ->editOnClick(),
+                ->searchable(),
 
             Column::make('Puesto', 'puesto_nombre')
                 ->sortable()
-                ->searchable()
-                ->editOnClick(),
+                ->searchable(),
 
             Column::make('Estado', 'estado_nombre')
                 ->sortable()
-                ->searchable()
-                ->editOnClick(),
+                ->searchable(),
 
             Column::make('Fecha ingreso', 'fecha_ingreso')
                 ->sortable(),
@@ -97,17 +103,14 @@ final class TrabajadorTable extends PowerGridComponent
 
             Column::make('Salario', 'salario')
                 ->sortable()
-                ->searchable()
-                ->editOnClick(),
+                ->searchable(),
 
             Column::make('N° Seguro Social', 'numero_seguro_social')
                 ->sortable()
-                ->searchable()
-                ->editOnClick(),
+                ->searchable(),
 
             Column::make('Fecha creación', 'fecha_registro')
                 ->sortable(),
-
 
             Column::action('Acciones')
         ];
@@ -118,6 +121,44 @@ final class TrabajadorTable extends PowerGridComponent
         return [
             Filter::datepicker('fecha_ingreso'),
             Filter::datepicker('fecha_salida'),
+            Filter::select('estado_nombre', 'Estado')
+                ->dataSource($this->estados)
+                ->optionValue('id')
+                ->optionLabel('name')
+                ->builder(function (Builder $query, $value) {
+                    return $query->whereHas('estadoTrabajador', function ($q) use ($value) {
+                        $q->where('id_estado_trabajador', $value);
+                    });
+                }),
+            Filter::select('puesto_nombre', 'Puesto')
+                ->dataSource($this->puestos)
+                ->optionValue('id')
+                ->optionLabel('name')
+                ->builder(function (Builder $query, $value) {
+                    return $query->whereHas('puestoTrabajo', function ($q) use ($value) {
+                        $q->where('id_puesto_trabajo', $value);
+                    });
+                }),
+            Filter::inputText('nombre_completo', 'Nombre completo')
+                ->builder(function (Builder $query, array $value) {
+                    $search = $value['value'];
+
+                    return $query->whereHas('persona', function ($q) use ($search) {
+                        $q->where(DB::raw("CONCAT(nombre, ' ', apellido_paterno, ' ', apellido_materno)"), 'like', "%{$search}%")
+                            ->orWhere('nombre', 'like', "%{$search}%")
+                            ->orWhere('apellido_paterno', 'like', "%{$search}%")
+                            ->orWhere('apellido_materno', 'like', "%{$search}%");
+                    });
+                }),
+            Filter::inputText('documento', 'Documento')
+                ->builder(function (Builder $query, array $value) {
+                    $search = $value['value'];
+
+                    return $query->whereHas('persona', function ($q) use ($search) {
+                        $q->where('numero_documento', 'like', "%{$search}%");
+                    });
+                }),
+
         ];
     }
 

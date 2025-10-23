@@ -47,7 +47,7 @@
 
                     <div class="flex flex-col">
                         <label>Nombre <span class="text-red-500">*</span></label>
-                        <select wire:model.live='trabajadorSeleccionado' name="trabajador" id="trabajador"
+                        <select wire:model.live="trabajadorSeleccionado" name="trabajador" id="trabajador"
                             class="border rounded px-2 py-1">
                             <option value="">Seleccione...</option>
                             @foreach ($trabajadores as $t)
@@ -56,8 +56,8 @@
                                     {{ $t->persona->apellido_materno }}
                                 </option>
                             @endforeach
-
                         </select>
+
                         @error('trabajadorSeleccionado')
                             <p class="text-red-500 text-xs">{{ $message }}</p>
                         @enderror
@@ -74,11 +74,12 @@
 
                     <!-- Password -->
                     <div class="flex flex-col">
-                        <label>Contraseña <span class="text-red-500">*</span></label>
-                        <input type="password" wire:model="password" class="border rounded px-2 py-1">
-                        @error('password')
-                            <p class="text-red-500 text-xs">{{ $message }}</p>
-                        @enderror
+                        <div class="flex flex-col mb-3">
+                            <label>Contraseña <span class="text-red-500">*</span></label>
+                            <input type="text" wire:model="dniTrabajador"
+                                class="border rounded px-2 py-1 bg-gray-100" readonly>
+                        </div>
+
                     </div>
 
                     <!-- Rol -->
@@ -175,6 +176,23 @@
             </div>
         </div>
     @endif
-
+    @push('scripts')
+        <script>
+            Livewire.on('notify', (data) => {
+                Swal.fire({
+                    title: data.title,
+                    text: data.description,
+                    icon: data.type,
+                    timer: 2500,
+                    showConfirmButton: false,
+                    customClass: {
+                        popup: 'rounded-lg',
+                        title: 'text-lg font-semibold',
+                        htmlContainer: 'text-sm'
+                    }
+                });
+            });
+        </script>
+    @endpush
     <x-loader />
 </x-panel>

@@ -77,13 +77,6 @@ final class UserTable extends PowerGridComponent
             Column::make('Fecha de registro', 'fecha_registro')
                 ->sortable()
                 ->searchable(),
-            Column::make('Estado', 'estado_boolean')
-                ->sortable()
-                ->searchable()
-                ->toggleable(
-                    trueLabel: 'activo',
-                    falseLabel: 'inactivo'
-                ),
             Column::make('Roles', 'roles'),
             Column::action('Acciones')
         ];

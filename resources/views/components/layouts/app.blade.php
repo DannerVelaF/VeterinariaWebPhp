@@ -7,6 +7,8 @@
         <title>ADELA VETERÍNARIA & SPA</title>
         @vite('resources/css/app.css')
         @livewireStyles
+        <link rel="shortcut icon" href="/images/pets.png" type="image/x-icon">
+
     </head>
 
     <body class="bg-gray-50 antialiased">

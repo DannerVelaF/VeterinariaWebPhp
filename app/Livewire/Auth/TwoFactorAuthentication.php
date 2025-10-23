@@ -50,16 +50,27 @@ class TwoFactorAuthentication extends Component
 
             // Limpiar sesión temporal
             Session::forget('two_factor_code');
-            Session::forget('two_factor_user_id');
+            Session::forget('two_factor_user_id');  
+
+
+            if ($this->user->ultimo_login === null) {
+                return redirect()->route('primer.login');
+            }
 
             // Registrar último login
             $this->user->ultimo_login = now();
             $this->user->save();
+
             return redirect()->route('inicio');
         } else {
             $this->alertMessage = "Código incorrecto, intente nuevamente.";
             $this->alertType = "error";
         }
+    }
+
+    public function backToLogin()
+    {
+        return redirect()->route('login');
     }
 
     public function render()

@@ -17,7 +17,7 @@ class Usuarios extends Component
         'rolesUpdated',
         'roles-created-global' => 'cargarDatos', // Escuchar evento global
     ];
-
+    public $dniTrabajador = null;
     public $usernameEdit;
     public $passwordEdit;
     public $estadoEdit;
@@ -36,10 +36,18 @@ class Usuarios extends Component
     public $usuarioSeleccionado; // instancia del usuario que vamos a editar
     public $rolNuevo; // rol seleccionado en el modal
 
-    public function updateTrabajadorSelecccionado($value)
+    public function updatedTrabajadorSeleccionado($value)
     {
         $this->trabajadorSeleccionado = $value;
+
+        $trabajador = Trabajador::find($value);
+        if ($trabajador) {
+            $this->dniTrabajador = $trabajador->persona->numero_documento;
+        } else {
+            $this->dniTrabajador = null;
+        }
     }
+
 
     public function mount()
     {
@@ -63,25 +71,24 @@ class Usuarios extends Component
         $this->validate([
             'trabajadorSeleccionado' => 'required|exists:trabajadores,id_trabajador',
             'username' => 'required|string|unique:usuarios,usuario',
-            'password' => [
-                'required',
-                'string',
-                'min:8',
-                'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\d\s]).{8,}$/',
-            ],
+            // 'password' => [
+            //     'required',
+            //     'string',
+            //     'min:8',
+            //     'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\d\s]).{8,}$/',
+            // ],
             'rolSeleccionado' => 'required|exists:roles,id_rol',
         ], [
             "username.unique" => "El usuario ya existe.",
             "username.required" => "El campo 'Usuario' es requerido.",
-            "password.required" => "El campo 'Contraseña' es requerido.",
+            // "password.required" => "El campo 'Contraseña' es requerido.",
             "trabajadorSeleccionado.required" => "El campo 'Trabajador' es requerido.",
             "rolSeleccionado.required" => "El campo 'Rol' es requerido.",
-            'password.regex' => 'La contraseña debe contener al menos una letra mayúscula, una minúscula, un número y un carácter especial.',
+            // 'password.regex' => 'La contraseña debe contener al menos una letra mayúscula, una minúscula, un número y un carácter especial.',
         ]);
 
 
         $trabajador = Trabajador::find($this->trabajadorSeleccionado);
-
         // Validar si el trabajador ya tiene usuario
         if (User::where('id_persona', $trabajador->id_persona)->exists()) {
             session()->flash('error', 'Este trabajador ya tiene un usuario asignado.');
@@ -93,7 +100,7 @@ class Usuarios extends Component
                 // Crear usuario
                 $user = User::create([
                     'usuario' => $this->username,
-                    'contrasena' => Hash::make($this->password),
+                    'contrasena' => Hash::make($trabajador->persona->numero_documento),
                     'estado' => 'activo',
                     'id_persona' => $trabajador->id_persona,
                     'id_rol' => $this->rolSeleccionado,
@@ -107,6 +114,7 @@ class Usuarios extends Component
 
                 $this->dispatch('notify', title: 'Success', description: 'Usuario registrado correctamente.', type: 'success');
                 $this->reset(['trabajadorSeleccionado', 'username', 'password', 'rolSeleccionado', 'permisosSeleccionados']);
+                $this->dniTrabajador = null;
             });
         } catch (\Exception $e) {
             $this->dispatch('notify', title: 'Error', description: 'Error al registrar el usuario: ' . $e->getMessage(), type: 'error');
@@ -147,33 +155,47 @@ class Usuarios extends Component
         }
     }
 
+
+    public function resetContrasena()
+    {
+        if (!$this->usuarioSeleccionado) return;
+
+        try {
+            $this->usuarioSeleccionado->update([
+                'contrasena' => Hash::make($this->usuarioSeleccionado->trabajador->dni), // contraseña = DNI
+                'ultimo_login' => null, // resetea la fecha de último login
+            ]);
+
+            $this->dispatch('notify', title: 'Success', description: 'Contraseña reseteada correctamente. La nueva contraseña es el DNI.', type: 'success');
+        } catch (\Exception $e) {
+            $this->dispatch('notify', title: 'Error', description: 'Error al resetear la contraseña: ' . $e->getMessage(), type: 'error');
+            Log::error('Error al resetear contraseña', ['error' => $e->getMessage()]);
+        }
+    }
+
+
     public function guardarRol()
     {
         if (!$this->usuarioSeleccionado) return;
-        if (!empty($this->passwordEdit)) {
-            $rules['passwordEdit'] = [
-                'string',
-                'min:8',
-                'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\d\s]).{8,}$/',
-            ];
-            $messages['passwordEdit.min'] = 'La contraseña debe tener al menos 8 caracteres.';
-            $messages['passwordEdit.regex'] = 'La contraseña debe contener al menos una letra mayúscula, una minúscula, un número y un carácter especial.';
-            $this->validate($rules, $messages);
+
+        $rules = [];
+        $messages = [];
+
+        // Solo validar si el username cambió
+        if ($this->usernameEdit !== $this->usuarioSeleccionado->usuario) {
+            $rules['usernameEdit'] = 'required|string|unique:usuarios,usuario';
+            $messages['usernameEdit.unique'] = 'Este nombre de usuario ya existe.';
+            $messages['usernameEdit.required'] = 'El campo Usuario es requerido.';
         }
 
+        $this->validate($rules, $messages);
 
         try {
-
             $data = [
                 'usuario' => $this->usernameEdit,
                 'id_rol' => $this->rolNuevo,
                 'estado' => $this->estadoEdit,
             ];
-
-            // Solo actualizar contraseña si se ingresó
-            if (!empty($this->passwordEdit)) {
-                $data['contrasena'] = Hash::make($this->passwordEdit);
-            }
 
             $this->usuarioSeleccionado->update($data);
 
