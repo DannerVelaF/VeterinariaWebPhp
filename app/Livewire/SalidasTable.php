@@ -4,6 +4,7 @@ namespace App\Livewire;
 
 use App\Models\InventarioMovimiento;
 use App\Models\Producto;
+use App\Models\TipoMovimiento;
 use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use PowerComponents\LivewirePowerGrid\Button;
@@ -35,9 +36,12 @@ final class SalidasTable extends PowerGridComponent
 
     public function datasource(): Builder
     {
+
+        $tipoSalida = \App\Models\TipoMovimiento::where("nombre_tipo_movimiento", "salida")->firstOrFail();
+
         return InventarioMovimiento::query()
             ->with(["trabajador", "lote.producto"])
-            ->where('tipo_movimiento', 'salida')
+            ->where('id_tipo_movimiento', $tipoSalida->id_tipo_movimiento)
             ->orderBy('fecha_movimiento', 'desc');
     }
 

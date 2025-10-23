@@ -177,23 +177,24 @@ class Proveedores extends Component
                     'numero' => $ruc
                 ]);
 
-
-
             if ($response->successful()) {
                 $data = $response->json();
                 if (!empty($data['razon_social'])) {
                     $this->proveedor['nombre_proveedor'] = $data['razon_social'];
                     $this->dispatch('notify', title: 'Success', description: 'Razón social cargada desde SUNAT.', type: 'success');
+                    $this->proveedorEncontrado = true;
                 } else {
-                    $this->dispatch('notify', title: 'Error', description: 'No se encontró la razón social para este RUC.', type: 'error');
+                    $this->dispatch('notify', title: 'Error', description: 'No se encontró la razón social para este RUC. Ingreselo los datos manualmente', type: 'error');
+                    Log::error('Error al consultar RUC', ['error' => 'No se encontró la razón social']);
                     $this->proveedorEncontrado = false;
                 }
             } else {
-                $this->dispatch('notify', title: 'Error', description: 'Error al consultar el RUC. Intente nuevamente.', type: 'error');
+                $this->dispatch('notify', title: 'Error', description: 'Error al consultar el RUC. Intente nuevamente. Ingrese los datos manuamente', type: 'error');
                 $this->proveedorEncontrado = false;
             }
         } catch (\Exception $e) {
-            $this->dispatch('notify', title: 'Error', description: 'Error al conectar con la API: ' . $e->getMessage(), type: 'error');
+            $this->dispatch('notify', title: 'Error', description: 'Error al conectar con la API. Pruebe ingresando los datos manualmente', type: 'error');
+            Log::error('Error al consultar RUC', ['error' => $e->getMessage()]);
             $this->proveedorEncontrado = false;
         }
     }

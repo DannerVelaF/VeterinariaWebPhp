@@ -172,7 +172,7 @@
             </div>
         </flux:modal>
 
-        <!-- Tabla de opciones -->
+        <!-- Tabla de opciones con scroll -->
         <div class="bg-white rounded-lg shadow-sm border border-gray-200">
             <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
                 <div>
@@ -191,172 +191,109 @@
                 </button>
             </div>
 
+            <!-- Contenedor de tabla con scroll -->
             <div class="overflow-x-auto">
-                <table class="w-full">
-                    <thead class="bg-gray-50 border-b border-gray-200">
-                        <tr>
-                            <th
-                                class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                #</th>
-                            <th
-                                class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                Opción</th>
-                            <th
-                                class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                Módulo</th>
-                            <th
-                                class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                Ruta</th>
-                            <th
-                                class="px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                Orden</th>
-                            <th
-                                class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                Permiso</th>
-                            <th
-                                class="px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-200">
-                        @forelse ($opciones as $index => $op)
-                            <!-- Opción Principal -->
-                            <tr class="hover:bg-gray-50 transition-colors"
-                                data-parent-row="{{ $op->id_modulo_opcion }}">
-                                <td class="px-6 py-4 text-sm text-gray-700 font-medium">{{ $index + 1 }}</td>
-                                <td class="px-6 py-4">
-                                    <div class="flex items-center gap-2">
-                                        @if ($op->subopciones->count() > 0)
-                                            <button onclick="toggleSubopciones({{ $op->id_modulo_opcion }})"
-                                                class="toggle-btn w-6 h-6 rounded hover:bg-gray-200 flex items-center justify-center transition"
-                                                data-target="{{ $op->id_modulo_opcion }}">
-                                                <svg class="w-4 h-4 text-gray-600 transform transition-transform"
-                                                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                                        stroke-width="2" d="M9 5l7 7-7 7"></path>
-                                                </svg>
-                                            </button>
-                                        @else
-                                            <div class="w-6"></div>
-                                        @endif
-                                        <div class="flex items-center gap-2">
-                                            <div
-                                                class="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
-                                                <svg class="w-4 h-4 text-blue-600" fill="none"
-                                                    stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                                        stroke-width="2"
-                                                        d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z">
-                                                    </path>
-                                                </svg>
-                                            </div>
-                                            <div>
-                                                <span
-                                                    class="text-sm font-semibold text-gray-800">{{ $op->nombre_opcion }}</span>
-                                                @if ($op->subopciones->count() > 0)
-                                                    <span
-                                                        class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                                        {{ $op->subopciones->count() }} sub
-                                                    </span>
-                                                @endif
-                                            </div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4 text-sm text-gray-700">
-                                    <span
-                                        class="inline-flex items-center px-2.5 py-1 rounded-md bg-purple-100 text-purple-800 text-xs font-medium">
-                                        {{ $op->modulo->nombre_modulo }}
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 text-sm">
-                                    <code
-                                        class="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs font-mono">{{ $op->ruta_laravel }}</code>
-                                </td>
-                                <td class="px-6 py-4 text-sm text-gray-700 text-center">
-                                    <span
-                                        class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 text-gray-700 font-semibold">
-                                        {{ $op->orden }}
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 text-sm text-gray-700">
-                                    {{ $op->permiso->nombre_permiso ?? '-' }}
-                                </td>
-                                <td class="px-6 py-4">
-                                    <div class="flex items-center justify-center gap-2">
-                                        <flux:button wire:click="abrirModal({{ $op->id_modulo_opcion }})"
-                                            class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs rounded-lg transition">
-                                            <svg class="w-3.5 h-3.5 inline-block mr-1" fill="none"
-                                                stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z">
-                                                </path>
-                                            </svg>
-                                            Editar
-                                        </flux:button>
-                                        <flux:button wire:click="anular({{ $op->id_modulo_opcion }})"
-                                            class="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs rounded-lg transition">
-                                            <svg class="w-3.5 h-3.5 inline-block mr-1" fill="none"
-                                                stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
-                                                </path>
-                                            </svg>
-                                            Anular
-                                        </flux:button>
-                                    </div>
-                                </td>
+                <div class="min-w-full max-h-[500px] overflow-y-auto">
+                    <table class="w-full">
+                        <thead class="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
+                            <tr>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider bg-gray-50">
+                                    #
+                                </th>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider bg-gray-50">
+                                    Opción
+                                </th>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider bg-gray-50">
+                                    Módulo
+                                </th>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider bg-gray-50">
+                                    Ruta
+                                </th>
+                                <th
+                                    class="px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider bg-gray-50">
+                                    Orden
+                                </th>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider bg-gray-50">
+                                    Permiso
+                                </th>
+                                <th
+                                    class="px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider bg-gray-50">
+                                    Acciones
+                                </th>
                             </tr>
-
-                            <!-- Subopciones -->
-                            @foreach ($op->subopciones as $subIndex => $sub)
-                                <tr class="subopcion-row hover:bg-blue-50/50 transition-colors hidden bg-blue-50/30"
-                                    data-parent="{{ $op->id_modulo_opcion }}">
-                                    <td class="px-6 py-3 text-sm text-gray-500"></td>
-                                    <td class="px-6 py-3">
-                                        <div class="flex items-center gap-2 pl-8">
-                                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor"
-                                                viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M9 5l7 7-7 7"></path>
-                                            </svg>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200">
+                            @forelse ($opciones as $index => $op)
+                                <!-- Opción Principal -->
+                                <tr class="hover:bg-gray-50 transition-colors"
+                                    data-parent-row="{{ $op->id_modulo_opcion }}">
+                                    <td class="px-6 py-4 text-sm text-gray-700 font-medium">{{ $index + 1 }}</td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center gap-2">
+                                            @if ($op->subopciones->count() > 0)
+                                                <button onclick="toggleSubopciones({{ $op->id_modulo_opcion }})"
+                                                    class="toggle-btn w-6 h-6 rounded hover:bg-gray-200 flex items-center justify-center transition"
+                                                    data-target="{{ $op->id_modulo_opcion }}">
+                                                    <svg class="w-4 h-4 text-gray-600 transform transition-transform"
+                                                        fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                                    </svg>
+                                                </button>
+                                            @else
+                                                <div class="w-6"></div>
+                                            @endif
                                             <div class="flex items-center gap-2">
                                                 <div
-                                                    class="w-7 h-7 rounded-lg bg-blue-200 flex items-center justify-center flex-shrink-0">
-                                                    <svg class="w-3.5 h-3.5 text-blue-700" fill="none"
+                                                    class="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+                                                    <svg class="w-4 h-4 text-blue-600" fill="none"
                                                         stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round"
                                                             stroke-width="2"
-                                                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                                                            d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z">
                                                         </path>
                                                     </svg>
                                                 </div>
-                                                <span class="text-sm text-gray-700">{{ $sub->nombre_opcion }}</span>
+                                                <div>
+                                                    <span
+                                                        class="text-sm font-semibold text-gray-800">{{ $op->nombre_opcion }}</span>
+                                                    @if ($op->subopciones->count() > 0)
+                                                        <span
+                                                            class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                                            {{ $op->subopciones->count() }} sub
+                                                        </span>
+                                                    @endif
+                                                </div>
                                             </div>
                                         </div>
                                     </td>
-                                    <td class="px-6 py-3 text-sm text-gray-700">
+                                    <td class="px-6 py-4 text-sm text-gray-700">
                                         <span
                                             class="inline-flex items-center px-2.5 py-1 rounded-md bg-purple-100 text-purple-800 text-xs font-medium">
-                                            {{ $sub->modulo->nombre_modulo }}
+                                            {{ $op->modulo->nombre_modulo }}
                                         </span>
                                     </td>
-                                    <td class="px-6 py-3 text-sm">
+                                    <td class="px-6 py-4 text-sm">
                                         <code
-                                            class="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs font-mono">{{ $sub->ruta_laravel }}</code>
+                                            class="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs font-mono">{{ $op->ruta_laravel }}</code>
                                     </td>
-                                    <td class="px-6 py-3 text-sm text-gray-700 text-center">
+                                    <td class="px-6 py-4 text-sm text-gray-700 text-center">
                                         <span
-                                            class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-gray-100 text-gray-700 font-semibold text-xs">
-                                            {{ $sub->orden }}
+                                            class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 text-gray-700 font-semibold">
+                                            {{ $op->orden }}
                                         </span>
                                     </td>
-                                    <td class="px-6 py-3 text-sm text-gray-700">
-                                        {{ $sub->permiso->nombre_permiso ?? '-' }}
+                                    <td class="px-6 py-4 text-sm text-gray-700">
+                                        {{ $op->permiso->nombre_permiso ?? '-' }}
                                     </td>
-                                    <td class="px-6 py-3">
+                                    <td class="px-6 py-4">
                                         <div class="flex items-center justify-center gap-2">
-                                            <flux:button wire:click="abrirModal({{ $sub->id_modulo_opcion }})"
+                                            <flux:button wire:click="abrirModal({{ $op->id_modulo_opcion }})"
                                                 class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs rounded-lg transition">
                                                 <svg class="w-3.5 h-3.5 inline-block mr-1" fill="none"
                                                     stroke="currentColor" viewBox="0 0 24 24">
@@ -367,7 +304,7 @@
                                                 </svg>
                                                 Editar
                                             </flux:button>
-                                            <flux:button wire:click="anular({{ $sub->id_modulo_opcion }})"
+                                            <flux:button wire:click="anular({{ $op->id_modulo_opcion }})"
                                                 class="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs rounded-lg transition">
                                                 <svg class="w-3.5 h-3.5 inline-block mr-1" fill="none"
                                                     stroke="currentColor" viewBox="0 0 24 24">
@@ -381,24 +318,102 @@
                                         </div>
                                     </td>
                                 </tr>
-                            @endforeach
-                        @empty
-                            <tr>
-                                <td colspan="7" class="px-6 py-16 text-center">
-                                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor"
-                                        viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
-                                        </path>
-                                    </svg>
-                                    <p class="mt-4 text-sm font-medium text-gray-600">No hay opciones registradas</p>
-                                    <p class="text-sm text-gray-500 mt-1">Comienza creando tu primera opción de menú
-                                    </p>
-                                </td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
+
+                                <!-- Subopciones -->
+                                @foreach ($op->subopciones as $subIndex => $sub)
+                                    <tr class="subopcion-row hover:bg-blue-50/50 transition-colors hidden bg-blue-50/30"
+                                        data-parent="{{ $op->id_modulo_opcion }}">
+                                        <td class="px-6 py-3 text-sm text-gray-500"></td>
+                                        <td class="px-6 py-3">
+                                            <div class="flex items-center gap-2 pl-8">
+                                                <svg class="w-4 h-4 text-gray-400" fill="none"
+                                                    stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                                </svg>
+                                                <div class="flex items-center gap-2">
+                                                    <div
+                                                        class="w-7 h-7 rounded-lg bg-blue-200 flex items-center justify-center flex-shrink-0">
+                                                        <svg class="w-3.5 h-3.5 text-blue-700" fill="none"
+                                                            stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                                stroke-width="2"
+                                                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                                                            </path>
+                                                        </svg>
+                                                    </div>
+                                                    <span
+                                                        class="text-sm text-gray-700">{{ $sub->nombre_opcion }}</span>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-3 text-sm text-gray-700">
+                                            <span
+                                                class="inline-flex items-center px-2.5 py-1 rounded-md bg-purple-100 text-purple-800 text-xs font-medium">
+                                                {{ $sub->modulo->nombre_modulo }}
+                                            </span>
+                                        </td>
+                                        <td class="px-6 py-3 text-sm">
+                                            <code
+                                                class="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs font-mono">{{ $sub->ruta_laravel }}</code>
+                                        </td>
+                                        <td class="px-6 py-3 text-sm text-gray-700 text-center">
+                                            <span
+                                                class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-gray-100 text-gray-700 font-semibold text-xs">
+                                                {{ $sub->orden }}
+                                            </span>
+                                        </td>
+                                        <td class="px-6 py-3 text-sm text-gray-700">
+                                            {{ $sub->permiso->nombre_permiso ?? '-' }}
+                                        </td>
+                                        <td class="px-6 py-3">
+                                            <div class="flex items-center justify-center gap-2">
+                                                <flux:button wire:click="abrirModal({{ $sub->id_modulo_opcion }})"
+                                                    class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs rounded-lg transition">
+                                                    <svg class="w-3.5 h-3.5 inline-block mr-1" fill="none"
+                                                        stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2"
+                                                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z">
+                                                        </path>
+                                                    </svg>
+                                                    Editar
+                                                </flux:button>
+                                                <flux:button wire:click="anular({{ $sub->id_modulo_opcion }})"
+                                                    class="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs rounded-lg transition">
+                                                    <svg class="w-3.5 h-3.5 inline-block mr-1" fill="none"
+                                                        stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2"
+                                                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
+                                                        </path>
+                                                    </svg>
+                                                    Anular
+                                                </flux:button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            @empty
+                                <tr>
+                                    <td colspan="7" class="px-6 py-16 text-center">
+                                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none"
+                                            stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                                            </path>
+                                        </svg>
+                                        <p class="mt-4 text-sm font-medium text-gray-600">No hay opciones registradas
+                                        </p>
+                                        <p class="text-sm text-gray-500 mt-1">Comienza creando tu primera opción de
+                                            menú
+                                        </p>
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>

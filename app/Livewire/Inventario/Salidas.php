@@ -6,6 +6,7 @@ use App\Models\DetalleVentas;
 use App\Models\InventarioMovimiento;
 use App\Models\Lotes;
 use App\Models\Producto;
+use App\Models\TipoMovimiento;
 use App\Models\Ventas;
 use Exception;
 use Illuminate\Support\Facades\DB;
@@ -52,7 +53,9 @@ class Salidas extends Component
 
     public function cargarSalidasRecientes()
     {
-        $this->top10salidas = InventarioMovimiento::where("tipo_movimiento", "salida")
+        $salidas = TipoMovimiento::where("nombre_tipo_movimiento", "salida")->first();
+
+        $this->top10salidas = InventarioMovimiento::where("id_tipo_movimiento", $salidas->id_tipo_movimiento)
             ->with(['lote.producto', 'trabajador.persona.user'])
             ->orderBy("fecha_movimiento", "desc")
             ->limit(10)
@@ -288,10 +291,12 @@ class Salidas extends Component
                 'motivo_salida' => $motivoFinal,
             ]);
 
+            $salidas = TipoMovimiento::where("nombre_tipo_movimiento", "salida")->first();
+
 
             // 🔹 Registrar movimiento
             InventarioMovimiento::create([
-                "tipo_movimiento" => "salida",
+                "id_tipo_movimiento" => $salidas->id_tipo_movimiento,
                 "cantidad_movimiento" => $cantidadAUsar,
                 "stock_resultante" => $stockProductoDespues,
                 "fecha_movimiento" => now(),
@@ -319,7 +324,9 @@ class Salidas extends Component
 
     public function render()
     {
-        $salidas = InventarioMovimiento::where("tipo_movimiento", "salida")
+        $salidaID = TipoMovimiento::where("nombre_tipo_movimiento", "salida")->first();
+
+        $salidas = InventarioMovimiento::where("id_tipo_movimiento", $salidaID->id_tipo_movimiento)
             ->with(['lote.producto', 'trabajador.persona.user'])
             ->orderBy("fecha_movimiento", "desc")
             ->paginate(10);

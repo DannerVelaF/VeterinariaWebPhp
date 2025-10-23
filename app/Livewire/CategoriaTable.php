@@ -23,8 +23,7 @@ final class CategoriaTable extends PowerGridComponent
         $this->showCheckBox();
 
         return [
-            PowerGrid::header()
-                ->showSearchInput(),
+            PowerGrid::header(),
             PowerGrid::footer()
                 ->showPerPage()
                 ->showRecordCount(),
@@ -44,9 +43,7 @@ final class CategoriaTable extends PowerGridComponent
     public function fields(): PowerGridFields
     {
         return PowerGrid::fields()
-            ->add('id_categoria_producto')
             ->add('nombre_categoria_producto')
-            ->add('descripccion')
             ->add('estado')
             ->add("estado")
             ->add('estado_boolean', function ($row) {
@@ -58,21 +55,14 @@ final class CategoriaTable extends PowerGridComponent
     public function columns(): array
     {
         return [
-            Column::make('Id', 'id_categoria_producto'),
             Column::make('Nombre', 'nombre_categoria_producto')
                 ->sortable()
-                ->searchable()
-                ->editOnClick(),
+                ->searchable(),
 
-            Column::make('Descripccion', 'descripccion')
-                ->sortable()
-                ->searchable()
-                ->editOnClick(),
 
             Column::make('Estado', 'estado')
                 ->sortable()
-                ->searchable()
-                ->editOnClick(),
+                ->searchable(),
 
             Column::make('Fecha de registro', 'fecha_registro')
                 ->sortable()
@@ -91,7 +81,17 @@ final class CategoriaTable extends PowerGridComponent
 
     public function filters(): array
     {
-        return [];
+        return [
+            Filter::inputText('nombre_categoria_producto')
+                ->placeholder('Buscar por nombre'),
+            Filter::select('estado', 'Estado')
+                ->dataSource([
+                    ['id' => 'activo', 'name' => 'activo'],
+                    ['id' => 'inactivo', 'name' => 'inactivo'],
+                ])
+                ->optionValue('id')
+                ->optionLabel('name'),
+        ];
     }
 
     #[\Livewire\Attributes\On('edit')]

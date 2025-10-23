@@ -87,7 +87,17 @@ final class PuestosTable extends PowerGridComponent
 
     public function filters(): array
     {
-        return [];
+        return [
+            Filter::inputText('nombre_puesto')
+                ->placeholder('Buscar por nombre'),
+            Filter::select('estado', 'Estado')
+                ->dataSource([
+                    ['id' => 'activo', 'name' => 'activo'],
+                    ['id' => 'inactivo', 'name' => 'inactivo'],
+                ])
+                ->optionValue('id')
+                ->optionLabel('name'),
+        ];
     }
 
     #[\Livewire\Attributes\On('edit')]

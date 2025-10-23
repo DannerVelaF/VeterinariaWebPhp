@@ -31,6 +31,8 @@ use App\Livewire\Compras\Registro as RegistroCompras;
 use App\Livewire\Configuracion\Modulos;
 use App\Livewire\Configuracion\ModuloOpcion;
 use App\Livewire\Inventario\Entradas;
+use App\Livewire\Inventario\Lotes;
+use App\Livewire\Inventario\Salidas;
 use App\Livewire\Mantenimiento\Configuracion\Configuracion;
 use App\Livewire\Mantenimiento\Mascotas\Clientes;
 use App\Livewire\Mantenimiento\Mascotas\Mascotas;
@@ -107,9 +109,10 @@ Route::middleware('auth')->group(function () {
         | Inventario
         |--------------------------------------------------------------------------
         */
-        Route::get('/inventario', RegistrarInventario::class)->name('inventario.registro');
         Route::prefix('inventario')->group(function () {
+            Route::get('/', Lotes::class)->name('inventario.registro');
             Route::get('/entradas', Entradas::class)->name('inventario.entradas');
+            Route::get('/salidas', Salidas::class)->name('inventario.salidas');
         });
         /*
         |--------------------------------------------------------------------------
