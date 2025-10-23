@@ -91,6 +91,7 @@ class RegistroContraseña extends Component
 
             $this->dispatch('notify', title: 'Éxito', description: 'Contraseña registrada correctamente.', type: 'success');
             $this->reset('newPassword', 'newPassword_confirmation');
+            return redirect()->route('inicio');
         } catch (\Exception $e) {
             Log::error('Error al actualizar la contraseña', ['error' => $e->getMessage()]);
             $this->dispatch('notify', title: 'Error', description: 'No se pudo actualizar la contraseña.', type: 'error');
