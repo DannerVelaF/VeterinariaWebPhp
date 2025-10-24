@@ -20,7 +20,7 @@ class Producto extends Model
         'codigo_barras',
         'id_categoria_producto',
         'id_proveedor',
-        
+        "precio_unitario",
         'id_unidad',
         'fecha_registro',
         'fecha_actualizacion',

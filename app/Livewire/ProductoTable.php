@@ -2,7 +2,10 @@
 
 namespace App\Livewire;
 
+use App\Models\CategoriaProducto;
 use App\Models\Producto;
+use App\Models\Proveedor;
+use App\Models\Unidades;
 use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use PowerComponents\LivewirePowerGrid\Button;
@@ -45,15 +48,16 @@ final class ProductoTable extends PowerGridComponent
     public function fields(): PowerGridFields
     {
         return PowerGrid::fields()
-            ->add('id_producto')
             ->add('nombre_producto')
             ->add('unidad_nombre', fn($producto) => $producto->unidad?->nombre_unidad ?? '-')
             ->add("estado")
             ->add('estado_boolean', function ($row) {
                 return $row->estado === 'activo';
             })
+            ->add('precio_unitario')
             ->add('codigo_barras')
             ->add('fecha_registro')
+            ->add('estado')
             ->add('categoria_nombre', fn($producto) => $producto->categoria_producto?->nombre_categoria_producto)
             ->add('proveedor_nombre', fn($producto) => $producto->proveedor?->nombre_proveedor);
     }
@@ -62,28 +66,40 @@ final class ProductoTable extends PowerGridComponent
     public function columns(): array
     {
         return [
-            Column::make('Id', 'id_producto'),
             Column::make('Nombre producto', 'nombre_producto')
                 ->sortable(),
             Column::make('Unidad', 'unidad_nombre')->sortable(),
+            Column::make('Precio unitario (PEN)', 'precio_unitario')->sortable(),
             Column::make('Codigo barras', 'codigo_barras')->sortable(),
             Column::make('Categoría', 'categoria_nombre'),
             Column::make('Proveedor', 'proveedor_nombre'),
             Column::make('Fecha creación', 'fecha_registro')->sortable(),
-            Column::make('Estado', 'estado_boolean')
-                ->sortable()
-                ->toggleable(
-                    trueLabel: 'activo',
-                    falseLabel: 'inactivo'
-                ),
+            Column::make("Estado", 'estado'),
             Column::action('Action')
         ];
     }
 
     public function filters(): array
     {
-        return [];
+        return [
+            // 🔹 Filtro por nombre de producto
+            Filter::inputText('nombre_producto', 'Nombre'),
+
+            // 🔹 Filtro por estado
+            Filter::select('estado', 'Estado')
+                ->dataSource([
+                    ['id' => 'activo', 'nombre' => 'Activo'],
+                    ['id' => 'inactivo', 'nombre' => 'Inactivo'],
+                ])
+                ->optionValue('id')
+                ->optionLabel('nombre'),
+
+            // 🔹 Filtro por código de barras
+            Filter::inputText('codigo_barras', 'Código de barras'),
+
+        ];
     }
+
 
     #[\Livewire\Attributes\On('edit')]
     public function edit($rowId): void

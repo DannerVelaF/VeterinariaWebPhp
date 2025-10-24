@@ -49,6 +49,7 @@ class Productos extends Component
         'id_unidad' => '',
         'ruta_imagen' => null,
         'precio_unitario' => '',
+        'estado' => '',
     ]; // array para editar
     public $imagenEditar;
 
@@ -129,7 +130,9 @@ class Productos extends Component
                     "id_proveedor" => $this->producto["id_proveedor"],
                     "codigo_barras" => $this->codigoBarras,
                     "id_unidad" => $this->producto["id_unidad"] ?? null,
-                    "fecha_registro" => now()
+                    "fecha_registro" => now(),
+                    "fecha_actualizacion" => now(),
+                    "precio_unitario" => $this->producto["precio_unitario"] ?? null,
                 ]);
             });
 
@@ -178,6 +181,8 @@ class Productos extends Component
             'id_proveedor' => $producto->id_proveedor,
             'id_unidad' => $producto->id_unidad,
             'ruta_imagen' => $producto->ruta_imagen,
+            'estado' => $producto->estado,
+            'precio_unitario' => $producto->precio_unitario,
         ];
 
         $this->imagenEditar = null;
@@ -195,6 +200,8 @@ class Productos extends Component
             'id_proveedor' => 'required|exists:proveedores,id_proveedor',
             'id_unidad' => 'required|exists:unidades,id_unidad',
             'imagenEditar' => 'nullable|image|max:2048', // ✅ Validar solo si existe
+            'precio_unitario' => 'nullable|numeric|min:0',
+            'estado' => 'required|in:activo,inactivo',
         ])->validate();
 
         try {
@@ -217,11 +224,14 @@ class Productos extends Component
                     'id_categoria_producto' => $validatedData['id_categoria_producto'],
                     'id_proveedor' => $validatedData['id_proveedor'],
                     'id_unidad' => $validatedData['id_unidad'],
+                    'precio_unitario' => $validatedData['precio_unitario'],
+                    "fecha_actualizacion" => now(),
+                    'estado' => $validatedData['estado'],
                 ]);
             });
 
             $this->dispatch('productoRegistrado'); // refresca tabla
-            $this->dispatch('notify', title: 'Success', description: '✅ Producto actualizado correctamente.', type: 'success');
+            $this->dispatch('notify', title: 'Success', description: 'Producto actualizado correctamente.', type: 'success');
             $this->modalEditar = false;
         } catch (Exception $e) {
             Log::error('Error al actualizar el producto', ['error' => $e->getMessage()]);
