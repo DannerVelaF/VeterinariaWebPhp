@@ -44,7 +44,6 @@ final class ServicioTable extends PowerGridComponent
         return PowerGrid::fields()
             ->add('id_servicio')
             ->add('nombre_servicio')
-            ->add('descripcion')
             ->add('duracion_estimada')
             ->add('precio_unitario')
             ->add('estado')
@@ -58,7 +57,6 @@ final class ServicioTable extends PowerGridComponent
         return [
             Column::make('ID', 'id_servicio')->sortable(),
             Column::make('Nombre del servicio', 'nombre_servicio')->sortable()->searchable(),
-            Column::make('Descripción', 'descripcion')->sortable()->searchable(),
             Column::make('Duración estimada', 'duracion_estimada')->sortable(),
             Column::make('Precio unitario', 'precio_unitario')->sortable(),
             Column::make('Categoría', 'categoria_nombre')->sortable()->searchable(),
