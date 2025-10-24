@@ -166,18 +166,25 @@ class Turnos extends Component
 
     private function cargarListas($idTurno)
     {
+        // 🔹 IDs de trabajadores con el turno seleccionado
         $trabajadoresConTurnoIds = TrabajadorTurno::where('id_turno', $idTurno)
             ->pluck('id_trabajador')
             ->toArray();
 
+        // 🔹 Todos los trabajadores que tienen algún turno asignado
+        $trabajadoresConCualquierTurnoIds = TrabajadorTurno::pluck('id_trabajador')->toArray();
+
+        // 🔹 Trabajadores con el turno actual
         $this->trabajadoresConTurno = Trabajador::with('persona')
             ->whereIn('id_trabajador', $trabajadoresConTurnoIds)
             ->get();
 
+        // 🔹 Trabajadores sin turno asignado (ningún turno)
         $this->trabajadoresSinTurno = Trabajador::with('persona')
-            ->whereNotIn('id_trabajador', $trabajadoresConTurnoIds)
+            ->whereNotIn('id_trabajador', $trabajadoresConCualquierTurnoIds)
             ->get();
     }
+
 
     public function asignarTrabajadores()
     {
