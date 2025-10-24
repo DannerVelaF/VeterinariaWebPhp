@@ -155,14 +155,14 @@
                     <flux:text class="mt-1">Selecciona un turno para asignar o quitar trabajadores.</flux:text>
                 </div>
 
-                {{-- Selector de turno + tabla de horario en 2 filas --}}
+                {{-- Selector de turno + tabla de horario --}}
                 <div class="w-full">
-                    <div class="flex flex-col lg:flex-row items-start lg:items-center gap-4">
+                    <div class="flex items-center gap-4">
                         {{-- Selector --}}
-                        <div class="">
+                        <div class="w-80">
                             <flux:label class="mb-2">Seleccionar turno</flux:label>
                             <select wire:model.live="turnoSeleccionadoAsignar"
-                                class="w-[300px] border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                                class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
                                 <option value="">Seleccione un turno...</option>
                                 @foreach ($turnos as $t)
                                     <option value="{{ $t->id_turno }}">{{ $t->nombre_turno }}</option>
@@ -170,7 +170,7 @@
                             </select>
                         </div>
 
-                        {{-- Tabla resumen de horario (2 filas) --}}
+                        {{-- Tabla resumen de horario --}}
                         @if ($turnoSeleccionadoAsignar && count($horarioTurnoAsignar) > 0)
                             <div class="flex-1 overflow-x-auto border border-gray-200 rounded-lg shadow-sm bg-white">
                                 <table class="min-w-full text-center text-sm">
@@ -189,7 +189,7 @@
                                                 @endphp
                                                 <td
                                                     class="px-3 py-2 text-xs 
-            {{ $h && $h->es_descanso ? 'bg-red-100 text-red-700 font-semibold' : 'text-gray-700' }}">
+                                            {{ $h && $h->es_descanso ? 'bg-red-100 text-red-700 font-semibold' : 'text-gray-700' }}">
                                                     @if ($h)
                                                         @if ($h->es_descanso)
                                                             Descanso
@@ -209,7 +209,7 @@
                             </div>
                         @elseif($turnoSeleccionadoAsignar)
                             <div
-                                class="flex-1 border border-gray-200 rounded-lg shadow-sm bg-white flex items-center justify-center h-20">
+                                class="flex-1 border border-gray-200 rounded-lg shadow-sm bg-white flex items-center justify-center h-12">
                                 <p class="text-gray-500 text-sm">Este turno no tiene horarios registrados</p>
                             </div>
                         @endif
@@ -237,7 +237,7 @@
                     </div>
 
                     <div class="p-6">
-                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="grid grid-cols-3 gap-6">
                             {{-- Trabajadores sin turno --}}
                             <div class="border border-gray-200 rounded-lg overflow-hidden bg-white">
                                 <div class="bg-gray-50 px-4 py-3 border-b border-gray-200">
@@ -249,7 +249,7 @@
                                         </span>
                                     </h4>
                                 </div>
-                                <div class="max-h-80 overflow-y-auto">
+                                <div class="h-80 overflow-y-auto">
                                     @if (count($trabajadoresSinTurno) > 0)
                                         <table class="w-full text-sm">
                                             <tbody>
@@ -287,8 +287,7 @@
                             </div>
 
                             {{-- Controles de acción --}}
-                            <div
-                                class="flex lg:flex-col items-center justify-center space-y-4 lg:space-y-4 space-x-4 lg:space-x-0">
+                            <div class="flex flex-col items-center justify-center space-y-4">
                                 <flux:button wire:click="asignarTrabajadores" icon="chevron-right"
                                     class="w-full justify-center" :disabled="count($selectedSinTurno) === 0">
                                     Asignar
@@ -299,7 +298,7 @@
                                     Quitar
                                 </flux:button>
 
-                                <div class="hidden lg:block border-t border-gray-200 my-2 w-full"></div>
+                                <div class="border-t border-gray-200 my-2 w-full"></div>
 
                                 <flux:button wire:click="$set('selectedSinTurno', [])" size="sm" variant="ghost"
                                     class="w-full justify-center text-xs" :disabled="count($selectedSinTurno) === 0">
@@ -319,7 +318,7 @@
                                         </span>
                                     </h4>
                                 </div>
-                                <div class="max-h-80 overflow-y-auto">
+                                <div class="h-80 overflow-y-auto">
                                     @if (count($trabajadoresConTurno) > 0)
                                         <table class="w-full text-sm">
                                             <tbody>
@@ -365,7 +364,7 @@
 
                         {{-- Resumen --}}
                         <div class="mt-6 pt-4 border-t border-gray-200">
-                            <div class="flex flex-wrap items-center justify-between gap-2">
+                            <div class="flex items-center justify-between">
                                 <div class="text-sm text-gray-600">
                                     @if (count($selectedSinTurno) > 0 || count($selectedConTurno) > 0)
                                         <span class="font-medium">
