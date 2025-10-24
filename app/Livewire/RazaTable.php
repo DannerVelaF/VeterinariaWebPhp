@@ -24,7 +24,7 @@ final class RazaTable extends PowerGridComponent
         $this->showCheckBox();
 
         return [
-            PowerGrid::header()->showSearchInput(),
+            PowerGrid::header(),
             PowerGrid::footer()->showPerPage()->showRecordCount(),
         ];
     }
@@ -59,13 +59,7 @@ final class RazaTable extends PowerGridComponent
 
             Column::make('Nombre', 'nombre_raza')
                 ->sortable()
-                ->searchable()
-                ->editOnClick(),
-
-            Column::make('Descripcion', 'descripcion')
-                ->sortable()
-                ->searchable()
-                ->editOnClick(),
+                ->searchable(),
 
             Column::make('Estado', 'estado')
                 ->sortable()
@@ -86,7 +80,16 @@ final class RazaTable extends PowerGridComponent
 
     public function filters(): array
     {
-        return [];
+        return [
+            Filter::inputText('nombre_raza', 'Nombre'),
+            Filter::select('estado', 'Estado')
+                ->dataSource([
+                    ['id' => 'activo', 'name' => 'activo'],
+                    ['id' => 'inactivo', 'name' => 'inactivo'],
+                ])
+                ->optionValue('id')
+                ->optionLabel('name'),
+        ];
     }
 
     public function actions(Raza $row): array

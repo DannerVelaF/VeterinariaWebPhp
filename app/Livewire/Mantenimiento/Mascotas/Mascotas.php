@@ -31,19 +31,34 @@ class Mascotas extends Component
         'observacion' => '',
     ];
 
+    public $mascotaEditar = [
+        'id_mascota' => null,
+        'id_cliente' => '',
+        //'id_especie' => '',
+        'id_raza' => '',
+        'nombre_mascota' => '',
+        'fecha_nacimiento' => '',
+        'sexo' => '',
+        'color_primario' => '',
+        'peso_actual' => '',
+        'observacion' => '',
+    ];
+
+
     public $buscarCliente = '';
     public $resultadosClientes = [];
     public $clienteSeleccionado = null;
     public $razas = [];
     //public $especies = [];
-
+    public $mascotaSeleccionada = null;
+    public $modalEditar = false;
     public $edad_meses = null;
     public $edad_humana = null;
 
     public function mount()
     {
         $this->razas = Raza::where('estado', 'activo')->get();
-       // $this->especies = Especie::where('estado', 'activo')->get();
+        // $this->especies = Especie::where('estado', 'activo')->get();
     }
 
     public function refreshData()
@@ -53,30 +68,30 @@ class Mascotas extends Component
 
     /** 🔍 Búsqueda automática de clientes */
     public function updatedBuscarCliente($valor)
-{
-    if (strlen($valor) >= 2) {
-        $this->resultadosClientes = Clientes::join('personas', 'clientes.id_persona', '=', 'personas.id_persona')
-            ->where(function ($query) use ($valor) {
-                $query->where('personas.nombre', 'like', "%{$valor}%")
-                    ->orWhere('personas.apellido_paterno', 'like', "%{$valor}%")
-                    ->orWhere('personas.apellido_materno', 'like', "%{$valor}%")
-                    ->orWhere('personas.numero_documento', 'like', "%{$valor}%");
-            })
-            ->select(
-                'clientes.id_cliente',
-                'personas.nombre',
-                'personas.apellido_paterno',
-                'personas.apellido_materno',
-                'personas.numero_documento as dni',
-                'personas.numero_telefono_personal as telefono',
-                'personas.correo_electronico_personal as correo'
-            )
-            ->limit(10)
-            ->get();
-    } else {
-        $this->resultadosClientes = [];
+    {
+        if (strlen($valor) >= 2) {
+            $this->resultadosClientes = Clientes::join('personas', 'clientes.id_persona', '=', 'personas.id_persona')
+                ->where(function ($query) use ($valor) {
+                    $query->where('personas.nombre', 'like', "%{$valor}%")
+                        ->orWhere('personas.apellido_paterno', 'like', "%{$valor}%")
+                        ->orWhere('personas.apellido_materno', 'like', "%{$valor}%")
+                        ->orWhere('personas.numero_documento', 'like', "%{$valor}%");
+                })
+                ->select(
+                    'clientes.id_cliente',
+                    'personas.nombre',
+                    'personas.apellido_paterno',
+                    'personas.apellido_materno',
+                    'personas.numero_documento as dni',
+                    'personas.numero_telefono_personal as telefono',
+                    'personas.correo_electronico_personal as correo'
+                )
+                ->limit(10)
+                ->get();
+        } else {
+            $this->resultadosClientes = [];
+        }
     }
-}
     /* public function updatedBuscarCliente($valor)
     {
         if (strlen($valor) >= 2) {
@@ -190,11 +205,11 @@ class Mascotas extends Component
             });
 
             $this->resetForm();
-            session()->flash('success', '🐕 Mascota registrada con éxito.');
+            $this->dispatch("notify", title: 'Success', description: 'Mascota registrada con éxito', type: 'success');
             $this->dispatch('scrollToTop');
         } catch (Exception $e) {
             Log::error('Error al registrar mascota', ['error' => $e->getMessage()]);
-            session()->flash('error', 'Error al registrar la mascota: ' . $e->getMessage());
+            $this->dispatch('notify', title: 'Error', description: 'Error al registrar la mascota: ' . $e->getMessage(), type: 'error');
         }
     }
 
@@ -207,7 +222,7 @@ class Mascotas extends Component
             $this->clienteSeleccionado = $cliente;
             $this->mascota['id_cliente'] = $cliente->id_cliente;
         }
-        session()->flash('success', 'Formulario listo para registrar otra mascota 🐾');
+        $this->dispatch('notify', title: 'Success', description: 'Formulario listo para registrar otra mascota 🐾', type: 'success');
         $this->dispatch('scrollToTop');
     }
 
@@ -233,6 +248,61 @@ class Mascotas extends Component
         $this->edad_meses = null;
         $this->edad_humana = null;
     }
+
+    #[\Livewire\Attributes\On('abrirModalMascota')]
+    public function abrirModalMascota($mascotaId)
+    {
+        $this->mascotaSeleccionada = Mascota::findOrFail($mascotaId);
+        $this->mascotaEditar = [
+            'id_mascota' => $mascotaId,
+            'id_cliente' => $this->mascotaSeleccionada->id_cliente,
+            //'id_especie' => $this->mascotaSeleccionada->id_especie,
+            'id_raza' => $this->mascotaSeleccionada->id_raza,
+            'nombre_mascota' => $this->mascotaSeleccionada->nombre_mascota,
+            'fecha_nacimiento' => $this->mascotaSeleccionada->fecha_nacimiento,
+            'sexo' => $this->mascotaSeleccionada->sexo,
+            'color_primario' => $this->mascotaSeleccionada->color_primario,
+            'peso_actual' => $this->mascotaSeleccionada->peso_actual,
+            'observacion' => $this->mascotaSeleccionada->observacion,
+        ];
+
+        $this->modalEditar = true;
+    }
+    public function cerrarModal()
+    {
+        $this->reset(['modalEditar', 'mascotaEditar', 'mascotaSeleccionada']);
+    }
+
+    public function guardarEdicion()
+    {
+        $this->validate([
+            'mascotaEditar.nombre_mascota' => 'required|string|max:100',
+            'mascotaEditar.id_cliente' => 'required|integer|exists:clientes,id_cliente',
+            'mascotaEditar.id_raza' => 'required|integer|exists:razas,id_raza',
+            'mascotaEditar.fecha_nacimiento' => 'nullable|date',
+            'mascotaEditar.sexo' => 'required|string',
+        ]);
+
+        $mascota = Mascota::findOrFail($this->mascotaEditar['id_mascota']);
+
+        $mascota->update([
+            'id_cliente' => $this->mascotaEditar['id_cliente'],
+            'id_raza' => $this->mascotaEditar['id_raza'],
+            'nombre_mascota' => $this->mascotaEditar['nombre_mascota'],
+            'fecha_nacimiento' => $this->mascotaEditar['fecha_nacimiento'],
+            'sexo' => $this->mascotaEditar['sexo'],
+            'color_primario' => $this->mascotaEditar['color_primario'],
+            'peso_actual' => $this->mascotaEditar['peso_actual'],
+            'observacion' => $this->mascotaEditar['observacion'],
+        ]);
+
+        session()->flash('success', 'Mascota actualizada correctamente.');
+
+        // Cerrar el modal y notificar a la tabla que se actualice
+        $this->dispatch('mascotaActualizada');
+        $this->cerrarModal();
+    }
+
 
     public function render()
     {

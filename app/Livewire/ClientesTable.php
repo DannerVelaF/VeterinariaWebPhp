@@ -5,6 +5,7 @@ namespace App\Livewire;
 use App\Models\Clientes;
 use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 use PowerComponents\LivewirePowerGrid\Button;
 use PowerComponents\LivewirePowerGrid\Column;
 use PowerComponents\LivewirePowerGrid\Facades\Filter;
@@ -22,8 +23,7 @@ final class ClientesTable extends PowerGridComponent
         $this->showCheckBox();
 
         return [
-            PowerGrid::header()
-                ->showSearchInput(),
+            PowerGrid::header(),
             PowerGrid::footer()
                 ->showPerPage()
                 ->showRecordCount(),
@@ -43,7 +43,8 @@ final class ClientesTable extends PowerGridComponent
     public function fields(): PowerGridFields
     {
         return PowerGrid::fields()
-            ->add('nombre', fn($cliente) => $cliente->persona->nombre)
+            ->add("numero_documento", fn($cliente) => $cliente->persona->numero_documento)
+            ->add('nombre', fn($cliente) => $cliente->persona->nombre . ' ' . $cliente->persona->apellido_paterno . ' ' . $cliente->persona->apellido_materno)
             ->add("correo_personal", fn($cliente) => $cliente->persona->correo_electronico_personal)
             ->add("telefono_personal", fn($cliente) => $cliente->persona->numero_telefono_personal)
             ->add('fecha_registro');
@@ -52,6 +53,8 @@ final class ClientesTable extends PowerGridComponent
     public function columns(): array
     {
         return [
+            Column::make('Número documento', 'numero_documento')
+                ->sortable(),
             Column::make('Nombre', 'nombre'),
             Column::make('Correo personal', 'correo_personal'),
             Column::make('Telefono personal', 'telefono_personal'),
@@ -66,7 +69,59 @@ final class ClientesTable extends PowerGridComponent
 
     public function filters(): array
     {
-        return [];
+        return [
+            Filter::inputText('nombre', 'Nombre')
+                ->builder(function (Builder $query, array $value) {
+                    $search = trim($value['value']);
+
+                    if ($search === '') {
+                        return $query;
+                    }
+
+                    return $query->whereHas('persona', function ($q) use ($search) {
+                        $q->where(DB::raw("CONCAT(nombre, ' ', apellido_paterno, ' ', apellido_materno)"), 'like', "%{$search}%")
+                            ->orWhere('nombre', 'like', "%{$search}%")
+                            ->orWhere('apellido_paterno', 'like', "%{$search}%")
+                            ->orWhere('apellido_materno', 'like', "%{$search}%");
+                    });
+                }),
+            Filter::inputText('correo_personal', 'Correo personal')
+                ->builder(function (Builder $query, array $value) {
+                    $search = trim($value['value']);
+
+                    if ($search === '') {
+                        return $query;
+                    }
+
+                    return $query->whereHas('persona', function ($q) use ($search) {
+                        $q->where('correo_personal', 'like', "%{$search}%");
+                    });
+                }),
+            Filter::inputText('telefono_personal', 'Telefono personal')
+                ->builder(function (Builder $query, array $value) {
+                    $search = trim($value['value']);
+
+                    if ($search === '') {
+                        return $query;
+                    }
+
+                    return $query->whereHas('persona', function ($q) use ($search) {
+                        $q->where('numero_telefono_personal', 'like', "%{$search}%");
+                    });
+                }),
+            Filter::inputText('numero_documento', 'Número documento')
+                ->builder(function (Builder $query, array $value) {
+                    $search = trim($value['value']);
+
+                    if ($search === '') {
+                        return $query;
+                    }
+
+                    return $query->whereHas('persona', function ($q) use ($search) {
+                        $q->where('numero_documento', 'like', "%{$search}%");
+                    });
+                }),
+        ];
     }
 
     #[\Livewire\Attributes\On('edit')]
@@ -79,10 +134,9 @@ final class ClientesTable extends PowerGridComponent
     {
         return [
             Button::add('edit')
-                ->slot('Edit: ' . $row->id)
-                ->id()
-                ->class('pg-btn-white dark:ring-pg-primary-600 dark:border-pg-primary-600 dark:hover:bg-pg-primary-700 dark:ring-offset-pg-primary-800 dark:text-pg-primary-300 dark:bg-pg-primary-700')
-                ->dispatch('edit', ['rowId' => $row->id])
+                ->slot("Editar")
+                ->class('bg-blue-500 text-white px-3 py-2 m-1 rounded cursor-pointer text-sm')
+                ->dispatch('abrirModalCliente', ['clienteId' => $row->id_cliente])
         ];
     }
 

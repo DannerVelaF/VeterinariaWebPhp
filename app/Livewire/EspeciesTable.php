@@ -24,7 +24,7 @@ final class EspeciesTable extends PowerGridComponent
         $this->showCheckBox();
 
         return [
-            PowerGrid::header()->showSearchInput(),
+            PowerGrid::header(),
             PowerGrid::footer()->showPerPage()->showRecordCount(),
         ];
     }
@@ -56,12 +56,7 @@ final class EspeciesTable extends PowerGridComponent
             Column::make('ID', 'id_especie'),
             Column::make('Nombre', 'nombre_especie')
                 ->sortable()
-                ->searchable()
-                ->editOnClick(),
-            Column::make('Descripción', 'descripcion')
-                ->sortable()
-                ->searchable()
-                ->editOnClick(),
+                ->searchable(),
             Column::make('Estado', 'estado')
                 ->sortable()
                 ->searchable(),
@@ -79,7 +74,16 @@ final class EspeciesTable extends PowerGridComponent
 
     public function filters(): array
     {
-        return [];
+        return [
+            Filter::inputText('nombre_especie', 'Nombre'),
+            Filter::select('estado', 'Estado')
+                ->dataSource([
+                    ['id' => 'activo', 'name' => 'activo'],
+                    ['id' => 'inactivo', 'name' => 'inactivo'],
+                ])
+                ->optionValue('id')
+                ->optionLabel('name'),
+        ];
     }
 
     public function actions(Especie $row): array
@@ -108,5 +112,4 @@ final class EspeciesTable extends PowerGridComponent
         $this->dispatch('especieUpdated');
         $this->skipRender();
     }
-
 }

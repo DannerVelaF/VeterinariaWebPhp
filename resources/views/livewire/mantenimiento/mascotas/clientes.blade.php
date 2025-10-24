@@ -49,6 +49,9 @@
                                 <option value="{{ $t->id_tipo_documento }}">{{ $t->nombre_tipo_documento }}</option>
                             @endforeach
                         </select>
+                        @error('persona.id_tipo_documento')
+                            <p class="text-red-500 text-xs">{{ $message }}</p>
+                        @enderror
                     </div>
                     <div class="flex flex-col">
                         <label>Numero documento <span class="text-red-500">*</span></label>
@@ -88,11 +91,17 @@
                         <label>Apellido Materno</label>
                         <input type="text" wire:model="persona.apellido_materno" class="border rounded px-2 py-1"
                             @readonly($persona['id_tipo_documento'] == 1)>
+                        @error('persona.apellido_materno')
+                            <p class="text-red-500 text-xs">{{ $message }}</p>
+                        @enderror
                     </div>
 
                     <div class="flex flex-col">
                         <label>Fecha Nacimiento <span class="text-red-500">*</span></label>
                         <input type="date" wire:model="persona.fecha_nacimiento" class="border rounded px-2 py-1">
+                        @error('persona.fecha_nacimiento')
+                            <p class="text-red-500 text-xs">{{ $message }}</p>
+                        @enderror
                     </div>
 
                     <div class="flex flex-col">
@@ -103,33 +112,51 @@
                             <option value="F">Femenino</option>
                             <option value="O">Otro</option>
                         </select>
+                        @error('persona.sexo')
+                            <p class="text-red-500 text-xs">{{ $message }}</p>
+                        @enderror
                     </div>
                     <div class="flex flex-col">
                         <label>Nacionalidad <span class="text-red-500">*</span></label>
                         <input type="text" wire:model="persona.nacionalidad" class="border rounded px-2 py-1">
+                        @error('persona.nacionalidad')
+                            <p class="text-red-500 text-xs">{{ $message }}</p>
+                        @enderror
                     </div>
                     <div class="flex flex-col">
                         <label>Correo electronico personal <span class="text-red-500">*</span></label>
                         <input type="text" wire:model="persona.correo_electronico_personal"
                             class="border rounded px-2 py-1">
+                        @error('persona.correo_electronico_personal')
+                            <p class="text-red-500 text-xs">{{ $message }}</p>
+                        @enderror
                     </div>
 
                     <div class="flex flex-col">
                         <label>Numero telefono personal <span class="text-red-500">*</span></label>
                         <input type="text" wire:model="persona.numero_telefono_personal"
                             class="border rounded px-2 py-1">
+                        @error('persona.numero_telefono_personal')
+                            <p class="text-red-500 text-xs">{{ $message }}</p>
+                        @enderror
                     </div>
 
                     <div class="flex flex-col">
                         <label>Correo electronico secundario</label>
                         <input type="text" wire:model="persona.correo_electronico_secundario"
                             class="border rounded px-2 py-1">
+                        @error('persona.correo_electronico_secundario')
+                            <p class="text-red-500 text-xs">{{ $message }}</p>
+                        @enderror
                     </div>
 
                     <div class="flex flex-col">
                         <label>Numero telefono secundario</label>
                         <input type="text" wire:model="persona.numero_telefono_secundario"
                             class="border rounded px-2 py-1">
+                        @error('persona.numero_telefono_secundario')
+                            <p class="text-red-500 text-xs">{{ $message }}</p>
+                        @enderror
                     </div>
 
                     <!-- ====== DATOS DE DIRECCIÓN ====== -->
@@ -228,6 +255,11 @@
                                         <option value="{{ $dep }}">{{ $dep }}</option>
                                     @endforeach
                                 </select>
+                                @error('direccion.codigo_ubigeo')
+                                    <p class="text-red-500 text-xs italic mt-1">
+                                        {{ $message }}
+                                    </p>
+                                @enderror
                             </div>
 
                             <!-- PROVINCIA -->
@@ -242,6 +274,11 @@
                                         <option value="{{ $prov }}">{{ $prov }}</option>
                                     @endforeach
                                 </select>
+                                @error('direccion.codigo_ubigeo')
+                                    <p class="text-red-500 text-xs italic mt-1">
+                                        {{ $message }}
+                                    </p>
+                                @enderror
                             </div>
 
                             <!-- DISTRITO -->
@@ -276,150 +313,356 @@
         </x-tab>
     </x-tabs>
     @if ($modalEditar)
-        <div class="fixed inset-0 z-50 flex items-center justify-center">
-            <!-- Overlay -->
-            <div class="absolute inset-0 bg-black opacity-50" wire:click="$set('modalEditar', false)"></div>
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4" x-data="{ show: true }" x-show="show"
+            x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 scale-95"
+            x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-200"
+            x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95">
 
-            <!-- Modal -->
-            <div class="relative bg-white rounded-md p-6 w-1/2 z-10 overflow-y-auto max-h-[90vh]">
-                <h3 class="font-bold mb-4 text-lg">
-                    Editar trabajador: {{ $trabajadorSeleccionado->persona?->nombre }}
-                </h3>
+            <!-- Overlay difuminado -->
+            <div class="absolute inset-0 bg-black opacity-50" @click="$wire.cerrarModal()"></div>
 
-                <div class="grid grid-cols-2 gap-4">
-
-                    <!-- Información Personal -->
-                    <div class="col-span-2 font-bold text-gray-700 mt-2 flex gap-2"><svg
-                            xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                            stroke-linejoin="round" class="lucide lucide-user-icon lucide-user">
-                            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-                            <circle cx="12" cy="7" r="4" />
-                        </svg> Información Personal</div>
-
-                    <div class="flex flex-col">
-                        <label>Nombre</label>
-                        <input type="text" wire:model="persona.nombre" class="border rounded px-2 py-1">
+            <!-- Contenido del modal -->
+            <div class="relative bg-white rounded-xl shadow-2xl w-full max-w-6xl z-50 overflow-y-auto max-h-[95vh]">
+                <!-- Header del modal -->
+                <div class="sticky top-0 bg-white border-b border-gray-200 z-10">
+                    <div class="p-6 ">
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center space-x-3">
+                                <div class="p-2 bg-blue-100 rounded-lg">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600"
+                                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                        stroke-linecap="round" stroke-linejoin="round">
+                                        <path
+                                            d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" />
+                                        <path d="m15 5 4 4" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-xl text-gray-800">Editar Cliente</h3>
+                                    <p class="text-gray-600 text-sm mt-1">
+                                        {{ $clienteSeleccionado->persona?->nombre ?? 'Cliente' }}</p>
+                                </div>
+                            </div>
+                            <button @click="$wire.cerrarModal()"
+                                class="text-gray-500 hover:text-gray-700 transition-colors p-2 rounded-full hover:bg-gray-100">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20"
+                                    fill="currentColor">
+                                    <path fill-rule="evenodd"
+                                        d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                                        clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                        </div>
                     </div>
-
-                    <div class="flex flex-col">
-                        <label>Apellido Paterno</label>
-                        <input type="text" wire:model="persona.apellido_paterno" class="border rounded px-2 py-1">
-                    </div>
-
-                    <div class="flex flex-col">
-                        <label>Apellido Materno</label>
-                        <input type="text" wire:model="persona.apellido_materno" class="border rounded px-2 py-1">
-                    </div>
-
-                    <div class="flex flex-col">
-                        <label>Correo personal</label>
-                        <input type="email" wire:model="persona.correo_electronico_personal"
-                            class="border rounded px-2 py-1">
-                    </div>
-                    <div class="flex flex-col">
-                        <label>Correo secundario</label>
-                        <input type="email" wire:model="persona.correo_electronico_secundario"
-                            class="border rounded px-2 py-1">
-                    </div>
-                    <div class="flex flex-col">
-                        <label>Teléfono personal</label>
-                        <input type="text" wire:model="persona.numero_telefono_personal"
-                            class="border rounded px-2 py-1">
-                    </div>
-                    <div class="flex flex-col">
-                        <label>Teléfono Secundario</label>
-                        <input type="text" wire:model="persona.numero_telefono_secundario"
-                            class="border rounded px-2 py-1">
-                    </div>
-                    <!-- Información Laboral -->
-                    <div class="col-span-2 font-bold text-gray-700 mt-4 flex gap-2"><svg
-                            xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                            stroke-linejoin="round"
-                            class="lucide lucide-briefcase-business-icon lucide-briefcase-business">
-                            <path d="M12 12h.01" />
-                            <path d="M16 6V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" />
-                            <path d="M22 13a18.15 18.15 0 0 1-20 0" />
-                            <rect width="20" height="14" x="2" y="6" rx="2" />
-                        </svg> Información Laboral</div>
-
-                    <div class="flex flex-col">
-                        <label>Salario</label>
-                        <input type="number" step="0.01" wire:model="trabajador.salario"
-                            class="border rounded px-2 py-1">
-                    </div>
-
-                    <div class="flex flex-col">
-                        <label>Seguro Social</label>
-                        <input type="text" wire:model="trabajador.numero_seguro_social"
-                            class="border rounded px-2 py-1">
-                    </div>
-
-                    <div class="flex flex-col">
-                        <label>Puesto</label>
-                        <select wire:model="puestoNuevo" class="border rounded px-2 py-1">
-                            <option value="">Seleccione...</option>
-                            @foreach ($puestos as $puesto)
-                                <option value="{{ $puesto->id_puesto_trabajo }}">{{ $puesto->nombre_puesto }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-
-                    <div class="flex flex-col">
-                        <label>Estado</label>
-                        <select wire:model="estadoNuevo" class="border rounded px-2 py-1">
-                            <option value="">Seleccione...</option>
-                            @foreach ($estados as $estado)
-                                <option value="{{ $estado->id_estado_trabajador }}">
-                                    {{ $estado->nombre_estado_trabajador }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-
-                    <!-- Dirección -->
-                    <div class="col-span-2 font-bold text-gray-700 mt-4 flex gap-2"><svg
-                            xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                            stroke-linejoin="round"
-                            class="lucide lucide-briefcase-business-icon lucide-briefcase-business">
-                            <path d="M12 12h.01" />
-                            <path d="M16 6V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" />
-                            <path d="M22 13a18.15 18.15 0 0 1-20 0" />
-                            <rect width="20" height="14" x="2" y="6" rx="2" />
-                        </svg> Dirección</div>
-
-                    <div class="flex flex-col">
-                        <label>Zona</label>
-                        <input type="text" wire:model="direccion.zona" class="border rounded px-2 py-1">
-                    </div>
-
-                    <div class="flex flex-col">
-                        <label>Tipo de Calle</label>
-                        <input type="text" wire:model="direccion.tipo_calle" class="border rounded px-2 py-1">
-                    </div>
-
-                    <div class="flex flex-col">
-                        <label>Nombre de Calle</label>
-                        <input type="text" wire:model="direccion.nombre_calle" class="border rounded px-2 py-1">
-                    </div>
-
-                    <div class="flex flex-col">
-                        <label>Número</label>
-                        <input type="text" wire:model="direccion.numero" class="border rounded px-2 py-1">
-                    </div>
-
                 </div>
 
-                <div class="flex justify-end space-x-2 mt-6">
-                    <button wire:click="cerrarModal" class="px-3 py-1 rounded bg-gray-500 text-white">Cerrar</button>
-                    <button wire:click="guardarEdicion"
-                        class="px-3 py-1 rounded bg-blue-600 text-white">Guardar</button>
-                </div>
+                <form wire:submit.prevent="guardarEdicion" class="p-6">
+                    <!-- Sección: Información Personal -->
+                    <div class="mb-8">
+                        <div class="flex items-center space-x-2 mb-6 pb-3 border-b border-gray-200">
+                            <div class="p-2 bg-blue-100 rounded-lg">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-600"
+                                    viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                                        clip-rule="evenodd" />
+                                </svg>
+                            </div>
+                            <h4 class="font-semibold text-gray-800 text-lg">Información Personal</h4>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-6">
+                            <!-- Documento (readonly) -->
+                            <div class="flex flex-col">
+                                <label class="text-sm font-medium text-gray-700 mb-2">Tipo de documento</label>
+                                <select wire:model="persona.id_tipo_documento"
+                                    class="border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 cursor-not-allowed"
+                                    disabled>
+                                    <option value="">-- Seleccione --</option>
+                                    @foreach ($tipos_documentos as $t)
+                                        <option value="{{ $t->id_tipo_documento }}">{{ $t->nombre_tipo_documento }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <p class="text-xs text-gray-500 mt-1">No editable</p>
+                            </div>
+
+                            <div class="flex flex-col">
+                                <label class="text-sm font-medium text-gray-700 mb-2">Número documento</label>
+                                <input type="text" wire:model="persona.numero_documento"
+                                    class="border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 cursor-not-allowed"
+                                    readonly>
+                                <p class="text-xs text-gray-500 mt-1">No editable</p>
+                            </div>
+
+                            <!-- Nombres (readonly) -->
+                            <div class="flex flex-col">
+                                <label class="text-sm font-medium text-gray-700 mb-2">Nombre</label>
+                                <input type="text" wire:model="persona.nombre"
+                                    class="border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 cursor-not-allowed"
+                                    readonly>
+                                <p class="text-xs text-gray-500 mt-1">No editable</p>
+                            </div>
+
+                            <div class="flex flex-col">
+                                <label class="text-sm font-medium text-gray-700 mb-2">Apellido Paterno</label>
+                                <input type="text" wire:model="persona.apellido_paterno"
+                                    class="border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 cursor-not-allowed"
+                                    readonly>
+                                <p class="text-xs text-gray-500 mt-1">No editable</p>
+                            </div>
+
+                            <div class="flex flex-col">
+                                <label class="text-sm font-medium text-gray-700 mb-2">Apellido Materno</label>
+                                <input type="text" wire:model="persona.apellido_materno"
+                                    class="border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 cursor-not-allowed"
+                                    readonly>
+                                <p class="text-xs text-gray-500 mt-1">No editable</p>
+                            </div>
+
+                            <!-- Campos editables -->
+                            <div class="flex flex-col">
+                                <label class="text-sm font-medium text-gray-700 mb-2">Fecha de nacimiento</label>
+                                <input type="date" wire:model="persona.fecha_nacimiento"
+                                    class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors">
+                                @error('persona.fecha_nacimiento')
+                                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div class="flex flex-col">
+                                <label class="text-sm font-medium text-gray-700 mb-2">Sexo</label>
+                                <select wire:model="persona.sexo"
+                                    class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors">
+                                    <option value="">-- Seleccione --</option>
+                                    <option value="M">Masculino</option>
+                                    <option value="F">Femenino</option>
+                                    <option value="O">Otro</option>
+                                </select>
+                                @error('persona.sexo')
+                                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div class="flex flex-col">
+                                <label class="text-sm font-medium text-gray-700 mb-2">Nacionalidad</label>
+                                <input type="text" wire:model="persona.nacionalidad"
+                                    class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors">
+                                @error('persona.nacionalidad')
+                                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div class="flex flex-col">
+                                <label class="text-sm font-medium text-gray-700 mb-2">Correo electrónico
+                                    personal</label>
+                                <input type="email" wire:model="persona.correo_electronico_personal"
+                                    class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors">
+                                @error('persona.correo_electronico_personal')
+                                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div class="flex flex-col">
+                                <label class="text-sm font-medium text-gray-700 mb-2">Correo electrónico
+                                    secundario</label>
+                                <input type="email" wire:model="persona.correo_electronico_secundario"
+                                    class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors">
+                                @error('persona.correo_electronico_secundario')
+                                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div class="flex flex-col">
+                                <label class="text-sm font-medium text-gray-700 mb-2">Teléfono personal</label>
+                                <input type="text" wire:model="persona.numero_telefono_personal"
+                                    class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors">
+                                @error('persona.numero_telefono_personal')
+                                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div class="flex flex-col">
+                                <label class="text-sm font-medium text-gray-700 mb-2">Teléfono secundario</label>
+                                <input type="text" wire:model="persona.numero_telefono_secundario"
+                                    class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors">
+                                @error('persona.numero_telefono_secundario')
+                                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sección: Dirección -->
+                    <div class="mb-8">
+                        <div class="flex items-center space-x-2 mb-6 pb-3 border-b border-gray-200">
+                            <div class="p-2 bg-green-100 rounded-lg">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-600"
+                                    viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd"
+                                        d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"
+                                        clip-rule="evenodd" />
+                                </svg>
+                            </div>
+                            <h4 class="font-semibold text-gray-800 text-lg">Dirección</h4>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-6">
+                            <div class="flex flex-col">
+                                <label class="text-sm font-medium text-gray-700 mb-2">Tipo de calle</label>
+                                <input type="text" wire:model="direccion.tipo_calle"
+                                    class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors">
+                                @error('direccion.tipo_calle')
+                                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div class="flex flex-col">
+                                <label class="text-sm font-medium text-gray-700 mb-2">Nombre de calle</label>
+                                <input type="text" wire:model="direccion.nombre_calle"
+                                    class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors">
+                                @error('direccion.nombre_calle')
+                                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div class="flex flex-col">
+                                <label class="text-sm font-medium text-gray-700 mb-2">Número</label>
+                                <input type="text" wire:model="direccion.numero"
+                                    class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors">
+                                @error('direccion.numero')
+                                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div class="flex flex-col">
+                                <label class="text-sm font-medium text-gray-700 mb-2">Zona</label>
+                                <input type="text" wire:model="direccion.zona"
+                                    class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors">
+                                @error('direccion.zona')
+                                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div class="flex flex-col">
+                                <label class="text-sm font-medium text-gray-700 mb-2">Código Postal</label>
+                                <input type="text" wire:model="direccion.codigo_postal"
+                                    class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors">
+                                @error('direccion.codigo_postal')
+                                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div class="flex flex-col">
+                                <label class="text-sm font-medium text-gray-700 mb-2">Referencia</label>
+                                <input type="text" wire:model="direccion.referencia"
+                                    class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors">
+                                @error('direccion.referencia')
+                                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sección: Ubigeo -->
+                    <div class="mb-8">
+                        <div class="flex items-center space-x-2 mb-6 pb-3 border-b border-gray-200">
+                            <div class="p-2 bg-purple-100 rounded-lg">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-purple-600"
+                                    viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd"
+                                        d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a1 1 0 110 2h-3a1 1 0 01-1-1v-2a1 1 0 00-1-1H9a1 1 0 00-1 1v2a1 1 0 01-1 1H4a1 1 0 110-2V4zm3 1h2v2H7V5zm2 4H7v2h2V9zm2-4h2v2h-2V5zm2 4h-2v2h2V9z"
+                                        clip-rule="evenodd" />
+                                </svg>
+                            </div>
+                            <h4 class="font-semibold text-gray-800 text-lg">Ubicación Geográfica</h4>
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-6">
+                            <div class="flex flex-col">
+                                <label class="text-sm font-medium text-gray-700 mb-2">Departamento</label>
+                                <select wire:model="departamentoSeleccionado"
+                                    class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors">
+                                    <option value="">-- Seleccione --</option>
+                                    @foreach ($departamentos as $dep)
+                                        <option value="{{ $dep }}">{{ $dep }}</option>
+                                    @endforeach
+                                </select>
+                                @error('direccion.codigo_ubigeo')
+                                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div class="flex flex-col">
+                                <label class="text-sm font-medium text-gray-700 mb-2">Provincia</label>
+                                <select wire:model="provinciaSeleccionada"
+                                    class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors disabled:bg-gray-50 disabled:cursor-not-allowed"
+                                    @if (empty($departamentoSeleccionado)) disabled @endif>
+                                    <option value="">-- Seleccione --</option>
+                                    @foreach ($provincias as $prov)
+                                        <option value="{{ $prov }}">{{ $prov }}</option>
+                                    @endforeach
+                                </select>
+                                @error('direccion.codigo_ubigeo')
+                                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div class="flex flex-col">
+                                <label class="text-sm font-medium text-gray-700 mb-2">Distrito</label>
+                                <select wire:model="direccion.codigo_ubigeo"
+                                    class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors disabled:bg-gray-50 disabled:cursor-not-allowed"
+                                    @if (empty($provinciaSeleccionada)) disabled @endif>
+                                    <option value="">-- Seleccione --</option>
+                                    @foreach ($distritos as $dis)
+                                        <option value="{{ $dis->codigo_ubigeo }}">{{ $dis->distrito }}</option>
+                                    @endforeach
+                                </select>
+                                @error('direccion.codigo_ubigeo')
+                                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botones de acción -->
+                    <div class="flex justify-end space-x-3 pt-6 border-t border-gray-200">
+                        <button type="button" @click="$wire.cerrarModal()"
+                            class="px-6 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            Cancelar
+                        </button>
+                        <button type="submit"
+                            class="px-6 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 flex items-center space-x-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20"
+                                fill="currentColor">
+                                <path fill-rule="evenodd"
+                                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                    clip-rule="evenodd" />
+                            </svg>
+                            <span>Guardar Cambios</span>
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     @endif
 
+    @push('scripts')
+        <script>
+            Livewire.on('notify', (data) => {
+                Swal.fire({
+                    title: data.title,
+                    text: data.description,
+                    icon: data.type,
+                    timer: 2500,
+                    showConfirmButton: false,
+                    customClass: {
+                        popup: 'rounded-lg',
+                        title: 'text-lg font-semibold',
+                        htmlContainer: 'text-sm'
+                    }
+                });
+            });
+        </script>
+    @endpush
     <x-loader />
 </x-panel>

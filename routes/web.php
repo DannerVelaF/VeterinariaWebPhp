@@ -35,7 +35,9 @@ use App\Livewire\Inventario\Lotes;
 use App\Livewire\Inventario\Salidas;
 use App\Livewire\Mantenimiento\Configuracion\Configuracion;
 use App\Livewire\Mantenimiento\Mascotas\Clientes;
+use App\Livewire\Mantenimiento\Mascotas\Especies;
 use App\Livewire\Mantenimiento\Mascotas\Mascotas;
+use App\Livewire\Mantenimiento\Mascotas\Razas;
 use App\Livewire\Mantenimiento\Productos\Categoria;
 use App\Livewire\Mantenimiento\Productos\Productos;
 use App\Livewire\Mantenimiento\Productos\Proveedores;
@@ -159,6 +161,8 @@ Route::middleware('auth')->group(function () {
             Route::prefix("clientes")->group(function () {
                 Route::get('/', Clientes::class)->name('mantenimiento.clientes');
                 Route::get("/mascotas", Mascotas::class)->name('mantenimiento.clientes.mascotas');
+                Route::get("/razas", Razas::class)->name('mantenimiento.clientes.razas');
+                Route::get("/especies", Especies::class)->name('mantenimiento.clientes.especies');
             });
 
 

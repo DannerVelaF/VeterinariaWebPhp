@@ -16,7 +16,7 @@
 
             {{-- Sidebar mejorado --}}
             <aside id="default-sidebar"
-                class=" w-72 h-screen transition-transform -translate-x-full sm:translate-x-0 bg-white shadow-xl border-r border-gray-200"
+                class=" w-72 min-h-screen transition-transform -translate-x-full sm:translate-x-0 bg-white shadow-xl border-r border-gray-200"
                 aria-label="Sidebar">
 
                 <div class="h-full flex flex-col">

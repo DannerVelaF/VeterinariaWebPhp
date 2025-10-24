@@ -8,6 +8,7 @@ use App\Models\Cliente;
 use Illuminate\Database\Eloquent\Builder;
 use PowerComponents\LivewirePowerGrid\Button;
 use PowerComponents\LivewirePowerGrid\Column;
+use PowerComponents\LivewirePowerGrid\Facades\Filter;
 use PowerComponents\LivewirePowerGrid\Facades\PowerGrid;
 use PowerComponents\LivewirePowerGrid\PowerGridComponent;
 use PowerComponents\LivewirePowerGrid\PowerGridFields;
@@ -57,7 +58,7 @@ final class MascotasTable extends PowerGridComponent
             ->add('estado')
             ->add('estado_boolean', fn($row) => $row->estado === 'activo')
             ->add('fecha_registro')
-            ->add('cliente_nombre', fn($mascota) => $mascota->cliente?->nombre_cliente ?? '-')
+            ->add('cliente_nombre', fn($mascota) => $mascota->cliente?->persona->nombre . ' ' . $mascota->cliente->persona->apellido_paterno . ' ' . $mascota->cliente->persona->apellido_materno ?? '-')
             ->add('raza_nombre', fn($mascota) => $mascota->raza?->nombre_raza ?? '-');
     }
 
@@ -68,37 +69,26 @@ final class MascotasTable extends PowerGridComponent
 
             Column::make('Nombre', 'nombre_mascota')
                 ->sortable()
-                ->searchable()
-                ->editOnClick(),
+                ->searchable(),
 
             Column::make('Cliente', 'cliente_nombre')
-                ->sortable()
-                ->searchable(),
+                ->sortable(),
 
             Column::make('Raza', 'raza_nombre')
-                ->sortable()
-                ->searchable(),
+                ->sortable(),
 
             Column::make('Sexo', 'sexo')
-                ->sortable()
-                ->searchable(),
+                ->sortable(),
 
             Column::make('Color', 'color_primario')
                 ->sortable()
-                ->searchable()
-                ->editOnClick(),
+                ->searchable(),
 
             Column::make('Peso (kg)', 'peso_actual')
-                ->sortable()
-                ->editOnClick(),
+                ->sortable(),
 
             Column::make('Fecha Nacimiento', 'fecha_nacimiento')
                 ->sortable(),
-
-            Column::make('Observación', 'observacion')
-                ->sortable()
-                ->searchable()
-                ->editOnClick(),
 
             Column::make('Estado', 'estado_boolean')
                 ->sortable()
@@ -113,7 +103,23 @@ final class MascotasTable extends PowerGridComponent
 
     public function filters(): array
     {
-        return [];
+        return [
+            Filter::inputText('nombre_mascota', 'Nombre'),
+            Filter::select('estado', 'Estado')
+                ->dataSource([
+                    ['id' => 'activo', 'name' => 'activo'],
+                    ['id' => 'inactivo', 'name' => 'inactivo'],
+                ])
+                ->optionValue('id')
+                ->optionLabel('name'),
+            Filter::select("sexo", "Sexo")
+                ->dataSource([
+                    ['id' => 'M', 'name' => 'Macho'],
+                    ['id' => 'F', 'name' => 'Hembra'],
+                ])
+                ->optionValue('id')
+                ->optionLabel('name'),
+        ];
     }
 
     public function actions(Mascota $row): array
@@ -122,7 +128,7 @@ final class MascotasTable extends PowerGridComponent
             Button::add('editarMascota')
                 ->slot('Editar')
                 ->class('px-2 py-1 bg-yellow-500 hover:bg-yellow-600 text-white text-xs rounded')
-                ->dispatch('editarMascota', ['mascotaId' => $row->id_mascota]),
+                ->dispatch('abrirModalMascota', ['mascotaId' => $row->id_mascota]),
         ];
     }
 
@@ -141,7 +147,7 @@ final class MascotasTable extends PowerGridComponent
         $this->skipRender();
     } */
 
-        /**
+    /**
      * Actualiza campos editables directamente en la tabla
      */
     public function onUpdatedEditable(string|int $id, string $field, string $value): void
@@ -163,5 +169,4 @@ final class MascotasTable extends PowerGridComponent
         $this->dispatch('mascotaUpdated');
         $this->skipRender();
     }
-
 }

@@ -28,7 +28,7 @@ class Razas extends Component
     public $especies = [];
     public $modalEditar = false;
     public $razaSeleccionado;
-    
+
     public $razaEditar = [
         'id_raza' => null,
         'nombre_raza' => '',
@@ -74,11 +74,11 @@ class Razas extends Component
 
             // Si llegamos aquí, todo se guardó correctamente
             $this->dispatch('razaRegistrada');
-            session()->flash('success', '✅ Raza registrada con éxito');
+            $this->dispatch('notify', title: 'Success', description: 'Raza registrada con éxito', type: 'success');
             $this->resetForm();
             $this->dispatch('razasUpdated');
         } catch (\Exception $e) {
-            session()->flash('error', '❌ Error al registrar la raza: ' . $e->getMessage());
+            $this->dispatch('notify', title: 'Error', description: 'Error al registrar la raza: ' . $e->getMessage(), type: 'error');
             Log::error('Error al registrar raza', ['error' => $e->getMessage()]);
         }
     }
@@ -107,6 +107,12 @@ class Razas extends Component
         $this->modalEditar = true;
     }
 
+    public function cerrarModal($razaId)
+    {
+        $this->modalEditar = false;
+    }
+
+
     public function guardarEdicion()
     {
         $validatedData = Validator::make($this->razaEditar, [
@@ -126,11 +132,11 @@ class Razas extends Component
             });
 
             // Si llegamos aquí, todo se guardó correctamente
-            session()->flash('success', '✅ Raza actualizada con éxito');
+            $this->dispatch('notify', title: 'Success', description: 'Raza actualizada con éxito', type: 'success');
             $this->modalEditar = false;
             $this->dispatch('razasUpdated');
         } catch (Exception $e) {
-            session()->flash('error', '❌ Error al actualizar la raza: ' . $e->getMessage());
+            $this->dispatch('notify', title: 'Error', description: 'Error al actualizar la raza: ' . $e->getMessage(), type: 'error');
             Log::error('Error al actualizar raza', ['error' => $e->getMessage()]);
         }
     }

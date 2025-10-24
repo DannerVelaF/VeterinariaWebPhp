@@ -45,11 +45,11 @@
                     </div>
 
                     <div class="flex flex-col">
-                        <label for="nombre_especie" class="font-bold mb-1">Nombre de la especie <span class="text-red-500">*</span></label>
+                        <label for="nombre_especie" class="font-bold mb-1">Nombre de la especie <span
+                                class="text-red-500">*</span></label>
                         <input type="text" id="nombre_especie" name="nombre_especie" maxlength="255"
                             class="border rounded px-2 py-1 focus:outline-none focus:ring focus:ring-blue-300 @error('especie.nombre_especie') border-red-500 @enderror"
-                            placeholder="Ej. Canino, Felino, Ave, Reptil..."
-                            wire:model="especie.nombre_especie">
+                            placeholder="Ej. Canino, Felino, Ave, Reptil..." wire:model="especie.nombre_especie">
                         @error('especie.nombre_especie')
                             <p class="text-red-500 text-xs italic mt-1">{{ $message }}</p>
                         @enderror
@@ -59,8 +59,7 @@
                         <label for="descripcion" class="font-bold mb-1">Descripción de la especie</label>
                         <textarea id="descripcion" name="descripcion" rows="4" maxlength="1000"
                             class="border rounded px-2 py-1 focus:outline-none focus:ring focus:ring-blue-300 @error('especie.descripcion') border-red-500 @enderror"
-                            placeholder="Describe brevemente esta especie..."
-                            wire:model="especie.descripcion"></textarea>
+                            placeholder="Describe brevemente esta especie..." wire:model="especie.descripcion"></textarea>
                         @error('especie.descripcion')
                             <p class="text-red-500 text-xs italic mt-1">{{ $message }}</p>
                         @enderror
@@ -94,11 +93,11 @@
             <!-- Contenido del modal -->
             <div class="relative bg-white rounded-md p-6 w-1/3 z-10 overflow-y-auto max-h-[90vh]">
                 <h2 class="text-lg font-bold mb-4 flex gap-2 items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round"
-                        class="lucide lucide-pencil">
-                        <path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" />
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" class="lucide lucide-pencil">
+                        <path
+                            d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" />
                         <path d="m15 5 4 4" />
                     </svg>
                     Editar Especie
@@ -138,6 +137,23 @@
             </div>
         </div>
     @endif
-
+    @push('scripts')
+        <script>
+            Livewire.on('notify', (data) => {
+                Swal.fire({
+                    title: data.title,
+                    text: data.description,
+                    icon: data.type,
+                    timer: 2500,
+                    showConfirmButton: false,
+                    customClass: {
+                        popup: 'rounded-lg',
+                        title: 'text-lg font-semibold',
+                        htmlContainer: 'text-sm'
+                    }
+                });
+            });
+        </script>
+    @endpush
     <x-loader />
 </x-panel>

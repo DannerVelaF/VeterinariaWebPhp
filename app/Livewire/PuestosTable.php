@@ -90,13 +90,13 @@ final class PuestosTable extends PowerGridComponent
         return [
             Filter::inputText('nombre_puesto')
                 ->placeholder('Buscar por nombre'),
-            Filter::select('estado', 'Estado')
-                ->dataSource([
-                    ['id' => 'activo', 'name' => 'activo'],
-                    ['id' => 'inactivo', 'name' => 'inactivo'],
-                ])
-                ->optionValue('id')
-                ->optionLabel('name'),
+                Filter::select('estado', 'Estado')
+                    ->dataSource([
+                        ['id' => 'activo', 'name' => 'activo'],
+                        ['id' => 'inactivo', 'name' => 'inactivo'],
+                    ])
+                    ->optionValue('id')
+                    ->optionLabel('name'),
         ];
     }
 

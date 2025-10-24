@@ -29,6 +29,7 @@ class User extends Authenticatable implements JWTSubject
         'fecha_registro',
         'fecha_actualizacion',
         'id_rol',
+        'ultimo_login',
     ];
 
     public $timestamps = true;

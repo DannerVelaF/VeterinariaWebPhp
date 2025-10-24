@@ -108,70 +108,96 @@
         </x-tab>
     </x-tabs>
     @if ($modalRol)
-        <div class="fixed inset-0 z-50 flex items-center justify-center">
-            <!-- Overlay -->
-            <div class="absolute inset-0 bg-black opacity-50" wire:click="$set('modalRol', false)"></div>
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4" x-data="{ show: true }" x-show="show"
+            x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 scale-95"
+            x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-200"
+            x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95">
 
-            <!-- Modal -->
-            <div class="relative bg-white rounded-md p-6 w-96 z-10">
-                <h3 class="font-bold mb-4 flex gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="24"
-                        height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pencil-icon lucide-pencil">
-                        <path
-                            d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" />
-                        <path d="m15 5 4 4" />
-                    </svg> Editar usuario: {{ $usuarioSeleccionado->usuario }}</h3>
+            <!-- Overlay difuminado -->
+            <div class="absolute inset-0 bg-black opacity-50" @click="$wire.set('modalRol', false)"></div>
 
-                <!-- Username -->
-                <div class="flex flex-col mb-3">
-                    <label>Nombre de usuario</label>
-                    <input type="text" wire:model="usernameEdit" class="border rounded px-2 py-1">
-                    @error('usernameEdit')
-                        <p class="text-red-500 text-xs">{{ $message }}</p>
-                    @enderror
+            <!-- Contenido del modal -->
+            <div class="relative bg-white rounded-xl shadow-2xl w-full max-w-md z-50 overflow-hidden">
+                <!-- Header del modal -->
+                <div class="p-6">
+                    <div class="flex justify-between items-center">
+                        <h3 class="font-bold text-lg text-gray-700">Editar Usuario</h3>
+                        <button wire:click="$set('modalRol', false)"
+                            class="text-gray-500 hover:text-gray-700 transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20"
+                                fill="currentColor">
+                                <path fill-rule="evenodd"
+                                    d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                                    clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                    </div>
+                    <p class="text-gray-600 text-sm mt-1">Usuario seleccionado: {{ $usuarioSeleccionado->usuario }}</p>
                 </div>
 
-                <!-- Reset Password -->
-                <div class="flex flex-col mb-3">
-                    <label>Nueva contraseña (opcional)</label>
-                    <input type="password" wire:model="passwordEdit" class="border rounded px-2 py-1">
-                    <small class="text-gray-500">Si no deseas cambiarla, deja este campo vacío</small>
-                    @error('passwordEdit')
-                        <p class="text-red-500 text-xs">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <!-- Rol -->
-                <div class="flex flex-col mb-3">
-                    <label>Rol</label>
-                    <select wire:model="rolNuevo" class="border rounded px-2 py-1">
-                        <option value="">Seleccione...</option>
-                        @foreach ($roles as $rol)
-                            <option value="{{ $rol->id_rol }}">{{ $rol->nombre_rol }}</option>
-                        @endforeach
-                        @error('rolNuevo')
-                            <p class="text-red-500 text-xs">{{ $message }}</p>
+                <!-- Contenido del formulario -->
+                <div class="px-6 pb-6">
+                    <!-- Username -->
+                    <div class="flex flex-col mb-4">
+                        <label class="text-sm font-medium text-gray-700 mb-1">Nombre de usuario</label>
+                        <input type="text" wire:model="usernameEdit"
+                            class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors">
+                        @error('usernameEdit')
+                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                         @enderror
-                    </select>
-                </div>
+                    </div>
 
-                <!-- Estado -->
-                <div class="flex flex-col mb-3">
-                    <label>Estado</label>
-                    <select wire:model="estadoEdit" class="border rounded px-2 py-1">
-                        <option value="activo">Activo</option>
-                        <option value="inactivo">Inactivo</option>
-                    </select>
-                    @error('estadoEdit')
-                        <p class="text-red-500 text-xs">{{ $message }}</p>
-                    @enderror
-                </div>
+                    <!-- Reset Password -->
+                    <div class="flex flex-col mb-4">
+                        <label class="text-sm font-medium text-gray-700 mb-1">Contraseña</label>
+                        <div class="flex items-center space-x-2">
+                            <button type="button" wire:click="resetContrasena"
+                                class="px-4 py-2 text-sm font-medium text-white bg-amber-500 border border-transparent rounded-lg hover:bg-amber-600 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500">
+                                Resetear Contraseña
+                            </button>
+                            <span class="text-xs text-gray-500">Se restablecerá al DNI del trabajador</span>
+                        </div>
+                    </div>
 
-                <!-- Botones -->
-                <div class="flex justify-end space-x-2 mt-4">
-                    <button wire:click="$set('modalRol', false)"
-                        class="px-3 py-1 rounded bg-gray-500 text-white">Cerrar</button>
-                    <button wire:click="guardarRol" class="px-3 py-1 rounded bg-blue-600 text-white">Guardar</button>
+                    <!-- Rol -->
+                    <div class="flex flex-col mb-4">
+                        <label class="text-sm font-medium text-gray-700 mb-1">Rol</label>
+                        <select wire:model="rolNuevo"
+                            class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors">
+                            <option value="">Seleccione un rol...</option>
+                            @foreach ($roles as $rol)
+                                <option value="{{ $rol->id_rol }}">{{ $rol->nombre_rol }}</option>
+                            @endforeach
+                        </select>
+                        @error('rolNuevo')
+                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <!-- Estado -->
+                    <div class="flex flex-col mb-4">
+                        <label class="text-sm font-medium text-gray-700 mb-1">Estado</label>
+                        <select wire:model="estadoEdit"
+                            class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors">
+                            <option value="activo">Activo</option>
+                            <option value="inactivo">Inactivo</option>
+                        </select>
+                        @error('estadoEdit')
+                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <!-- Acciones del modal -->
+                    <div class="flex justify-end space-x-3 mt-6 pt-4 border-t border-gray-200">
+                        <button wire:click="$set('modalRol', false)"
+                            class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            Cancelar
+                        </button>
+                        <button wire:click="guardarRol"
+                            class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            Guardar Cambios
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

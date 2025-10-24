@@ -47,11 +47,11 @@ class Especies extends Component
 
             // Si llegamos aquí, todo se guardó correctamente
             $this->dispatch('especieRegistrado');
-            session()->flash('success', '✅ Especie registrada con éxito');
+            $this->dispatch('notify', title: 'Success', description: 'Especie registrada con éxito', type: 'success');
             $this->resetForm();
             $this->dispatch('especieUpdated');
         } catch (\Exception $e) {
-            session()->flash('error', '❌ Error al registrar la especie: ' . $e->getMessage());
+            $this->dispatch('notify', title: 'Error', description: 'Error al registrar la especie: ' . $e->getMessage(), type: 'error');
             Log::error('Error al registrar especie', ['error' => $e->getMessage()]);
         }
     }
@@ -79,9 +79,9 @@ class Especies extends Component
     }
 
     public function guardarEdicion()
-    {        
+    {
         if (! $this->especieSeleccionado) return;
-    
+
         // Validación
         $validated = $this->validate([
             'especieEditar.nombre_especie' => 'required|string|max:255',
@@ -99,11 +99,11 @@ class Especies extends Component
             });
 
             // Si llegamos aquí, todo se guardó correctamente
-            session()->flash('success', '✅ Especie actualizada con éxito');
+            $this->dispatch('notify', title: 'Success', description: 'Especie actualizada con éxito', type: 'success');
             $this->modalEditar = false;
             $this->dispatch('especieUpdated');
         } catch (\Exception $e) {
-            session()->flash('error', '❌ Error al actualizar la especie: ' . $e->getMessage());
+            $this->dispatch('notify', title: 'Error', description: 'Error al actualizar la especie: ' . $e->getMessage(), type: 'error');
             Log::error('Error al actualizar especie', ['error' => $e->getMessage()]);
         }
     }
@@ -123,6 +123,4 @@ class Especies extends Component
     {
         return view('livewire.mantenimiento.mascotas.especies');
     }
-
-
 }

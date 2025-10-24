@@ -53,6 +53,9 @@
                                 <option value="{{ $t->id_tipo_documento }}">{{ $t->nombre_tipo_documento }}</option>
                             @endforeach
                         </select>
+                        @error('persona.id_tipo_documento')
+                            <p class="text-red-500 text-xs">{{ $message }}</p>
+                        @enderror
                     </div>
                     <div class="flex flex-col">
                         <label>Numero documento <span class="text-red-500">*</span></label>
@@ -92,11 +95,17 @@
                         <label>Apellido Materno</label>
                         <input type="text" wire:model="persona.apellido_materno" class="border rounded px-2 py-1"
                             @readonly($persona['id_tipo_documento'] == 1)>
+                        @error('persona.apellido_materno')
+                            <p class="text-red-500 text-xs">{{ $message }}</p>
+                        @enderror
                     </div>
 
                     <div class="flex flex-col">
                         <label>Fecha Nacimiento <span class="text-red-500">*</span></label>
                         <input type="date" wire:model="persona.fecha_nacimiento" class="border rounded px-2 py-1">
+                        @error('persona.fecha_nacimiento')
+                            <p class="text-red-500 text-xs">{{ $message }}</p>
+                        @enderror
                     </div>
 
                     <div class="flex flex-col">
@@ -107,33 +116,51 @@
                             <option value="F">Femenino</option>
                             <option value="O">Otro</option>
                         </select>
+                        @error('persona.sexo')
+                            <p class="text-red-500 text-xs">{{ $message }}</p>
+                        @enderror
                     </div>
                     <div class="flex flex-col">
                         <label>Nacionalidad <span class="text-red-500">*</span></label>
                         <input type="text" wire:model="persona.nacionalidad" class="border rounded px-2 py-1">
+                        @error('persona.nacionalidad')
+                            <p class="text-red-500 text-xs">{{ $message }}</p>
+                        @enderror
                     </div>
                     <div class="flex flex-col">
                         <label>Correo electronico personal <span class="text-red-500">*</span></label>
                         <input type="text" wire:model="persona.correo_electronico_personal"
                             class="border rounded px-2 py-1">
+                        @error('persona.correo_electronico_personal')
+                            <p class="text-red-500 text-xs">{{ $message }}</p>
+                        @enderror
                     </div>
 
                     <div class="flex flex-col">
                         <label>Numero telefono personal <span class="text-red-500">*</span></label>
                         <input type="text" wire:model="persona.numero_telefono_personal"
                             class="border rounded px-2 py-1">
+                        @error('persona.numero_telefono_personal')
+                            <p class="text-red-500 text-xs">{{ $message }}</p>
+                        @enderror
                     </div>
 
                     <div class="flex flex-col">
                         <label>Correo electronico secundario</label>
                         <input type="text" wire:model="persona.correo_electronico_secundario"
                             class="border rounded px-2 py-1">
+                        @error('persona.correo_electronico_secundario')
+                            <p class="text-red-500 text-xs">{{ $message }}</p>
+                        @enderror
                     </div>
 
                     <div class="flex flex-col">
                         <label>Numero telefono secundario</label>
                         <input type="text" wire:model="persona.numero_telefono_secundario"
                             class="border rounded px-2 py-1">
+                        @error('persona.numero_telefono_secundario')
+                            <p class="text-red-500 text-xs">{{ $message }}</p>
+                        @enderror
                     </div>
 
                     <!-- Datos de Trabajador -->
@@ -145,18 +172,25 @@
                         <label>Fecha de Ingreso</label>
                         <input type="date" wire:model="trabajador.fecha_ingreso" class="border rounded px-2 py-1"
                             disabled>
+
                     </div>
 
                     <div class="flex flex-col">
                         <label>Numero seguro social <span class="text-red-500">*</span></label>
                         <input type="number" step="0.01" wire:model="trabajador.numero_seguro_social"
                             class="border rounded px-2 py-1">
+                        @error('trabajador.numero_seguro_social')
+                            <p class="text-red-500 text-xs">{{ $message }}</p>
+                        @enderror
                     </div>
 
                     <div class="flex flex-col">
                         <label>Salario <span class="text-red-500">*</span></label>
                         <input type="number" step="0.01" wire:model="trabajador.salario"
                             class="border rounded px-2 py-1">
+                        @error('trabajador.salario')
+                            <p class="text-red-500 text-xs">{{ $message }}</p>
+                        @enderror
                     </div>
 
                     <div class="flex flex-col">
@@ -167,6 +201,9 @@
                                 <option value="{{ $p->id_puesto_trabajo }}">{{ $p->nombre_puesto }}</option>
                             @endforeach
                         </select>
+                        @error('trabajador.id_puesto_trabajo')
+                            <p class="text-red-500 text-xs">{{ $message }}</p>
+                        @enderror
                     </div>
 
                     <!-- ====== DATOS DE DIRECCIÓN ====== -->
@@ -265,6 +302,11 @@
                                         <option value="{{ $dep }}">{{ $dep }}</option>
                                     @endforeach
                                 </select>
+                                @error('direccion.codigo_ubigeo')
+                                    <p class="text-red-500 text-xs italic mt-1">
+                                        {{ $message }}
+                                    </p>
+                                @enderror
                             </div>
 
                             <!-- PROVINCIA -->
@@ -279,6 +321,11 @@
                                         <option value="{{ $prov }}">{{ $prov }}</option>
                                     @endforeach
                                 </select>
+                                @error('direccion.codigo_ubigeo')
+                                    <p class="text-red-500 text-xs italic mt-1">
+                                        {{ $message }}
+                                    </p>
+                                @enderror
                             </div>
 
                             <!-- DISTRITO -->
@@ -324,13 +371,14 @@
                 <!-- Header -->
                 <div class="px-6 py-4 flex items-center justify-between">
                     <div class="flex items-center gap-3">
-
                         <div>
                             <h3 class="text-lg font-medium text-gray-700">Editar información de Trabajador</h3>
-                            <p class="text-gray-500"> Trabajador:
+                            <p class="text-gray-500">
+                                Trabajador:
                                 {{ $trabajadorSeleccionado->persona?->nombre }}
                                 {{ $trabajadorSeleccionado->persona?->apellido_paterno }}
-                                {{ $trabajadorSeleccionado->persona?->apellido_materno }}</p>
+                                {{ $trabajadorSeleccionado->persona?->apellido_materno }}
+                            </p>
                         </div>
                     </div>
                     <button wire:click="cerrarModal"
@@ -346,7 +394,7 @@
 
                 <!-- Body -->
                 <div class="overflow-y-auto max-h-[calc(90vh-180px)] p-6 bg-gray-50">
-                    <form class="space-y-6">
+                    <form class="space-y-6" wire:submit.prevent="guardarEdicion">
 
                         <!-- Información Personal -->
                         <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-200">
@@ -365,45 +413,66 @@
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div class="flex flex-col">
                                     <label class="text-sm font-semibold text-gray-700 mb-1.5">Nombre</label>
-                                    <input readonly type="text" wire:model="persona.nombre"
-                                        class="border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                                    <input readonly type="text" wire:model="personaEditar.nombre"
+                                        class="border border-gray-300 rounded-lg px-3 py-2.5 text-sm">
+                                    @error('personaEditar.nombre')
+                                        <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
+                                    @enderror
                                 </div>
 
                                 <div class="flex flex-col">
                                     <label class="text-sm font-semibold text-gray-700 mb-1.5">Apellido Paterno</label>
-                                    <input readonly type="text" wire:model="persona.apellido_paterno"
-                                        class="border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                                    <input readonly type="text" wire:model="personaEditar.apellido_paterno"
+                                        class="border border-gray-300 rounded-lg px-3 py-2.5 text-sm">
+                                    @error('personaEditar.apellido_paterno')
+                                        <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
+                                    @enderror
                                 </div>
 
                                 <div class="flex flex-col">
                                     <label class="text-sm font-semibold text-gray-700 mb-1.5">Apellido Materno</label>
-                                    <input readonly type="text" wire:model="persona.apellido_materno"
-                                        class="border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                                    <input readonly type="text" wire:model="personaEditar.apellido_materno"
+                                        class="border border-gray-300 rounded-lg px-3 py-2.5 text-sm">
+                                    @error('personaEditar.apellido_materno')
+                                        <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
+                                    @enderror
                                 </div>
 
                                 <div class="flex flex-col">
                                     <label class="text-sm font-semibold text-gray-700 mb-1.5">Correo Personal</label>
-                                    <input type="email" wire:model="persona.correo_electronico_personal"
-                                        class="border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                                    <input type="email" wire:model="personaEditar.correo_electronico_personal"
+                                        class="border border-gray-300 rounded-lg px-3 py-2.5 text-sm">
+                                    @error('personaEditar.correo_electronico_personal')
+                                        <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
+                                    @enderror
                                 </div>
 
                                 <div class="flex flex-col">
                                     <label class="text-sm font-semibold text-gray-700 mb-1.5">Correo Secundario</label>
-                                    <input type="email" wire:model="persona.correo_electronico_secundario"
-                                        class="border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                                    <input type="email" wire:model="personaEditar.correo_electronico_secundario"
+                                        class="border border-gray-300 rounded-lg px-3 py-2.5 text-sm">
+                                    @error('personaEditar.correo_electronico_secundario')
+                                        <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
+                                    @enderror
                                 </div>
 
                                 <div class="flex flex-col">
                                     <label class="text-sm font-semibold text-gray-700 mb-1.5">Teléfono Personal</label>
-                                    <input type="text" wire:model="persona.numero_telefono_personal"
-                                        class="border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                                    <input type="text" wire:model="personaEditar.numero_telefono_personal"
+                                        class="border border-gray-300 rounded-lg px-3 py-2.5 text-sm">
+                                    @error('personaEditar.numero_telefono_personal')
+                                        <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
+                                    @enderror
                                 </div>
 
                                 <div class="flex flex-col">
                                     <label class="text-sm font-semibold text-gray-700 mb-1.5">Teléfono
                                         Secundario</label>
-                                    <input type="text" wire:model="persona.numero_telefono_secundario"
-                                        class="border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                                    <input type="text" wire:model="personaEditar.numero_telefono_secundario"
+                                        class="border border-gray-300 rounded-lg px-3 py-2.5 text-sm">
+                                    @error('personaEditar.numero_telefono_secundario')
+                                        <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
+                                    @enderror
                                 </div>
                             </div>
                         </div>
@@ -428,39 +497,53 @@
                                     <label class="text-sm font-semibold text-gray-700 mb-1.5">Salario</label>
                                     <div class="relative">
                                         <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">S/</span>
-                                        <input type="number" step="0.01" wire:model="trabajador.salario"
-                                            class="w-full border border-gray-300 rounded-lg pl-10 pr-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                                        <input type="number" step="0.01" wire:model="trabajadorEditar.salario"
+                                            class="w-full border border-gray-300 rounded-lg pl-10 pr-3 py-2.5 text-sm">
                                     </div>
+                                    @error('trabajadorEditar.salario')
+                                        <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
+                                    @enderror
                                 </div>
 
                                 <div class="flex flex-col">
                                     <label class="text-sm font-semibold text-gray-700 mb-1.5">Seguro Social</label>
-                                    <input type="text" wire:model="trabajador.numero_seguro_social"
-                                        class="border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                                    <input type="text" wire:model="trabajadorEditar.numero_seguro_social"
+                                        class="border border-gray-300 rounded-lg px-3 py-2.5 text-sm">
+                                    @error('trabajadorEditar.numero_seguro_social')
+                                        <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
+                                    @enderror
                                 </div>
 
                                 <div class="flex flex-col">
                                     <label class="text-sm font-semibold text-gray-700 mb-1.5">Puesto</label>
                                     <select wire:model="puestoNuevo"
-                                        class="border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                                        class="border border-gray-300 rounded-lg px-3 py-2.5 text-sm">
                                         <option value="">Seleccione...</option>
                                         @foreach ($puestos as $puesto)
                                             <option value="{{ $puesto->id_puesto_trabajo }}">
-                                                {{ $puesto->nombre_puesto }}</option>
+                                                {{ $puesto->nombre_puesto }}
+                                            </option>
                                         @endforeach
                                     </select>
+                                    @error('puestoNuevo')
+                                        <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
+                                    @enderror
                                 </div>
 
                                 <div class="flex flex-col">
                                     <label class="text-sm font-semibold text-gray-700 mb-1.5">Estado</label>
                                     <select wire:model="estadoNuevo"
-                                        class="border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                                        class="border border-gray-300 rounded-lg px-3 py-2.5 text-sm">
                                         <option value="">Seleccione...</option>
                                         @foreach ($estados as $estado)
                                             <option value="{{ $estado->id_estado_trabajador }}">
-                                                {{ $estado->nombre_estado_trabajador }}</option>
+                                                {{ $estado->nombre_estado_trabajador }}
+                                            </option>
                                         @endforeach
                                     </select>
+                                    @error('estadoNuevo')
+                                        <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
+                                    @enderror
                                 </div>
                             </div>
                         </div>
@@ -482,42 +565,54 @@
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div class="flex flex-col">
                                     <label class="text-sm font-semibold text-gray-700 mb-1.5">Zona</label>
-                                    <input type="text" wire:model="direccion.zona"
-                                        class="border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                                    <input type="text" wire:model="direccionEditar.zona"
+                                        class="border border-gray-300 rounded-lg px-3 py-2.5 text-sm">
+                                    @error('direccionEditar.zona')
+                                        <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
+                                    @enderror
                                 </div>
 
                                 <div class="flex flex-col">
                                     <label class="text-sm font-semibold text-gray-700 mb-1.5">Tipo de Calle</label>
-                                    <input type="text" wire:model="direccion.tipo_calle"
-                                        class="border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                                    <input type="text" wire:model="direccionEditar.tipo_calle"
+                                        class="border border-gray-300 rounded-lg px-3 py-2.5 text-sm">
+                                    @error('direccionEditar.tipo_calle')
+                                        <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
+                                    @enderror
                                 </div>
 
                                 <div class="flex flex-col">
                                     <label class="text-sm font-semibold text-gray-700 mb-1.5">Nombre de Calle</label>
-                                    <input type="text" wire:model="direccion.nombre_calle"
-                                        class="border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                                    <input type="text" wire:model="direccionEditar.nombre_calle"
+                                        class="border border-gray-300 rounded-lg px-3 py-2.5 text-sm">
+                                    @error('direccionEditar.nombre_calle')
+                                        <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
+                                    @enderror
                                 </div>
 
                                 <div class="flex flex-col">
                                     <label class="text-sm font-semibold text-gray-700 mb-1.5">Número</label>
-                                    <input type="text" wire:model="direccion.numero"
-                                        class="border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                                    <input type="text" wire:model="direccionEditar.numero"
+                                        class="border border-gray-300 rounded-lg px-3 py-2.5 text-sm">
+                                    @error('direccionEditar.numero')
+                                        <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
+                                    @enderror
                                 </div>
                             </div>
                         </div>
-                    </form>
-                </div>
 
-                <!-- Footer -->
-                <div class="bg-gray-50 px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
-                    <button wire:click="cerrarModal"
-                        class="px-5 py-2.5 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold transition-all hover:shadow-md">
-                        Cancelar
-                    </button>
-                    <button wire:click="guardarEdicion"
-                        class="px-5 py-2.5 rounded-lg bg-black hover:bg-black/80' text-white font-semibold transition-all shadow-lg hover:shadow-xl">
-                        Guardar Cambios
-                    </button>
+                        <!-- Footer -->
+                        <div class="bg-gray-50 px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
+                            <button wire:click="cerrarModal"
+                                class="px-5 py-2.5 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold transition-all hover:shadow-md">
+                                Cancelar
+                            </button>
+                            <button type="submit"
+                                class="px-5 py-2.5 rounded-lg bg-black hover:bg-black/80 text-white font-semibold transition-all shadow-lg hover:shadow-xl">
+                                Guardar Cambios
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>

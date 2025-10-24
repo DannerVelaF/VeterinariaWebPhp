@@ -54,17 +54,16 @@ class Usuarios extends Component
         $this->cargarDatos();
     }
 
-
-    // ✅ MÉTODO PARA CARGAR LOS DATOS
     public function cargarDatos()
     {
         $this->trabajadores = Trabajador::whereHas('estadoTrabajador', function ($q) {
             $q->where('nombre_estado_trabajador', 'activo');
-        })->get();
+        })
+            ->whereDoesntHave('persona.user') // 🔹 solo trabajadores sin usuario
+            ->get();
 
         $this->roles = Roles::where('estado', 'activo')->get();
     }
-
 
     public function guardar()
     {
@@ -162,9 +161,11 @@ class Usuarios extends Component
 
         try {
             $this->usuarioSeleccionado->update([
-                'contrasena' => Hash::make($this->usuarioSeleccionado->trabajador->dni), // contraseña = DNI
-                'ultimo_login' => null, // resetea la fecha de último login
+                'contrasena' => $this->usuarioSeleccionado->persona->numero_documento, // 🔹 sin Hash::make
+                'ultimo_login' => null,
             ]);
+
+            $this->usuarioSeleccionado->refresh();
 
             $this->dispatch('notify', title: 'Success', description: 'Contraseña reseteada correctamente. La nueva contraseña es el DNI.', type: 'success');
         } catch (\Exception $e) {
