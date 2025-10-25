@@ -199,8 +199,8 @@ class Productos extends Component
             'id_categoria_producto' => 'required|exists:categoria_productos,id_categoria_producto',
             'id_proveedor' => 'required|exists:proveedores,id_proveedor',
             'id_unidad' => 'required|exists:unidades,id_unidad',
-            'imagenEditar' => 'nullable|image|max:2048', // ✅ Validar solo si existe
-            'precio_unitario' => 'nullable|numeric|min:0',
+            'imagenEditar' => 'nullable|image|max:2048',
+            'precio_unitario' => 'required|numeric|min:1',
             'estado' => 'required|in:activo,inactivo',
         ])->validate();
 

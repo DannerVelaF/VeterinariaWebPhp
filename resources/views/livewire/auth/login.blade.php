@@ -186,5 +186,5 @@
             animation: fade-in 0.3s ease-out;
         }
     </style>
-
+    <x-loader />
 </div>

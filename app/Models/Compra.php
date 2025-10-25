@@ -25,8 +25,9 @@ class Compra extends Model
         "total",
         "observacion",
         "id_usuario_aprobador",
-        "created_at",
-        "updated_at",
+        'id_estado_compra',
+        "fecha_registro",
+        "fecha_actualizacion",
     ];
 
 

@@ -92,5 +92,6 @@
         </table>
 
     </body>
+    <x-loader />
 
 </html>

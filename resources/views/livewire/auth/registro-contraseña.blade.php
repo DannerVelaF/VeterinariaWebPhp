@@ -144,4 +144,5 @@
             animation-delay: 4s;
         }
     </style>
+    <x-loader />
 </div>

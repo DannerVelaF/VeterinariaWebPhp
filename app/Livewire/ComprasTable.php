@@ -59,7 +59,7 @@ final class ComprasTable extends PowerGridComponent
             ->add('fecha_compra')
             ->add('fecha_registro')
             ->add('estado', fn($compra) =>
-            '<span class="capitalize">' . $compra->estado . '</span>')
+            '<span class="capitalize">' . $compra->estadoCompra->nombre_estado_compra . '</span>')
             ->add('cantidad_total')
             ->add('total')
             ->add(
@@ -177,12 +177,19 @@ final class ComprasTable extends PowerGridComponent
             // Ocultar todos los botones si la compra ya fue recibida
 
             Rule::button('aprobar')
-                ->when(fn($row) => $row->estado === 'recibido' || $row->estado === 'cancelado' || $row->estado === 'aprobado')
+                ->when(
+                    fn($row) => in_array($row->estadoCompra->nombre_estado_compra, ['recibido', 'cancelado', 'aprobado'])
+                        || !auth()->user()->tienePermiso('aprobacion-compras')
+                )
                 ->hide(),
 
             Rule::button('rechazar')
-                ->when(fn($row) => $row->estado === 'recibido' || $row->estado === 'cancelado' || $row->estado === 'aprobado')
+                ->when(
+                    fn($row) => in_array($row->estadoCompra->nombre_estado_compra, ['recibido', 'cancelado', 'aprobado'])
+                        || !auth()->user()->tienePermiso('aprobacion-compras')
+                )
                 ->hide(),
+
 
         ];
     }

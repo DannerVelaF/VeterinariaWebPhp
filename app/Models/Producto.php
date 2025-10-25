@@ -40,4 +40,8 @@ class Producto extends Model
     {
         return $this->belongsTo(Unidades::class, "id_unidad");
     }
+    public function lotes()
+    {
+        return $this->hasMany(Lotes::class, 'id_producto', 'id_producto');
+    }
 }

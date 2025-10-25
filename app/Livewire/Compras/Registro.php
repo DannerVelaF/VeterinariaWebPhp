@@ -106,7 +106,7 @@ class Registro extends Component
 
                 $compra = $this->compraSeleccionada;
                 $compra->id_estado_compra = $estadoOrdenAprobado->id_estado_compra;
-                $compra->id_usuario_aprobador = auth()->user()->persona->id_persona;
+                $compra->id_usuario_aprobador = auth()->user()->id_usuario;
                 $compra->save();
             });
 
@@ -145,16 +145,36 @@ class Registro extends Component
 
     public function guardar()
     {
-        $this->validate([
-            "proveedorSeleccionado" => "required|exists:proveedores,id_proveedor",
-            "compra.numero_factura" => "required|string|max:255",
-            "compra.fecha_compra" => "required|date",
-            "compra.fecha_compra" => "required|date|before_or_equal:today",
-            "compra.observacion" => "max:1000",
-            "detalleCompra.*.id_producto" => "required|exists:productos,id_producto",
-            "detalleCompra.*.cantidad" => "required|numeric|min:0.01",
-            "detalleCompra.*.precio_unitario" => "required|numeric|min:0.01",
-        ]);
+        $this->validate(
+            [
+                "proveedorSeleccionado" => "required|exists:proveedores,id_proveedor",
+                "compra.numero_factura" => "required|string|max:255",
+                "compra.fecha_compra" => "required|date|before_or_equal:today",
+                "compra.observacion" => "max:1000",
+                "detalleCompra.*.id_producto" => "required|exists:productos,id_producto",
+                "detalleCompra.*.cantidad" => "required|numeric|min:0.01",
+                "detalleCompra.*.precio_unitario" => "required|numeric|min:0.01",
+            ],
+            [
+                "proveedorSeleccionado.required" => "El proveedor es obligatorio.",
+                "proveedorSeleccionado.exists" => "El proveedor seleccionado no es válido.",
+                "compra.numero_factura.required" => "El número de factura es obligatorio.",
+                "compra.numero_factura.string" => "El número de factura debe ser una cadena de texto.",
+                "compra.numero_factura.max" => "El número de factura no debe exceder los 255 caracteres.",
+                "compra.fecha_compra.required" => "La fecha de compra es obligatoria.",
+                "compra.fecha_compra.date" => "La fecha de compra no es una fecha válida.",
+                "compra.fecha_compra.before_or_equal" => "La fecha de compra no puede ser futura.",
+                "compra.observacion.max" => "La observación no debe exceder los 1000 caracteres.",
+                "detalleCompra.*.id_producto.required" => "El producto es obligatorio en cada detalle.",
+                "detalleCompra.*.id_producto.exists" => "El producto seleccionado no es válido en uno de los detalles.",
+                "detalleCompra.*.cantidad.required" => "La cantidad es obligatoria en cada detalle.",
+                "detalleCompra.*.cantidad.numeric" => "La cantidad debe ser un número en cada detalle.",
+                "detalleCompra.*.cantidad.min" => "La cantidad debe ser al menos 0.01 en cada detalle.",
+                "detalleCompra.*.precio_unitario.required" => "El precio unitario es obligatorio en cada detalle.",
+                "detalleCompra.*.precio_unitario.numeric" => "El precio unitario debe ser un número en cada detalle.",
+                "detalleCompra.*.precio_unitario.min" => "El precio unitario debe ser al menos 0.01 en cada detalle.",
+            ]
+        );
         try {
             DB::transaction(function () {
                 $total = 0;

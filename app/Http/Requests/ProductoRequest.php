@@ -28,6 +28,7 @@ class ProductoRequest extends FormRequest
             'producto.id_unidad' => 'required|exists:unidades,id_unidad',
             'producto.id_categoria_producto' => 'required|exists:categoria_productos,id_categoria_producto',
             'producto.id_proveedor' => 'required|exists:proveedores,id_proveedor',
+            "producto.precio_unitario" => "required|numeric|min:1",
         ];
     }
 
@@ -46,6 +47,8 @@ class ProductoRequest extends FormRequest
             'producto.id_proveedor.exists' => 'El proveedor seleccionado no es válido.',
             'producto.id_unidad.required' => 'La unidad es obligatoria.',
             'producto.id_unidad.exists' => 'La unidad seleccionada no es válida.',
+            "producto.precio_unitario.required" => "El precio unitario es obligatorio.",
+            "producto.precio_unitario.numeric" => "El precio unitario debe ser un número"
         ];
     }
 }

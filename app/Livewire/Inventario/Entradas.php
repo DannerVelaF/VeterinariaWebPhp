@@ -4,11 +4,14 @@ namespace App\Livewire\Inventario;
 
 use App\Models\Compra;
 use App\Models\DetalleCompra;
+use App\Models\EstadoCompras;
+use App\Models\EstadoDetalleCompra;
 use App\Models\InventarioMovimiento;
 use App\Models\Lotes;
 use App\Models\Producto;
 use App\Models\Proveedor;
 use App\Models\TipoMovimiento;
+use App\Models\TipoUbicacion;
 use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -26,6 +29,8 @@ class Entradas extends Component
     public $proveedores = [];
     public $id_producto = null;
     public $observacion = "";
+    public $tipoUbicaciones = [];
+    public $tipoUbicacionSeleccionada = null;
     public $productoSeleccionado = null; // objeto del producto
     public $ubicacion = "";
     public $lote = [
@@ -56,7 +61,6 @@ class Entradas extends Component
         if (!$this->lote['fecha_recepcion']) {
             $this->lote['fecha_recepcion'] = now()->format('Y-m-d');
         }
-
         $tipoEntrad = TipoMovimiento::where("nombre_tipo_movimiento", "entrada")->first();
     }
 
@@ -71,51 +75,66 @@ class Entradas extends Component
 
 
         if (!$this->ordenCompra) {
-            session()->flash('error', 'No se ha introducido el código de orden de compra');
+            $this->dispatch('notify', title: 'Error', description: 'No se ha introducido el código de orden de compra', type: 'error');
             return;
         }
 
-        $compra = Compra::with('detalleCompra.producto.unidad', 'proveedor')
-            ->where('codigo', trim($this->ordenCompra))
-            ->first();
-
-        if (!$compra) {
-            session()->flash('error', 'No se encontró la orden de compra: ' . $this->ordenCompra);
-            return;
-        }
-
-        if ($compra->estado == "pendiente") {
-            session()->flash('error', 'La orden de compra no ha sido aprobada');
-            $this->ordenCompra = "";
-        }
-        if ($compra->estado == "recibido") {
-            session()->flash('error', 'La orden de compra ya ha sido recibida');
-            $this->ordenCompra = "";
-            return;
-        } elseif ($compra->estado == "cancelado") {
-            session()->flash('error', 'La orden se encuentra cancelada');
-            $this->ordenCompra = "";
-            return;
-        }
+        $compra = Compra::with([
+            'detalleCompra.producto.unidad',
+            'detalleCompra.estadoDetalleCompra',
+            'proveedor'
+        ])->where('codigo', trim($this->ordenCompra))->first();
 
         if (!$compra) {
-            session()->flash('error', 'No se encontró la orden de compra: ' . $this->ordenCompra);
+            $this->dispatch('notify', title: 'Error', description: 'No se encontró la orden de compra: ' . $this->ordenCompra, type: 'error');
+            return;
+        }
+
+        if ($compra->estadoCompra?->nombre_estado_compra === "pendiente") {
+            $this->dispatch('notify', title: 'Error', description: 'La orden de compra no ha sido aprobada', type: 'error');
+            $this->ordenCompra = "";
+            return;
+        }
+
+        if ($compra->estadoCompra?->nombre_estado_compra === "recibido") {
+            $this->dispatch('notify', title: 'Info', description: 'La orden de compra ya ha sido recibida', type: 'success');
+            $this->ordenCompra = "";
+            return;
+        }
+
+        if ($compra->estadoCompra?->nombre_estado_compra === "cancelado") {
+            $this->dispatch('notify', title: 'Error', description: 'La orden se encuentra cancelada', type: 'error');
+            $this->ordenCompra = "";
+            return;
+        }
+
+
+        if (!$compra) {
+            $this->dispatch('notify', title: 'Error', description: 'No se encontró la orden de compra: ' . $this->ordenCompra, type: 'error');
             return;
         }
 
         $this->proveedorOC = $compra->proveedor;
 
         $this->productosOC = $compra->detalleCompra
-            ->where('estado', 'pendiente')
             ->map(function ($detalle) {
+                // Sumar todos los movimientos de entrada asociados
+                $cantidadRecibida = InventarioMovimiento::where('id_tipo_movimiento', TipoMovimiento::where('nombre_tipo_movimiento', 'entrada')->first()->id_tipo_movimiento)
+                    ->where('id_movimiento_asociado', $detalle->id_detalle_compra)
+                    ->sum('cantidad_movimiento');
+
+
+                // Cantidad pendiente
+                $cantidadPendiente = $detalle->cantidad - $cantidadRecibida;
+
                 return [
                     'id_producto' => $detalle->producto->id_producto,
                     'id_detalle_compra' => $detalle->id_detalle_compra,
-                    'nombre' => $detalle->producto->nombre_producto . ' (' . $detalle->producto->unidad->nombre_unidad . ')',
+                    'nombre' => $detalle->producto->nombre_producto . ' (' . $detalle->producto->unidad?->nombre_unidad . ')',
                     'precio_compra' => $detalle->precio_unitario,
-                    'cantidad' => $detalle->cantidad,
+                    'cantidad' => max($cantidadPendiente, 0), // evita números negativos
                     'codigo_barras' => $detalle->producto->codigo_barras,
-                    'estado' => $detalle->estado,
+                    'estado' => $cantidadPendiente <= 0 ? 'recibido' : 'pendiente',
                 ];
             })->values();
     }
@@ -148,12 +167,37 @@ class Entradas extends Component
     {
         $this->validate([
             "id_producto"             => "required|exists:detalle_compras,id_detalle_compra",
-            'lote.cantidad_total'     => 'required|numeric|min:0.01|max:999999999.99',
-            'lote.fecha_recepcion'    => 'required|date|after:today',
-            'lote.fecha_vencimiento' => 'nullable|date|after:lote.fecha_recepcion',
+            'lote.cantidad_total'     => [
+                'required',
+                'numeric',
+                'min:0.01',
+                'max:999999999.99',
+                function ($attribute, $value, $fail) {
+                    if ($this->productoSeleccionado && $value > $this->productoSeleccionado['cantidad']) {
+                        $fail('La cantidad recibida no puede ser mayor a la cantidad de la orden de compra (' . $this->productoSeleccionado['cantidad'] . ').');
+                    }
+                },
+            ],
+            'lote.fecha_recepcion'    => 'required|date|before_or_equal:today',
+            'lote.fecha_vencimiento' => [
+                'nullable',
+                'date',
+                function ($attribute, $value, $fail) {
+                    if ($value && $this->lote['fecha_recepcion'] && $value <= $this->lote['fecha_recepcion']) {
+                        $fail('La fecha de vencimiento debe ser posterior a la fecha de recepción.');
+                    }
+                },
+            ],
             "lote.observacion"        => "max:1000",
             'lote.precio_compra'      => 'required|numeric|min:0.01',
+        ], [
+            'lote.cantidad_total.required' => 'Debe ingresar la cantidad.',
+            'lote.cantidad_total.numeric' => 'La cantidad debe ser un número.',
+            'lote.cantidad_total.min' => 'La cantidad debe ser mayor a 0.',
+            'lote.cantidad_total.max' => 'La cantidad ingresada es demasiado grande.',
         ]);
+
+
 
         try {
             DB::transaction(function () {
@@ -179,38 +223,69 @@ class Entradas extends Component
                 if (!$trabajador) {
                     throw new \Exception("El usuario autenticado no tiene un trabajador asociado");
                 }
+                $tipoUbicacion = TipoUbicacion::where('nombre_tipo_ubicacion', $this->ubicacion)->first();
+
+                if (!$tipoUbicacion) {
+                    throw new \Exception("Tipo de ubicación no encontrado: " . $this->ubicacion);
+                }
+                $tipoEntrada = TipoMovimiento::where('nombre_tipo_movimiento', 'entrada')->first();
+
+
                 InventarioMovimiento::create([
-                    "tipo_movimiento"   => "entrada",
-                    "cantidad_movimiento"          => $this->lote['cantidad_total'],
-                    "stock_resultante"  => $lote->cantidad_total,
-                    "fecha_movimiento"  => now(),
-                    "fecha_registro"    => now(),
-                    "id_lote"           => $lote->id_lote,
-                    "id_trabajador"     => $trabajador->id_trabajador,
-                    "ubicacion"         => $this->ubicacion,
-                    "id_tipo_movimiento" => TipoMovimiento::where("nombre_tipo_movimiento", "entrada")->first()->id_tipo_movimiento,
-                    "tipo_movimiento_asociado" => DetalleCompra::class,
+                    "cantidad_movimiento"       => $this->lote['cantidad_total'],
+                    "stock_resultante"          => $lote->cantidad_total,
+                    "fecha_movimiento"          => now(),
+                    "fecha_registro"            => now(),
+                    "id_lote"                   => $lote->id_lote,
+                    "id_trabajador"             => $trabajador->id_trabajador,
+                    "id_tipo_movimiento"        => TipoMovimiento::where("nombre_tipo_movimiento", "entrada")->first()->id_tipo_movimiento,
+                    "id_tipo_ubicacion"         => $tipoUbicacion->id_tipo_ubicacion, // <--- Aquí va
+                    "tipo_movimiento_asociado"  => DetalleCompra::class,
                     "id_movimiento_asociado"    => $this->lote['id_detalle_compra'],
                 ]);
 
+
                 $detalle = DetalleCompra::find($this->lote['id_detalle_compra']);
-                $detalle->estado = 'recibido';
-                $detalle->save();
+
+                // Cantidad total pedida en la OC
+                $cantidadOC = $detalle->cantidad;
+
+                $tipoEntrada = TipoMovimiento::where("nombre_tipo_movimiento", "entrada")->first();
+
+                $cantidadRecibida = InventarioMovimiento::where('id_tipo_movimiento', $tipoEntrada->id_tipo_movimiento)
+                    ->where('id_movimiento_asociado', $detalle->id_detalle_compra)
+                    ->sum('cantidad_movimiento');
+
+                // Cantidad nueva que vamos a registrar
+                $cantidadNueva = $this->lote['cantidad_total'];
+
+                // Solo cambiar a "recibido" si se ha alcanzado o superado la cantidad de la OC
+                if ($cantidadRecibida + $cantidadNueva >= $cantidadOC) {
+                    $estadoRecibido = EstadoDetalleCompra::where('nombre_estado_detalle_compra', 'recibido')->first();
+                    $detalle->id_estado_detalle_compra = $estadoRecibido->id_estado_detalle_compra;
+                    $detalle->save();
+                }
+
 
                 // Verificar si todos los detalles de la orden de compra están recibidos
                 $ordenCompra = $detalle->compra;
-                $todosRecibidos = $ordenCompra->detalleCompra()->where('estado', 'pendiente')->count() === 0;
-                if ($todosRecibidos) {
-                    $ordenCompra->estado = 'recibido';
+                $pendientes = $ordenCompra->detalleCompra()
+                    ->whereHas('estadoDetalleCompra', function ($q) {
+                        $q->where('nombre_estado_detalle_compra', 'pendiente');
+                    })->count();
+
+                if ($pendientes === 0) {
+                    $estadoRecibido = EstadoCompras::where('nombre_estado_compra', 'recibido')->first();
+                    $ordenCompra->id_estado_compra = $estadoRecibido->id_estado_compra;
                     $ordenCompra->save();
                 }
             });
 
-            session()->flash('success', '✅ Entrada registrada con éxito. Código de lote: ' . $this->lote['codigo_lote']);
+            $this->dispatch('notify', title: 'Success', description: 'Entrada registrada con éxito. Código de lote: ' . $this->lote['codigo_lote'], type: 'success');
             $this->resetForm();
             $this->dispatch('entradasUpdated');
         } catch (Exception $e) {
-            session()->flash('error', 'Error al registrar la entrada: ' . $e->getMessage());
+            $this->dispatch('notify', title: 'Error', description: 'Error al registrar la entrada: ' . $e->getMessage(), type: 'error');
             Log::error('Error al registrar entrada', ['error' => $e->getMessage()]);
         }
     }

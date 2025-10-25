@@ -250,4 +250,22 @@
         </x-tab>
     </x-tabs>
     <x-loader />
+    @push('scripts')
+        <script>
+            Livewire.on('notify', (data) => {
+                Swal.fire({
+                    title: data.title,
+                    text: data.description,
+                    icon: data.type,
+                    timer: 2500,
+                    showConfirmButton: false,
+                    customClass: {
+                        popup: 'rounded-lg',
+                        title: 'text-lg font-semibold',
+                        htmlContainer: 'text-sm'
+                    }
+                });
+            });
+        </script>
+    @endpush
 </x-panel>
