@@ -23,7 +23,6 @@ final class SalidasTable extends PowerGridComponent
     public string $sortField = 'id_inventario_movimiento';
     public function setUp(): array
     {
-        $this->showCheckBox();
 
         return [
             PowerGrid::header()

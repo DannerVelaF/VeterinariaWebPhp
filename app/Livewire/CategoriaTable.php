@@ -20,7 +20,6 @@ final class CategoriaTable extends PowerGridComponent
     public string $sortField = 'id_categoria_producto';
     public function setUp(): array
     {
-        $this->showCheckBox();
 
         return [
             PowerGrid::header(),

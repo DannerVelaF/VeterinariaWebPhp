@@ -21,7 +21,6 @@ final class RazaTable extends PowerGridComponent
 
     public function setUp(): array
     {
-        $this->showCheckBox();
 
         return [
             PowerGrid::header(),

@@ -25,8 +25,6 @@ final class ProveedorTable extends PowerGridComponent
 
     public function setUp(): array
     {
-        $this->showCheckBox();
-
         return [
             PowerGrid::header(),
             PowerGrid::footer()

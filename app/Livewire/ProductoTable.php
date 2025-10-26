@@ -24,7 +24,6 @@ final class ProductoTable extends PowerGridComponent
     public string $sortField = 'id_producto';
     public function setUp(): array
     {
-        $this->showCheckBox();
 
         return [
             PowerGrid::header(),

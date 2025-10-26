@@ -11,7 +11,7 @@
                 <h2 class="text-2xl font-bold text-gray-800">Módulos del Sistema</h2>
                 <p class="text-sm text-gray-600 mt-1">Administra los módulos y sus permisos de acceso por rol</p>
             </div>
-            <flux:button wire:click="abrirModal" class="bg-blue-600 hover:bg-blue-700 text-white">
+            <flux:button wire:click="abrirModal" variant="primary">
                 <svg class="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                 </svg>
@@ -68,7 +68,7 @@
                             class="px-5 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700">
                             Cancelar
                         </flux:button>
-                        <flux:button type="submit" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white">
+                        <flux:button type="submit" variant="primary" class="px-5 py-2 ">
                             {{ $modulo_id ? 'Actualizar Módulo' : 'Guardar Módulo' }}
                         </flux:button>
                     </div>
@@ -220,7 +220,7 @@
                         class="px-5 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700">
                         Cancelar
                     </flux:button>
-                    <flux:button wire:click="asignarRoles" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white">
+                    <flux:button variant="primary" wire:click="asignarRoles" class="px-5 py-2 ">
                         Asignar Roles
                     </flux:button>
                 </div>

@@ -25,7 +25,6 @@ final class TrabajadorTable extends PowerGridComponent
     public string $sortField = 'id_trabajador';
     public function setUp(): array
     {
-        $this->showCheckBox();
 
         $this->estados = EstadoTrabajadores::select('id_estado_trabajador as id', 'nombre_estado_trabajador as name')
             ->get()

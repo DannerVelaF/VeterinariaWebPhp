@@ -16,7 +16,7 @@ use Livewire\Component;
 class Clientes extends Component
 {
     protected $listeners = ['abrirModalCliente'];
-
+    public $loading = false;
     public $persona = [
         "numero_documento" => '',
         'nombre' => '',
@@ -51,13 +51,27 @@ class Clientes extends Component
 
     public $departamentoSeleccionado = '';
     public $provinciaSeleccionada = '';
-
+    public $tipos_calle = [
+        'AV' => 'Avenida',
+        'JR' => 'Jirón',
+        'CL' => 'Calle',
+        'PS' => 'Paseo',
+        'CT' => 'Carretera',
+        'MZ' => 'Manzana',
+        'LT' => 'Lote',
+        'URB' => 'Urbanización',
+        'AAHH' => 'Asentamiento Humano',
+        'PJ' => 'Pasaje',
+        'GD' => 'Grupo',
+        'SM' => 'Sector',
+        'KM' => 'Kilómetro',
+        'OTRO' => 'Otro'
+    ];
     // Modal edición
     public $modalEditar = false;
     public $clienteSeleccionado;
     public $cliente = [
         'id_cliente' => null,
-
     ];
 
     public function mount()
@@ -65,6 +79,89 @@ class Clientes extends Component
         $this->departamentos = Ubigeo::select("departamento")->distinct()->pluck('departamento')->toArray();
         $this->tipos_documentos = Tipo_documento::select("id_tipo_documento", "nombre_tipo_documento")->get();
     }
+
+    public function updated($propertyName)
+    {
+        // Validar campos de persona en registro
+        if (str_starts_with($propertyName, 'persona.')) {
+            $this->validateOnly($propertyName, [
+                'persona.id_tipo_documento' => 'required|integer|exists:tipo_documentos,id_tipo_documento',
+                'persona.numero_documento' => 'required|string|min:8|max:15',
+                'persona.nombre' => 'required|string|max:100',
+                'persona.apellido_paterno' => 'required|string|max:100',
+                'persona.apellido_materno' => 'nullable|string|max:100',
+                'persona.fecha_nacimiento' => 'required|date|before_or_equal:' . now()->subYears(18)->format('Y-m-d'),
+                'persona.sexo' => 'required|in:M,F',
+                'persona.nacionalidad' => 'required|string|max:50',
+                'persona.correo_electronico_personal' => 'required|email|max:150',
+                'persona.correo_electronico_secundario' => 'nullable|email|max:150',
+                'persona.numero_telefono_personal' => 'required|digits:9',
+                'persona.numero_telefono_secundario' => 'nullable|digits:9',
+            ], [
+                'required' => 'El campo es obligatorio.',
+                'before_or_equal' => 'El cliente debe tener al menos 18 años de edad.',
+                'email' => 'Ingrese un correo electrónico válido.',
+                'date' => 'El campo debe tener un formato de fecha válido.',
+                'in' => 'El valor seleccionado no es válido.',
+                'max' => 'El campo no puede exceder los :max caracteres.',
+                'min' => 'El campo debe tener al menos :min caracteres.',
+                'exists' => 'El valor seleccionado no existe en la base de datos.',
+                'digits' => 'El campo debe tener exactamente :digits dígitos.',
+            ]);
+        }
+
+        // Validar campos de dirección en registro
+        if (str_starts_with($propertyName, 'direccion.')) {
+            $this->validateOnly($propertyName, [
+                'direccion.tipo_calle' => 'required|string|max:50',
+                'direccion.nombre_calle' => 'required|string|max:150',
+                'direccion.numero' => 'required|string|max:15',
+                'direccion.referencia' => 'nullable|string|max:255',
+                'direccion.codigo_postal' => 'required|string|max:10',
+                'direccion.zona' => 'required|string|max:100',
+                'direccion.codigo_ubigeo' => 'required|string|size:6',
+            ], [
+                'required' => 'El campo es obligatorio.',
+                'max' => 'El campo no puede exceder los :max caracteres.',
+                'min' => 'El campo debe tener al menos :min caracteres.',
+                'size' => 'El campo debe tener exactamente :size caracteres.',
+            ]);
+        }
+
+        // Validar campos de persona en edición
+        if (str_starts_with($propertyName, 'personaEditar.')) {
+            $this->validateOnly($propertyName, [
+                'personaEditar.correo_electronico_personal' => 'required|email|max:150',
+                'personaEditar.correo_electronico_secundario' => 'nullable|email|max:150',
+                'personaEditar.numero_telefono_personal' => 'required|digits:9',
+                'personaEditar.numero_telefono_secundario' => 'nullable|digits:9',
+            ], [
+                'required' => 'El campo es obligatorio.',
+                'email' => 'Ingrese un correo electrónico válido.',
+                'max' => 'El campo no puede exceder los :max caracteres.',
+                'digits' => 'El campo debe tener exactamente :digits dígitos.',
+            ]);
+        }
+
+        // Validar campos de dirección en edición
+        if (str_starts_with($propertyName, 'direccionEditar.')) {
+            $this->validateOnly($propertyName, [
+                'direccionEditar.tipo_calle' => 'nullable|string|max:50',
+                'direccionEditar.nombre_calle' => 'required|string|max:150',
+                'direccionEditar.numero' => 'required|string|max:15',
+                'direccionEditar.zona' => 'required|string|max:100',
+                'direccionEditar.codigo_ubigeo' => 'nullable|string|size:6',
+            ], [
+                'required' => 'El campo es obligatorio.',
+                'max' => 'El campo no puede exceder los :max caracteres.',
+                'size' => 'El campo debe tener exactamente :size caracteres.',
+            ]);
+        }
+    }
+
+    // ============================================================
+    // 🔸 MÉTODOS PARA CARGAR DINÁMICAMENTE UBIGEO EN REGISTRO
+    // ============================================================
 
     public function updatedDepartamentoSeleccionado($value)
     {
@@ -94,8 +191,13 @@ class Clientes extends Component
         }
     }
 
+    // ============================================================
+    // 🔸 REGISTRO DE CLIENTE
+    // ============================================================
+
     public function guardar()
     {
+        $this->loading = true;
         DB::beginTransaction();
         try {
             // 🔹 Validaciones completas
@@ -125,7 +227,7 @@ class Clientes extends Component
                     'direccion.tipo_calle' => 'required|string|max:50',
                     'direccion.nombre_calle' => 'required|string|max:150',
                     'direccion.numero' => 'required|string|max:15',
-                    'direccion.referencia' => 'required|string|max:255',
+                    'direccion.referencia' => 'nullable|string|max:255',
                     'direccion.codigo_postal' => 'required|string|max:10',
                     'direccion.zona' => 'required|string|max:100',
                     'direccion.codigo_ubigeo' => 'required|string|size:6',
@@ -138,12 +240,11 @@ class Clientes extends Component
                     'date' => 'El campo debe tener un formato de fecha válido.',
                     'in' => 'El valor seleccionado para :attribute no es válido.',
                     'integer' => 'El campo debe ser un número entero.',
-                    'regex' => 'El campo solo debe contener números válidos.',
                     'size' => 'El campo debe tener exactamente :size caracteres.',
                     'max' => 'El campo no puede exceder los :max caracteres.',
                     'min' => 'El campo debe tener al menos :min caracteres.',
+                    'exists' => 'El valor seleccionado no existe en la base de datos.',
                     'digits' => 'El campo debe tener exactamente :digits dígitos.',
-
                 ]
             )->validate();
 
@@ -166,6 +267,7 @@ class Clientes extends Component
             // ✅ Notificación y reset
             $this->dispatch('notify', title: 'Success', description: 'Cliente registrado con éxito', type: 'success');
             $this->resetForm();
+            $this->dispatch('clientesUpdated');
         } catch (\Illuminate\Validation\ValidationException $e) {
             DB::rollBack();
             $this->dispatch('notify', title: 'Error', description: 'Error de validación. Verifique los campos.', type: 'error');
@@ -183,8 +285,13 @@ class Clientes extends Component
         }
     }
 
+    // ============================================================
+    // 🔸 EDICIÓN DE CLIENTE
+    // ============================================================
+
     public function guardarEdicion()
     {
+        $this->loading = true;
         try {
             if (!$this->clienteSeleccionado) {
                 $this->dispatch('notify', title: 'Error', description: 'No hay un cliente seleccionado para editar.', type: 'error');
@@ -226,7 +333,6 @@ class Clientes extends Component
                     'date' => 'El campo debe tener un formato de fecha válido.',
                     'in' => 'El valor seleccionado para no es válido.',
                     'integer' => 'El campo debe ser un número entero.',
-                    'regex' => 'El campo solo debe contener números válidos.',
                     'size' => 'El campo debe tener exactamente :size caracteres.',
                     'max' => 'El campo no puede exceder los :max caracteres.',
                     'min' => 'El campo debe tener al menos :min caracteres.',
@@ -270,6 +376,7 @@ class Clientes extends Component
             $this->cerrarModal();
             $this->dispatch('notify', title: 'Success', description: 'Cliente actualizado correctamente.', type: 'success');
             $this->dispatch('clientesUpdated');
+            $this->loading = false;
         } catch (\Illuminate\Validation\ValidationException $e) {
             $this->dispatch('notify', title: 'Error', description: 'Error de validación. Verifique los campos.', type: 'error');
             throw $e; // Livewire muestra los mensajes en los inputs
@@ -284,12 +391,16 @@ class Clientes extends Component
         }
     }
 
+    // ============================================================
+    // 🔸 AUXILIARES
+    // ============================================================
+
     public function buscarDni()
     {
         $dni = $this->persona['numero_documento'];
 
         if (!$dni || strlen($dni) !== 8) {
-            session()->flash('error', 'El DNI debe tener 8 dígitos.');
+            $this->dispatch('notify', title: 'Error', description: 'El DNI debe tener 8 dígitos.', type: 'error');
             return;
         }
 
@@ -305,17 +416,24 @@ class Clientes extends Component
             if ($response->successful()) {
                 $data = $response->json();
 
-                if (!empty($data['full_name'])) {
+                if (!empty($data['first_name'])) {
                     $this->persona['nombre'] = $data['first_name'];
                     $this->persona['apellido_paterno'] = $data['first_last_name'];
                     $this->persona['apellido_materno'] = $data['second_last_name'];
                     $this->persona['nacionalidad'] = "Peruana";
+                    $this->resetErrorBag([
+                        'persona.nombre',
+                        'persona.apellido_paterno',
+                        'persona.apellido_materno',
+                        'persona.nacionalidad'
+                    ]);
+
                     $this->dispatch('notify', title: 'Success', description: 'Datos cargados desde RENIEC.', type: 'success');
                 } else {
                     $this->dispatch('notify', title: 'Error', description: 'No se encontró información para este DNI.', type: 'error');
                 }
             } else {
-                $this->dispatch('notify', title: 'Error', description: 'Error al consultar el DNI ' . $dni . '. Intente nuevamente.', type: 'error');
+                $this->dispatch('notify', title: 'Error', description: 'Error al consultar el DNI', type: 'error');
             }
         } catch (\Exception $e) {
             $this->dispatch('notify', title: 'Error', description: 'Error al conectar con la API: ' . $e->getMessage(), type: 'error');
@@ -325,25 +443,23 @@ class Clientes extends Component
     public function resetForm()
     {
         $this->persona = [
+            'numero_documento' => '',
             'nombre' => '',
             'apellido_paterno' => '',
             'apellido_materno' => '',
             'fecha_nacimiento' => '',
             'sexo' => '',
-            'correo' => '',
             'nacionalidad' => '',
             'id_tipo_documento' => '',
-            'id_direccion' => '',
-            "correo_electronico_personal" => "",
-            "correo_electronico_secundario" => "",
-            "numero_telefono_personal" => "",
-            "numero_telefono_secundario" => "",
-            "numero_documento" => "",
+            'correo_electronico_personal' => '',
+            'correo_electronico_secundario' => '',
+            'numero_telefono_personal' => '',
+            'numero_telefono_secundario' => '',
         ];
 
         $this->direccion = [
             'zona' => '',
-            'tipo_calle' => '',
+            'tipo_calle' => '', // 🔹 Asegurar que se resetee
             'nombre_calle' => '',
             'numero' => '',
             'codigo_postal' => '',
@@ -351,17 +467,17 @@ class Clientes extends Component
             'codigo_ubigeo' => ''
         ];
 
+        // Resetear ubigeo de registro
         $this->departamentoSeleccionado = '';
         $this->provinciaSeleccionada = '';
         $this->provincias = [];
         $this->distritos = [];
-
-        $this->mount();
     }
 
     #[\Livewire\Attributes\On('abrirModalCliente')]
     public function abrirModalCliente($clienteId)
     {
+        $this->loading = true;
         try {
             $this->clienteSeleccionado = ModelsClientes::with(['persona.direccion'])->findOrFail($clienteId);
             $persona = $this->clienteSeleccionado->persona;
@@ -375,14 +491,12 @@ class Clientes extends Component
                 'apellido_materno' => $persona->apellido_materno,
                 'fecha_nacimiento' => $persona->fecha_nacimiento,
                 'sexo' => $persona->sexo,
-                'correo' => $persona->correo,
                 'nacionalidad' => $persona->nacionalidad,
                 'id_tipo_documento' => $persona->id_tipo_documento,
-                'id_direccion' => $persona->id_direccion,
-                "correo_electronico_personal" => $persona->correo_electronico_personal,
-                "correo_electronico_secundario" => $persona->correo_electronico_secundario,
-                "numero_telefono_personal" => $persona->numero_telefono_personal,
-                "numero_telefono_secundario" => $persona->numero_telefono_secundario,
+                'correo_electronico_personal' => $persona->correo_electronico_personal,
+                'correo_electronico_secundario' => $persona->correo_electronico_secundario,
+                'numero_telefono_personal' => $persona->numero_telefono_personal,
+                'numero_telefono_secundario' => $persona->numero_telefono_secundario,
             ];
 
             // Cargar dirección
@@ -420,11 +534,15 @@ class Clientes extends Component
             ]);
 
             $this->dispatch('notify', title: 'Error', description: 'No se pudo cargar el cliente.', type: 'error');
+        } finally {
+            $this->loading = false;
         }
     }
 
     public function cerrarModal()
     {
+        $this->resetValidation();
+
         $this->modalEditar = false;
         $this->clienteSeleccionado = null;
 
@@ -436,19 +554,17 @@ class Clientes extends Component
             'apellido_materno' => '',
             'fecha_nacimiento' => '',
             'sexo' => '',
-            'correo' => '',
             'nacionalidad' => '',
             'id_tipo_documento' => '',
-            'id_direccion' => '',
-            "correo_electronico_personal" => "",
-            "correo_electronico_secundario" => "",
-            "numero_telefono_personal" => "",
-            "numero_telefono_secundario" => "",
+            'correo_electronico_personal' => '',
+            'correo_electronico_secundario' => '',
+            'numero_telefono_personal' => '',
+            'numero_telefono_secundario' => '',
         ];
 
         $this->direccion = [
             'zona' => '',
-            'tipo_calle' => '',
+            'tipo_calle' => '', // 🔹 Asegurar que se resetee
             'nombre_calle' => '',
             'numero' => '',
             'codigo_postal' => '',
@@ -456,16 +572,12 @@ class Clientes extends Component
             'codigo_ubigeo' => ''
         ];
 
+        // Resetear ubigeo del modal de edición
         $this->departamentoSeleccionado = '';
         $this->provinciaSeleccionada = '';
         $this->provincias = [];
         $this->distritos = [];
-
-        // Reestablecer listas base
-        $this->departamentos = Ubigeo::select("departamento")->distinct()->pluck('departamento')->toArray();
-        $this->tipos_documentos = Tipo_documento::select("id_tipo_documento", "nombre_tipo_documento")->get();
     }
-
 
     public function render()
     {

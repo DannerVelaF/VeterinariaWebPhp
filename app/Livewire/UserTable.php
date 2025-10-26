@@ -20,7 +20,6 @@ final class UserTable extends PowerGridComponent
     public string $sortField = 'id_usuario';
     public function setUp(): array
     {
-        $this->showCheckBox();
 
         return [
             PowerGrid::header(),

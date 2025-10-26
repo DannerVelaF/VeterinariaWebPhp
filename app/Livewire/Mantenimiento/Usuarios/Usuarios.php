@@ -179,18 +179,6 @@ class Usuarios extends Component
     {
         if (!$this->usuarioSeleccionado) return;
 
-        $rules = [];
-        $messages = [];
-
-        // Solo validar si el username cambió
-        if ($this->usernameEdit !== $this->usuarioSeleccionado->usuario) {
-            $rules['usernameEdit'] = 'required|string|unique:usuarios,usuario';
-            $messages['usernameEdit.unique'] = 'Este nombre de usuario ya existe.';
-            $messages['usernameEdit.required'] = 'El campo Usuario es requerido.';
-        }
-
-        $this->validate($rules, $messages);
-
         try {
             $data = [
                 'usuario' => $this->usernameEdit,

@@ -20,7 +20,6 @@ final class ClientesTable extends PowerGridComponent
     public string $sortField = 'id_cliente';
     public function setUp(): array
     {
-        $this->showCheckBox();
 
         return [
             PowerGrid::header(),

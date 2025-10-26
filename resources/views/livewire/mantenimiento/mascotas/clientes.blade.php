@@ -56,7 +56,7 @@
                     <div class="flex flex-col">
                         <label>Numero documento <span class="text-red-500">*</span></label>
                         <div class="flex items-center">
-                            <input type="text" wire:model="persona.numero_documento"
+                            <input type="text" wire:model.change="persona.numero_documento"
                                 maxlength="{{ $persona['id_tipo_documento'] == 1 ? 8 : 11 }}"
                                 class="border rounded px-2 py-1" @disabled(!$persona['id_tipo_documento'])>
                             <button type="button" wire:click="buscarDni" @disabled($persona['id_tipo_documento'] != 1)
@@ -71,7 +71,7 @@
 
                     <div class="flex flex-col">
                         <label>Nombre <span class="text-red-500">*</span></label>
-                        <input type="text" wire:model="persona.nombre" class="border rounded px-2 py-1"
+                        <input type="text" wire:model.change="persona.nombre" class="border rounded px-2 py-1"
                             @readonly($persona['id_tipo_documento'] == 1)>
                         @error('persona.nombre')
                             <p class="text-red-500 text-xs">{{ $message }}</p>
@@ -80,8 +80,8 @@
 
                     <div class="flex flex-col">
                         <label>Apellido Paterno <span class="text-red-500">*</span></label>
-                        <input type="text" wire:model="persona.apellido_paterno" class="border rounded px-2 py-1"
-                            @readonly($persona['id_tipo_documento'] == 1)>
+                        <input type="text" wire:model.change="persona.apellido_paterno"
+                            class="border rounded px-2 py-1" @readonly($persona['id_tipo_documento'] == 1)>
                         @error('persona.apellido_paterno')
                             <p class="text-red-500 text-xs">{{ $message }}</p>
                         @enderror
@@ -89,8 +89,8 @@
 
                     <div class="flex flex-col">
                         <label>Apellido Materno</label>
-                        <input type="text" wire:model="persona.apellido_materno" class="border rounded px-2 py-1"
-                            @readonly($persona['id_tipo_documento'] == 1)>
+                        <input type="text" wire:model.change="persona.apellido_materno"
+                            class="border rounded px-2 py-1" @readonly($persona['id_tipo_documento'] == 1)>
                         @error('persona.apellido_materno')
                             <p class="text-red-500 text-xs">{{ $message }}</p>
                         @enderror
@@ -98,7 +98,8 @@
 
                     <div class="flex flex-col">
                         <label>Fecha Nacimiento <span class="text-red-500">*</span></label>
-                        <input type="date" wire:model="persona.fecha_nacimiento" class="border rounded px-2 py-1">
+                        <input type="date" wire:model.change="persona.fecha_nacimiento"
+                            class="border rounded px-2 py-1">
                         @error('persona.fecha_nacimiento')
                             <p class="text-red-500 text-xs">{{ $message }}</p>
                         @enderror
@@ -106,7 +107,7 @@
 
                     <div class="flex flex-col">
                         <label>Sexo <span class="text-red-500">*</span></label>
-                        <select wire:model="persona.sexo" class="border rounded px-2 py-1">
+                        <select wire:model.change="persona.sexo" class="border rounded px-2 py-1">
                             <option value="">-- Seleccione --</option>
                             <option value="M">Masculino</option>
                             <option value="F">Femenino</option>
@@ -118,14 +119,14 @@
                     </div>
                     <div class="flex flex-col">
                         <label>Nacionalidad <span class="text-red-500">*</span></label>
-                        <input type="text" wire:model="persona.nacionalidad" class="border rounded px-2 py-1">
+                        <input type="text" wire:model.change="persona.nacionalidad" class="border rounded px-2 py-1">
                         @error('persona.nacionalidad')
                             <p class="text-red-500 text-xs">{{ $message }}</p>
                         @enderror
                     </div>
                     <div class="flex flex-col">
                         <label>Correo electronico personal <span class="text-red-500">*</span></label>
-                        <input type="text" wire:model="persona.correo_electronico_personal"
+                        <input type="text" wire:model.change="persona.correo_electronico_personal"
                             class="border rounded px-2 py-1">
                         @error('persona.correo_electronico_personal')
                             <p class="text-red-500 text-xs">{{ $message }}</p>
@@ -134,7 +135,7 @@
 
                     <div class="flex flex-col">
                         <label>Numero telefono personal <span class="text-red-500">*</span></label>
-                        <input type="text" wire:model="persona.numero_telefono_personal"
+                        <input type="text" wire:model.change="persona.numero_telefono_personal"
                             class="border rounded px-2 py-1">
                         @error('persona.numero_telefono_personal')
                             <p class="text-red-500 text-xs">{{ $message }}</p>
@@ -143,7 +144,7 @@
 
                     <div class="flex flex-col">
                         <label>Correo electronico secundario</label>
-                        <input type="text" wire:model="persona.correo_electronico_secundario"
+                        <input type="text" wire:model.change="persona.correo_electronico_secundario"
                             class="border rounded px-2 py-1">
                         @error('persona.correo_electronico_secundario')
                             <p class="text-red-500 text-xs">{{ $message }}</p>
@@ -152,7 +153,7 @@
 
                     <div class="flex flex-col">
                         <label>Numero telefono secundario</label>
-                        <input type="text" wire:model="persona.numero_telefono_secundario"
+                        <input type="text" wire:model.change="persona.numero_telefono_secundario"
                             class="border rounded px-2 py-1">
                         @error('persona.numero_telefono_secundario')
                             <p class="text-red-500 text-xs">{{ $message }}</p>
@@ -165,9 +166,14 @@
                         <div class="grid grid-cols-3 gap-4">
                             <div class="flex flex-col">
                                 <label for="tipo_calle" class="font-bold mb-1">Tipo de Calle</label>
-                                <input type="text" id="tipo_calle" name="tipo_calle" maxlength="50"
+                                <select id="tipo_calle" name="tipo_calle"
                                     class="border rounded px-2 py-1 focus:outline-none focus:ring focus:ring-blue-300 @error('direccion.tipo_calle') border-red-500 @enderror"
-                                    placeholder="Ej: Av, Jr, Calle" wire:model="direccion.tipo_calle">
+                                    wire:model.change="direccion.tipo_calle">
+                                    <option value="">-- Seleccione --</option>
+                                    @foreach ($tipos_calle as $key => $value)
+                                        <option value="{{ $key }}">{{ $value }}</option>
+                                    @endforeach
+                                </select>
                                 @error('direccion.tipo_calle')
                                     <p class="text-red-500 text-xs italic mt-1">
                                         {{ $message }}
@@ -180,7 +186,7 @@
                                         class="text-red-500">*</span></label>
                                 <input type="text" id="nombre_calle" name="nombre_calle" maxlength="255"
                                     class="border rounded px-2 py-1 focus:outline-none focus:ring focus:ring-blue-300 @error('direccion.nombre_calle') border-red-500 @enderror"
-                                    placeholder="Ej: Los Olivos" wire:model="direccion.nombre_calle">
+                                    placeholder="Ej: Los Olivos" wire:model.change="direccion.nombre_calle">
                                 @error('direccion.nombre_calle')
                                     <p class="text-red-500 text-xs italic mt-1">
                                         {{ $message }}
@@ -193,7 +199,7 @@
                                         class="text-red-500">*</span></label>
                                 <input type="text" id="numero" name="numero" maxlength="10"
                                     class="border rounded px-2 py-1 focus:outline-none focus:ring focus:ring-blue-300 @error('direccion.numero') border-red-500 @enderror"
-                                    placeholder="Ej: 123" wire:model="direccion.numero">
+                                    placeholder="Ej: 123" wire:model.change="direccion.numero">
                                 @error('direccion.numero')
                                     <p class="text-red-500 text-xs italic mt-1">
                                         {{ $message }}
@@ -206,7 +212,7 @@
                                         class="text-red-500">*</span></label>
                                 <input type="text" id="zona" name="zona" maxlength="255"
                                     class="border rounded px-2 py-1 focus:outline-none focus:ring focus:ring-blue-300 @error('direccion.zona') border-red-500 @enderror"
-                                    placeholder="Urbanización, sector" wire:model="direccion.zona">
+                                    placeholder="Urbanización, sector" wire:model.change="direccion.zona">
                                 @error('direccion.zona')
                                     <p class="text-red-500 text-xs italic mt-1">
                                         {{ $message }}
@@ -219,7 +225,7 @@
                                         class="text-red-500">*</span></label>
                                 <input type="text" id="codigo_postal" name="codigo_postal" maxlength="10"
                                     class="border rounded px-2 py-1 focus:outline-none focus:ring focus:ring-blue-300 @error('direccion.codigo_postal') border-red-500 @enderror"
-                                    placeholder="Ej: 15084" wire:model="direccion.codigo_postal">
+                                    placeholder="Ej: 15084" wire:model.change="direccion.codigo_postal">
                                 @error('direccion.codigo_postal')
                                     <p class="text-red-500 text-xs italic mt-1">
                                         {{ $message }}
@@ -231,7 +237,7 @@
                                 <label for="referencia" class="font-bold mb-1">Referencia</label>
                                 <input type="text" id="referencia" name="referencia" maxlength="255"
                                     class="border rounded px-2 py-1 focus:outline-none focus:ring focus:ring-blue-300 @error('direccion.referencia') border-red-500 @enderror"
-                                    placeholder="Punto de referencia" wire:model="direccion.referencia">
+                                    placeholder="Punto de referencia" wire:model.change="direccion.referencia">
                                 @error('direccion.referencia')
                                     <p class="text-red-500 text-xs italic mt-1">
                                         {{ $message }}
@@ -285,7 +291,7 @@
                             <div class="flex flex-col">
                                 <label for="distrito" class="font-bold mb-1">Distrito <span
                                         class="text-red-500">*</span></label>
-                                <select wire:model="direccion.codigo_ubigeo"
+                                <select wire:model.change="direccion.codigo_ubigeo"
                                     class="border rounded px-2 py-1 focus:outline-none focus:ring focus:ring-blue-300 @error('direccion.codigo_ubigeo') border-red-500 @enderror"
                                     @if (empty($provinciaSeleccionada)) disabled @endif>
                                     <option value="">-- Seleccione --</option>
@@ -312,339 +318,309 @@
             </div>
         </x-tab>
     </x-tabs>
-    @if ($modalEditar)
-        <div class="fixed inset-0 z-50 flex items-center justify-center p-4" x-data="{ show: true }" x-show="show"
-            x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 scale-95"
-            x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-200"
-            x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95">
-
-            <!-- Overlay difuminado -->
-            <div class="absolute inset-0 bg-black opacity-50" @click="$wire.cerrarModal()"></div>
-
-            <!-- Contenido del modal -->
-            <div class="relative bg-white rounded-xl shadow-2xl w-full max-w-6xl z-50 overflow-y-auto max-h-[95vh]">
-                <!-- Header del modal -->
-                <div class="sticky top-0 bg-white border-b border-gray-200 z-10">
-                    <div class="p-6 ">
-                        <div class="flex justify-between items-center">
-                            <div class="flex items-center space-x-3">
-                                <div class="p-2 bg-blue-100 rounded-lg">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600"
-                                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                        stroke-linecap="round" stroke-linejoin="round">
-                                        <path
-                                            d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" />
-                                        <path d="m15 5 4 4" />
-                                    </svg>
-                                </div>
-                                <div>
-                                    <h3 class="font-bold text-xl text-gray-800">Editar Cliente</h3>
-                                    <p class="text-gray-600 text-sm mt-1">
-                                        {{ $clienteSeleccionado->persona?->nombre ?? 'Cliente' }}</p>
-                                </div>
-                            </div>
-                            <button @click="$wire.cerrarModal()"
-                                class="text-gray-500 hover:text-gray-700 transition-colors p-2 rounded-full hover:bg-gray-100">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20"
-                                    fill="currentColor">
-                                    <path fill-rule="evenodd"
-                                        d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                                        clip-rule="evenodd" />
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
+    <flux:modal name="editarCliente" class="w-full max-w-4xl h-[80vh]" wire:model="modalEditar">
+        <!-- Header -->
+        <div class="px-6 py-4 flex items-center justify-between border-b border-gray-200">
+            <div class="flex items-center gap-3">
+                <div>
+                    <h3 class="text-lg font-medium text-gray-700">Editar información de Cliente</h3>
+                    <p class="text-gray-500">
+                        Cliente:
+                        @if ($clienteSeleccionado && $clienteSeleccionado->persona)
+                            {{ $clienteSeleccionado->persona->nombre }}
+                            {{ $clienteSeleccionado->persona->apellido_paterno }}
+                            {{ $clienteSeleccionado->persona->apellido_materno }}
+                        @else
+                            Cargando...
+                        @endif
+                    </p>
                 </div>
+            </div>
+        </div>
 
-                <form wire:submit.prevent="guardarEdicion" class="p-6">
-                    <!-- Sección: Información Personal -->
-                    <div class="mb-8">
-                        <div class="flex items-center space-x-2 mb-6 pb-3 border-b border-gray-200">
-                            <div class="p-2 bg-blue-100 rounded-lg">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-600"
-                                    viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
-                                        clip-rule="evenodd" />
+        <!-- Body -->
+        <div class="overflow-y-auto p-6 bg-gray-50">
+            @if ($clienteSeleccionado && $clienteSeleccionado->persona)
+                <form class="space-y-6" wire:submit.prevent="guardarEdicion">
+
+                    <!-- Información Personal -->
+                    <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-200">
+                        <div class="flex items-center gap-2 mb-4 pb-3 border-b border-gray-200">
+                            <div class="bg-gray-200 p-2 rounded-lg">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                                    viewBox="0 0 24 24" fill="none" stroke="gray" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+                                    <circle cx="12" cy="7" r="4" />
                                 </svg>
                             </div>
-                            <h4 class="font-semibold text-gray-800 text-lg">Información Personal</h4>
+                            <h4 class="font-bold text-gray-800 text-lg">Información Personal</h4>
                         </div>
 
-                        <div class="grid grid-cols-2 gap-6">
-                            <!-- Documento (readonly) -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- Campos de solo lectura -->
                             <div class="flex flex-col">
-                                <label class="text-sm font-medium text-gray-700 mb-2">Tipo de documento</label>
-                                <select wire:model="persona.id_tipo_documento"
-                                    class="border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 cursor-not-allowed"
-                                    disabled>
+                                <flux:label class="mb-1.5">Tipo de documento</flux:label>
+                                <flux:select wire:model="persona.id_tipo_documento" disabled>
                                     <option value="">-- Seleccione --</option>
                                     @foreach ($tipos_documentos as $t)
                                         <option value="{{ $t->id_tipo_documento }}">{{ $t->nombre_tipo_documento }}
                                         </option>
                                     @endforeach
-                                </select>
+                                </flux:select>
                                 <p class="text-xs text-gray-500 mt-1">No editable</p>
                             </div>
 
                             <div class="flex flex-col">
-                                <label class="text-sm font-medium text-gray-700 mb-2">Número documento</label>
-                                <input type="text" wire:model="persona.numero_documento"
-                                    class="border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 cursor-not-allowed"
-                                    readonly>
-                                <p class="text-xs text-gray-500 mt-1">No editable</p>
-                            </div>
-
-                            <!-- Nombres (readonly) -->
-                            <div class="flex flex-col">
-                                <label class="text-sm font-medium text-gray-700 mb-2">Nombre</label>
-                                <input type="text" wire:model="persona.nombre"
-                                    class="border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 cursor-not-allowed"
-                                    readonly>
+                                <flux:label class="mb-1.5">Número documento</flux:label>
+                                <flux:input readonly wire:model="persona.numero_documento" />
                                 <p class="text-xs text-gray-500 mt-1">No editable</p>
                             </div>
 
                             <div class="flex flex-col">
-                                <label class="text-sm font-medium text-gray-700 mb-2">Apellido Paterno</label>
-                                <input type="text" wire:model="persona.apellido_paterno"
-                                    class="border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 cursor-not-allowed"
-                                    readonly>
+                                <flux:label class="mb-1.5">Nombre</flux:label>
+                                <flux:input readonly wire:model="persona.nombre" />
                                 <p class="text-xs text-gray-500 mt-1">No editable</p>
                             </div>
 
                             <div class="flex flex-col">
-                                <label class="text-sm font-medium text-gray-700 mb-2">Apellido Materno</label>
-                                <input type="text" wire:model="persona.apellido_materno"
-                                    class="border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 cursor-not-allowed"
-                                    readonly>
+                                <flux:label class="mb-1.5">Apellido Paterno</flux:label>
+                                <flux:input readonly wire:model="persona.apellido_paterno" />
+                                <p class="text-xs text-gray-500 mt-1">No editable</p>
+                            </div>
+
+                            <div class="flex flex-col">
+                                <flux:label class="mb-1.5">Apellido Materno</flux:label>
+                                <flux:input readonly wire:model="persona.apellido_materno" />
                                 <p class="text-xs text-gray-500 mt-1">No editable</p>
                             </div>
 
                             <!-- Campos editables -->
                             <div class="flex flex-col">
-                                <label class="text-sm font-medium text-gray-700 mb-2">Fecha de nacimiento</label>
-                                <input type="date" wire:model="persona.fecha_nacimiento"
-                                    class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors">
+                                <flux:label class="mb-1.5">Fecha de nacimiento</flux:label>
+                                <flux:input type="date" wire:model.change="persona.fecha_nacimiento" />
                                 @error('persona.fecha_nacimiento')
-                                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                    <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
                                 @enderror
                             </div>
 
                             <div class="flex flex-col">
-                                <label class="text-sm font-medium text-gray-700 mb-2">Sexo</label>
-                                <select wire:model="persona.sexo"
-                                    class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors">
+                                <flux:label class="mb-1.5">Sexo</flux:label>
+                                <flux:select wire:model.change="persona.sexo">
                                     <option value="">-- Seleccione --</option>
                                     <option value="M">Masculino</option>
                                     <option value="F">Femenino</option>
                                     <option value="O">Otro</option>
-                                </select>
+                                </flux:select>
                                 @error('persona.sexo')
-                                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                    <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
                                 @enderror
                             </div>
 
                             <div class="flex flex-col">
-                                <label class="text-sm font-medium text-gray-700 mb-2">Nacionalidad</label>
-                                <input type="text" wire:model="persona.nacionalidad"
-                                    class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors">
+                                <flux:label class="mb-1.5">Nacionalidad</flux:label>
+                                <flux:input type="text" wire:model.change="persona.nacionalidad" />
                                 @error('persona.nacionalidad')
-                                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                    <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
                                 @enderror
                             </div>
 
                             <div class="flex flex-col">
-                                <label class="text-sm font-medium text-gray-700 mb-2">Correo electrónico
-                                    personal</label>
-                                <input type="email" wire:model="persona.correo_electronico_personal"
-                                    class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors">
+                                <flux:label class="mb-1.5">Correo electrónico personal</flux:label>
+                                <flux:input type="email" wire:model.change="persona.correo_electronico_personal" />
                                 @error('persona.correo_electronico_personal')
-                                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                    <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
                                 @enderror
                             </div>
 
                             <div class="flex flex-col">
-                                <label class="text-sm font-medium text-gray-700 mb-2">Correo electrónico
-                                    secundario</label>
-                                <input type="email" wire:model="persona.correo_electronico_secundario"
-                                    class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors">
+                                <flux:label class="mb-1.5">Correo electrónico secundario</flux:label>
+                                <flux:input type="email"
+                                    wire:model.change="persona.correo_electronico_secundario" />
                                 @error('persona.correo_electronico_secundario')
-                                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                    <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
                                 @enderror
                             </div>
 
                             <div class="flex flex-col">
-                                <label class="text-sm font-medium text-gray-700 mb-2">Teléfono personal</label>
-                                <input type="text" wire:model="persona.numero_telefono_personal"
-                                    class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors">
+                                <flux:label class="mb-1.5">Teléfono personal</flux:label>
+                                <flux:input type="text" wire:model.change="persona.numero_telefono_personal" />
                                 @error('persona.numero_telefono_personal')
-                                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                    <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
                                 @enderror
                             </div>
 
                             <div class="flex flex-col">
-                                <label class="text-sm font-medium text-gray-700 mb-2">Teléfono secundario</label>
-                                <input type="text" wire:model="persona.numero_telefono_secundario"
-                                    class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors">
+                                <flux:label class="mb-1.5">Teléfono secundario</flux:label>
+                                <flux:input type="text" wire:model.change="persona.numero_telefono_secundario" />
                                 @error('persona.numero_telefono_secundario')
-                                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                    <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
                                 @enderror
                             </div>
                         </div>
                     </div>
 
-                    <!-- Sección: Dirección -->
-                    <div class="mb-8">
-                        <div class="flex items-center space-x-2 mb-6 pb-3 border-b border-gray-200">
-                            <div class="p-2 bg-green-100 rounded-lg">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-600"
-                                    viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd"
-                                        d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"
-                                        clip-rule="evenodd" />
+                    <!-- Dirección -->
+                    <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-200">
+                        <div class="flex items-center gap-2 mb-4 pb-3 border-b border-gray-200">
+                            <div class="bg-gray-200 p-2 rounded-lg">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                                    viewBox="0 0 24 24" fill="none" stroke="gray" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+                                    <circle cx="12" cy="10" r="3" />
                                 </svg>
                             </div>
-                            <h4 class="font-semibold text-gray-800 text-lg">Dirección</h4>
+                            <h4 class="font-bold text-gray-800 text-lg">Dirección</h4>
                         </div>
 
-                        <div class="grid grid-cols-2 gap-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div class="flex flex-col">
-                                <label class="text-sm font-medium text-gray-700 mb-2">Tipo de calle</label>
-                                <input type="text" wire:model="direccion.tipo_calle"
-                                    class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors">
+                                <flux:label class="mb-1.5">Tipo de Calle</flux:label>
+                                <flux:select wire:model.change="direccion.tipo_calle">
+                                    <option value="">-- Seleccione --</option>
+                                    @foreach ($tipos_calle as $key => $value)
+                                        <option value="{{ $key }}">{{ $value }}</option>
+                                    @endforeach
+                                </flux:select>
                                 @error('direccion.tipo_calle')
-                                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                    <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
                                 @enderror
                             </div>
 
                             <div class="flex flex-col">
-                                <label class="text-sm font-medium text-gray-700 mb-2">Nombre de calle</label>
-                                <input type="text" wire:model="direccion.nombre_calle"
-                                    class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors">
-                                @error('direccion.nombre_calle')
-                                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                                @enderror
-                            </div>
-
-                            <div class="flex flex-col">
-                                <label class="text-sm font-medium text-gray-700 mb-2">Número</label>
-                                <input type="text" wire:model="direccion.numero"
-                                    class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors">
-                                @error('direccion.numero')
-                                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                                @enderror
-                            </div>
-
-                            <div class="flex flex-col">
-                                <label class="text-sm font-medium text-gray-700 mb-2">Zona</label>
-                                <input type="text" wire:model="direccion.zona"
-                                    class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors">
+                                <flux:label class="mb-1.5">Zona</flux:label>
+                                <flux:input type="text" wire:model.change="direccion.zona" />
                                 @error('direccion.zona')
-                                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                    <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
                                 @enderror
                             </div>
 
                             <div class="flex flex-col">
-                                <label class="text-sm font-medium text-gray-700 mb-2">Código Postal</label>
-                                <input type="text" wire:model="direccion.codigo_postal"
-                                    class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors">
+                                <flux:label class="mb-1.5">Nombre de Calle</flux:label>
+                                <flux:input type="text" wire:model.change="direccion.nombre_calle" />
+                                @error('direccion.nombre_calle')
+                                    <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
+                                @enderror
+                            </div>
+
+                            <div class="flex flex-col">
+                                <flux:label class="mb-1.5">Número</flux:label>
+                                <flux:input type="text" wire:model.change="direccion.numero" />
+                                @error('direccion.numero')
+                                    <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
+                                @enderror
+                            </div>
+
+                            <div class="flex flex-col">
+                                <flux:label class="mb-1.5">Código Postal</flux:label>
+                                <flux:input type="text" wire:model.change="direccion.codigo_postal" />
                                 @error('direccion.codigo_postal')
-                                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                    <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
                                 @enderror
                             </div>
 
                             <div class="flex flex-col">
-                                <label class="text-sm font-medium text-gray-700 mb-2">Referencia</label>
-                                <input type="text" wire:model="direccion.referencia"
-                                    class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors">
+                                <flux:label class="mb-1.5">Referencia</flux:label>
+                                <flux:input type="text" wire:model.change="direccion.referencia" />
                                 @error('direccion.referencia')
-                                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                    <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
                                 @enderror
                             </div>
                         </div>
                     </div>
 
-                    <!-- Sección: Ubigeo -->
-                    <div class="mb-8">
-                        <div class="flex items-center space-x-2 mb-6 pb-3 border-b border-gray-200">
-                            <div class="p-2 bg-purple-100 rounded-lg">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-purple-600"
-                                    viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd"
-                                        d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a1 1 0 110 2h-3a1 1 0 01-1-1v-2a1 1 0 00-1-1H9a1 1 0 00-1 1v2a1 1 0 01-1 1H4a1 1 0 110-2V4zm3 1h2v2H7V5zm2 4H7v2h2V9zm2-4h2v2h-2V5zm2 4h-2v2h2V9z"
-                                        clip-rule="evenodd" />
+                    <!-- Ubicación Geográfica -->
+                    <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-200">
+                        <div class="flex items-center gap-2 mb-4 pb-3 border-b border-gray-200">
+                            <div class="bg-gray-200 p-2 rounded-lg">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                                    viewBox="0 0 24 24" fill="none" stroke="gray" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="10" />
+                                    <line x1="2" y1="12" x2="22" y2="12" />
+                                    <path
+                                        d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
                                 </svg>
                             </div>
-                            <h4 class="font-semibold text-gray-800 text-lg">Ubicación Geográfica</h4>
+                            <h4 class="font-bold text-gray-800 text-lg">Ubicación Geográfica</h4>
                         </div>
 
-                        <div class="grid grid-cols-3 gap-6">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div class="flex flex-col">
-                                <label class="text-sm font-medium text-gray-700 mb-2">Departamento</label>
-                                <select wire:model="departamentoSeleccionado"
-                                    class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors">
+                                <flux:label class="mb-1.5">Departamento</flux:label>
+                                <flux:select wire:model.live="departamentoSeleccionado">
                                     <option value="">-- Seleccione --</option>
                                     @foreach ($departamentos as $dep)
                                         <option value="{{ $dep }}">{{ $dep }}</option>
                                     @endforeach
-                                </select>
-                                @error('direccion.codigo_ubigeo')
-                                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                                @enderror
+                                </flux:select>
                             </div>
 
                             <div class="flex flex-col">
-                                <label class="text-sm font-medium text-gray-700 mb-2">Provincia</label>
-                                <select wire:model="provinciaSeleccionada"
-                                    class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors disabled:bg-gray-50 disabled:cursor-not-allowed"
-                                    @if (empty($departamentoSeleccionado)) disabled @endif>
+                                <flux:label class="mb-1.5">Provincia</flux:label>
+                                <flux:select wire:model.live="provinciaSeleccionada"
+                                    :disabled="empty($departamentoSeleccionado)">
                                     <option value="">-- Seleccione --</option>
                                     @foreach ($provincias as $prov)
                                         <option value="{{ $prov }}">{{ $prov }}</option>
                                     @endforeach
-                                </select>
-                                @error('direccion.codigo_ubigeo')
-                                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                                @enderror
+                                </flux:select>
                             </div>
 
                             <div class="flex flex-col">
-                                <label class="text-sm font-medium text-gray-700 mb-2">Distrito</label>
-                                <select wire:model="direccion.codigo_ubigeo"
-                                    class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors disabled:bg-gray-50 disabled:cursor-not-allowed"
-                                    @if (empty($provinciaSeleccionada)) disabled @endif>
+                                <flux:label class="mb-1.5">Distrito</flux:label>
+                                <flux:select wire:model.change="direccion.codigo_ubigeo"
+                                    :disabled="empty($provinciaSeleccionada)">
                                     <option value="">-- Seleccione --</option>
                                     @foreach ($distritos as $dis)
                                         <option value="{{ $dis->codigo_ubigeo }}">{{ $dis->distrito }}</option>
                                     @endforeach
-                                </select>
+                                </flux:select>
                                 @error('direccion.codigo_ubigeo')
-                                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                    <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
                                 @enderror
                             </div>
                         </div>
                     </div>
-
-                    <!-- Botones de acción -->
-                    <div class="flex justify-end space-x-3 pt-6 border-t border-gray-200">
-                        <button type="button" @click="$wire.cerrarModal()"
-                            class="px-6 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                            Cancelar
-                        </button>
-                        <button type="submit"
-                            class="px-6 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 flex items-center space-x-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20"
-                                fill="currentColor">
-                                <path fill-rule="evenodd"
-                                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                    clip-rule="evenodd" />
-                            </svg>
-                            <span>Guardar Cambios</span>
-                        </button>
-                    </div>
                 </form>
-            </div>
+            @else
+                <!-- Loading state -->
+                <div class="flex items-center justify-center py-12">
+                    <div class="text-center">
+                        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                        <p class="mt-4 text-gray-600">Cargando datos del cliente...</p>
+                    </div>
+                </div>
+            @endif
         </div>
-    @endif
+
+        <!-- Footer -->
+        @if ($clienteSeleccionado && $clienteSeleccionado->persona)
+            <div slot="footer" class="flex justify-end gap-3">
+                <flux:button wire:click.prevent="cerrarModal">
+                    Cancelar
+                </flux:button>
+                <flux:button wire:click="guardarEdicion" :disabled="$loading" variant="primary">
+                    @if ($loading)
+                        <span class="flex items-center">
+                            <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg"
+                                fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10"
+                                    stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor"
+                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                                </path>
+                            </svg>
+                            Guardando...
+                        </span>
+                    @else
+                        Guardar Cambios
+                    @endif
+                </flux:button>
+            </div>
+        @endif
+    </flux:modal>
 
     @push('scripts')
         <script>
@@ -664,5 +640,5 @@
             });
         </script>
     @endpush
-    <x-loader />
+    <x-loader target="guardar, guardarEdicion, buscarDni, cerrarModal" />
 </x-panel>
