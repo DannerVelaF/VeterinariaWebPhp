@@ -30,7 +30,7 @@ final class InventarioProductoTable extends PowerGridComponent
 
     public function datasource(): Builder
     {
-        return Producto::query()->with('lotes.movimientos');
+        return Producto::query()->with('lotes.inventarios');
     }
 
 
@@ -45,12 +45,12 @@ final class InventarioProductoTable extends PowerGridComponent
             ->add('nombre_producto')
             ->add('stock_total', fn($producto) => $producto->lotes->sum('cantidad_almacenada'))
             ->add('stock_almacen', fn($producto) => $producto->lotes->sum(function ($lote) {
-                return $lote->movimientos
+                return $lote->inventarios // ← Cambiado de 'movimientos' a 'inventarios'
                     ->where('id_tipo_ubicacion', 1) // 1 = Almacén
                     ->sum('cantidad_movimiento') + ($lote->cantidad_almacenada ?? 0);
             }))
             ->add('stock_mostrador', fn($producto) => $producto->lotes->sum(function ($lote) {
-                return $lote->movimientos
+                return $lote->inventarios // ← Cambiado de 'movimientos' a 'inventarios'
                     ->where('id_tipo_ubicacion', 2) // 2 = Mostrador
                     ->sum('cantidad_movimiento') + ($lote->cantidad_mostrada ?? 0);
             }))
