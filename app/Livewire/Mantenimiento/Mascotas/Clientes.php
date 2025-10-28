@@ -456,6 +456,7 @@ class Clientes extends Component
         } catch (\Illuminate\Validation\ValidationException $e) {
             $this->dispatch('notify', title: 'Error', description: 'Error de validación. Verifique los campos.', type: 'error');
             throw $e; // Livewire muestra los mensajes en los inputs
+            $this->loading = false;
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error al actualizar cliente', [
@@ -464,6 +465,8 @@ class Clientes extends Component
                 'direccion' => $this->direccion
             ]);
             $this->dispatch('notify', title: 'Error', description: 'Error al actualizar el cliente: ' . $e->getMessage(), type: 'error');
+        } finally {
+            $this->loading = false;
         }
     }
 
