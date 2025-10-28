@@ -38,10 +38,11 @@
         <h2>Reporte de Compras con Detalle</h2>
 
         @foreach ($compras as $compra)
-            <h3>Orden: {{ $compra->codigo }} - Proveedor: {{ $compra->proveedor->nombre ?? '---' }}</h3>
+            <h3>Orden: {{ $compra->codigo }} - Proveedor: {{ $compra->proveedor->nombre_proveedor ?? '---' }}</h3>
             <p>
+                Nro Factura: {{ $compra->numero_factura }} <br>
                 Fecha Compra: {{ $compra->fecha_compra }} <br>
-                Estado: {{ ucfirst($compra->estado) }}
+                Estado: {{ ucfirst($compra->estadoCompra->nombre_estado_compra) }}
             </p>
 
             <table>
@@ -58,8 +59,8 @@
                         <tr>
                             <td>{{ $detalle->producto->nombre_producto ?? '---' }}</td>
                             <td>{{ $detalle->cantidad }}</td>
-                            <td>{{ number_format($detalle->precio_unitario, 2) }}</td>
-                            <td>{{ number_format($detalle->sub_total, 2) }}</td>
+                            <td>s/{{ number_format($detalle->precio_unitario, 2) }}</td>
+                            <td>s/{{ number_format($detalle->sub_total, 2) }}</td>
                         </tr>
                     @endforeach
                 </tbody>

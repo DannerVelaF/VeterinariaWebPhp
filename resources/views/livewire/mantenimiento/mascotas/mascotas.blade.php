@@ -75,23 +75,23 @@
                                         </div>
                                         <ul>
                                             @foreach ($resultadosClientes as $cliente)
-                                                <li wire:click="seleccionarCliente({{ $cliente->id_cliente }})"
+                                                <li wire:click="seleccionarCliente({{ $cliente['id_cliente'] }})"
                                                     class="px-4 py-3 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors duration-150">
                                                     <div class="flex justify-between items-start">
                                                         <div class="flex-1">
                                                             <div class="flex items-center mb-1">
                                                                 <span class="font-semibold text-gray-800 text-sm">
-                                                                    {{ $cliente->persona->nombre ?? $cliente->nombre }}
-                                                                    {{ $cliente->persona->apellido_paterno ?? '' }}
-                                                                    {{ $cliente->persona->apellido_materno ?? ($cliente->apellido ?? '') }}
+                                                                    {{ $cliente['nombre'] }}
+                                                                    {{ $cliente['apellido_paterno'] }}
+                                                                    {{ $cliente['apellido_materno'] }}
                                                                 </span>
                                                                 <span
                                                                     class="ml-2 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
-                                                                    DNI: {{ $cliente->persona->dni ?? $cliente->dni }}
+                                                                    DNI: {{ $cliente['dni'] }}
                                                                 </span>
                                                             </div>
                                                             <div class="text-xs text-gray-600 space-y-1">
-                                                                @if ($cliente->persona->telefono ?? $cliente->telefono)
+                                                                @if ($cliente['telefono'])
                                                                     <span class="flex items-center">
                                                                         <svg class="w-3 h-3 mr-1" fill="none"
                                                                             stroke="currentColor" viewBox="0 0 24 24">
@@ -100,10 +100,10 @@
                                                                                 d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z">
                                                                             </path>
                                                                         </svg>
-                                                                        {{ $cliente->persona->telefono ?? $cliente->telefono }}
+                                                                        {{ $cliente['telefono'] }}
                                                                     </span>
                                                                 @endif
-                                                                @if ($cliente->persona->correo ?? $cliente->correo)
+                                                                @if ($cliente['correo'])
                                                                     <span class="flex items-center">
                                                                         <svg class="w-3 h-3 mr-1" fill="none"
                                                                             stroke="currentColor" viewBox="0 0 24 24">
@@ -112,7 +112,7 @@
                                                                                 d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z">
                                                                             </path>
                                                                         </svg>
-                                                                        {{ $cliente->persona->correo ?? $cliente->correo }}
+                                                                        {{ $cliente['correo'] }}
                                                                     </span>
                                                                 @endif
                                                             </div>
@@ -151,7 +151,7 @@
                         </div>
 
                         <!-- CLIENTE SELECCIONADO -->
-                        @if ($clienteSeleccionado)
+                        @if ($clienteSeleccionado && is_array($clienteSeleccionado))
                             <div class="col-span-2 mt-3">
                                 <div class="bg-green-50 border border-green-200 rounded-lg shadow-sm p-4">
                                     <div class="flex items-center justify-between mb-3">
@@ -177,27 +177,27 @@
                                         <div>
                                             <p class="font-semibold text-gray-600">Nombre completo:</p>
                                             <p class="text-gray-800">
-                                                {{ $clienteSeleccionado->persona->nombre ?? $clienteSeleccionado->nombre }}
-                                                {{ $clienteSeleccionado->persona->apellido_paterno ?? '' }}
-                                                {{ $clienteSeleccionado->persona->apellido_materno ?? ($clienteSeleccionado->apellido ?? '') }}
+                                                {{ $clienteSeleccionado['nombre'] }}
+                                                {{ $clienteSeleccionado['apellido_paterno'] }}
+                                                {{ $clienteSeleccionado['apellido_materno'] }}
                                             </p>
                                         </div>
                                         <div>
                                             <p class="font-semibold text-gray-600">DNI:</p>
                                             <p class="text-gray-800">
-                                                {{ $clienteSeleccionado->persona->dni ?? $clienteSeleccionado->dni }}
+                                                {{ $clienteSeleccionado['dni'] }}
                                             </p>
                                         </div>
                                         <div>
                                             <p class="font-semibold text-gray-600">Teléfono:</p>
                                             <p class="text-gray-800">
-                                                {{ $clienteSeleccionado->persona->telefono ?? ($clienteSeleccionado->telefono ?? 'No registrado') }}
+                                                {{ $clienteSeleccionado['telefono'] ?? 'No registrado' }}
                                             </p>
                                         </div>
                                         <div>
                                             <p class="font-semibold text-gray-600">Correo:</p>
                                             <p class="text-gray-800">
-                                                {{ $clienteSeleccionado->persona->correo ?? ($clienteSeleccionado->correo ?? 'No registrado') }}
+                                                {{ $clienteSeleccionado['correo'] ?? 'No registrado' }}
                                             </p>
                                         </div>
                                     </div>
@@ -207,7 +207,6 @@
 
                         <hr class="col-span-2 my-3 border-gray-300">
 
-                        <!-- ... (el resto del formulario de mascotas se mantiene igual) ... -->
                         <!-- INFORMACIÓN DE LA MASCOTA -->
                         <div class="col-span-2">
                             <h3 class="font-bold text-gray-700 text-base mb-2">🐾 Información de la Mascota</h3>
@@ -216,23 +215,30 @@
                                 mascota.</p>
                         </div>
 
-                        <!-- NOMBRE -->
+                        <!-- ESPECIE - ACTUALIZADO -->
                         <div class="flex flex-col">
-                            <label class="font-semibold mb-1">Nombre de la Mascota <span
-                                    class="text-red-500">*</span></label>
-                            <input type="text" wire:model="mascota.nombre_mascota"
-                                placeholder="Ej. Firulais, Luna, Max..."
-                                class="border rounded px-3 py-2 focus:ring focus:ring-blue-300 @error('mascota.nombre_mascota') border-red-500 @enderror">
-                            @error('mascota.nombre_mascota')
+                            <label class="font-semibold mb-1">Especie <span class="text-red-500">*</span></label>
+                            <select wire:model="mascota.id_especie" wire:change="cambiarEspecie($event.target.value)"
+                                class="border rounded px-3 py-2 focus:ring focus:ring-blue-300 @error('mascota.id_especie') border-red-500 @enderror">
+                                <option value="">Seleccione especie</option>
+                                @foreach ($especies as $especie)
+                                    @if ($especie->estado === 'activo')
+                                        <option value="{{ $especie->id_especie }}">{{ $especie->nombre_especie }}
+                                        </option>
+                                    @endif
+                                @endforeach
+                            </select>
+                            @error('mascota.id_especie')
                                 <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                             @enderror
                         </div>
 
-                        <!-- RAZA -->
+                        <!-- RAZA - ACTUALIZADO -->
                         <div class="flex flex-col">
                             <label class="font-semibold mb-1">Raza <span class="text-red-500">*</span></label>
                             <select wire:model="mascota.id_raza"
-                                class="border rounded px-3 py-2 focus:ring focus:ring-blue-300 @error('mascota.id_raza') border-red-500 @enderror">
+                                class="border rounded px-3 py-2 focus:ring focus:ring-blue-300 @error('mascota.id_raza') border-red-500 @enderror"
+                                {{ empty($razas) ? 'disabled' : '' }}>
                                 <option value="">Seleccione raza</option>
                                 @foreach ($razas as $raza)
                                     @if ($raza->estado === 'activo')
@@ -241,6 +247,21 @@
                                 @endforeach
                             </select>
                             @error('mascota.id_raza')
+                                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                            @enderror
+                            @if (empty($razas) && $mascota['id_especie'])
+                                <p class="text-blue-500 text-xs mt-1">Primero seleccione una especie</p>
+                            @endif
+                        </div>
+
+                        <!-- NOMBRE -->
+                        <div class="flex flex-col">
+                            <label class="font-semibold mb-1">Nombre de la Mascota <span
+                                    class="text-red-500">*</span></label>
+                            <input type="text" wire:model.change="mascota.nombre_mascota"
+                                placeholder="Ej. Firulais, Luna, Max..."
+                                class="border rounded px-3 py-2 focus:ring focus:ring-blue-300 @error('mascota.nombre_mascota') border-red-500 @enderror">
+                            @error('mascota.nombre_mascota')
                                 <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                             @enderror
                         </div>
@@ -254,27 +275,36 @@
                                 <option value="Macho">Macho</option>
                                 <option value="Hembra">Hembra</option>
                             </select>
+                            @error('mascota.sexo')
+                                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                            @enderror
                         </div>
 
                         <!-- FECHA DE NACIMIENTO -->
                         <div class="flex flex-col">
                             <label class="font-semibold mb-1">Fecha de Nacimiento</label>
-                            <input type="date" wire:model="mascota.fecha_nacimiento"
+                            <input type="date" wire:model.change="mascota.fecha_nacimiento"
                                 class="border rounded px-3 py-2 focus:ring focus:ring-blue-300">
+                            @error('mascota.fecha_nacimiento')
+                                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                            @enderror
                         </div>
 
                         <!-- PESO ACTUAL -->
                         <div class="flex flex-col">
                             <label class="font-semibold mb-1">Peso actual (kg)</label>
-                            <input type="number" step="0.01" min="0" wire:model="mascota.peso_actual"
-                                placeholder="Ej. 5.20"
+                            <input type="number" step="0.01" min="0"
+                                wire:model.change="mascota.peso_actual" placeholder="Ej. 5.20"
                                 class="border rounded px-3 py-2 focus:ring focus:ring-blue-300">
+                            @error('mascota.peso_actual')
+                                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                            @enderror
                         </div>
 
-                        <!-- NOMBRE -->
+                        <!-- COLOR PRIMARIO -->
                         <div class="flex flex-col">
                             <label class="font-semibold mb-1">Color Primario</span></label>
-                            <input type="text" wire:model="mascota.color_primario"
+                            <input type="text" wire:model.change="mascota.color_primario"
                                 placeholder="Ej. Negro, Blanco, Marrón..."
                                 class="border rounded px-3 py-2 focus:ring focus:ring-blue-300 @error('mascota.color_primario') border-red-500 @enderror">
                             @error('mascota.color_primario')
@@ -285,9 +315,12 @@
                         <!-- OBSERVACIONES -->
                         <div class="flex flex-col col-span-2">
                             <label class="font-semibold mb-1">Observaciones</label>
-                            <textarea wire:model="mascota.observacion" rows="3"
+                            <textarea wire:model.change="mascota.observacion" rows="3"
                                 placeholder="Notas adicionales o características de la mascota..."
                                 class="border rounded px-3 py-2 focus:ring focus:ring-blue-300"></textarea>
+                            @error('mascota.observacion')
+                                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                            @enderror
                         </div>
 
                         <!-- BOTONES -->
@@ -296,10 +329,10 @@
                                 class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded text-xs font-bold">
                                 Limpiar Formulario
                             </button>
-                            <button type="button" wire:click="agregarOtraMascota"
+                            {{-- <button type="button" wire:click="agregarOtraMascota"
                                 class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-xs font-bold">
                                 Agregar Otra Mascota
-                            </button>
+                            </button> --}}
                             <button type="submit"
                                 class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-xs font-bold">
                                 Registrar Mascota
@@ -340,11 +373,29 @@
                     <form wire:submit.prevent="guardarEdicion" class="p-6 space-y-4">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-                            <!-- Raza -->
+                            <!-- Especie -->
+                            <div>
+                                <label class="text-sm font-medium text-gray-700 mb-2">Especie</label>
+                                <select wire:model="mascotaEditar.id_especie" disabled
+                                    wire:change="cambiarEspecieEditar($event.target.value)"
+                                    class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
+                                    <option value="">Seleccione una especie</option>
+                                    @foreach ($especies as $especie)
+                                        <option value="{{ $especie->id_especie }}">{{ $especie->nombre_especie }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('mascotaEditar.id_especie')
+                                    <span class="text-red-500 text-xs">{{ $message }}</span>
+                                @enderror
+                            </div>
+
+                            <!-- Raza - ACTUALIZADO -->
                             <div>
                                 <label class="text-sm font-medium text-gray-700 mb-2">Raza</label>
-                                <select wire:model="mascotaEditar.id_raza"
-                                    class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
+                                <select wire:model="mascotaEditar.id_raza" disabled
+                                    class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
+                                    {{ empty($razas) ? 'disabled' : '' }}>
                                     <option value="">Seleccione una raza</option>
                                     @foreach ($razas as $raza)
                                         <option value="{{ $raza->id_raza }}">{{ $raza->nombre_raza }}</option>
@@ -358,7 +409,7 @@
                             <!-- Nombre -->
                             <div>
                                 <label class="text-sm font-medium text-gray-700 mb-2">Nombre</label>
-                                <input type="text" readonly wire:model="mascotaEditar.nombre_mascota"
+                                <input type="text" wire:model="mascotaEditar.nombre_mascota" disabled
                                     class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
                                 @error('mascotaEditar.nombre_mascota')
                                     <span class="text-red-500 text-xs">{{ $message }}</span>
@@ -368,21 +419,28 @@
                             <!-- Fecha de nacimiento -->
                             <div>
                                 <label class="text-sm font-medium text-gray-700 mb-2">Fecha de nacimiento</label>
-                                <input type="date" wire:model="mascotaEditar.fecha_nacimiento"
+                                <input type="date" wire:model.change="mascotaEditar.fecha_nacimiento"
                                     class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
+                                @error('mascotaEditar.fecha_nacimiento')
+                                    <span class="text-red-500 text-xs">{{ $message }}</span>
+                                @enderror
+
                             </div>
 
                             <!-- Color primario -->
                             <div>
                                 <label class="text-sm font-medium text-gray-700 mb-2">Color primario</label>
-                                <input type="text" wire:model="mascotaEditar.color_primario"
+                                <input type="text" wire:model.change="mascotaEditar.color_primario"
                                     class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
+                                @error('mascotaEditar.color_primario')
+                                    <span class="text-red-500 text-xs">{{ $message }}</span>
+                                @enderror
                             </div>
 
                             <!-- Sexo -->
                             <div>
                                 <label class="text-sm font-medium text-gray-700 mb-2">Sexo</label>
-                                <select wire:model="mascotaEditar.sexo"
+                                <select wire:model.change="mascotaEditar.sexo"
                                     class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
                                     <option value="">Seleccione</option>
                                     <option value="macho">Macho</option>
@@ -393,14 +451,22 @@
                                 @enderror
                             </div>
 
-                            <!-- Estado -->
+                            <!-- Peso actual -->
                             <div>
-                                <label class="text-sm font-medium text-gray-700 mb-2">Estado</label>
-                                <select wire:model="mascotaEditar.estado"
+                                <label class="text-sm font-medium text-gray-700 mb-2">Peso actual (kg)</label>
+                                <input type="number" step="0.01" min="0"
+                                    wire:model="mascotaEditar.peso_actual"
                                     class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
-                                    <option value="1">Activo</option>
-                                    <option value="0">Inactivo</option>
-                                </select>
+                                @error('mascotaEditar.peso_actual')
+                                    <span class="text-red-500 text-xs">{{ $message }}</span>
+                                @enderror
+                            </div>
+
+                            <!-- Observaciones -->
+                            <div class="col-span-2">
+                                <label class="text-sm font-medium text-gray-700 mb-2">Observaciones</label>
+                                <textarea wire:model.change="mascotaEditar.observacion" rows="3"
+                                    class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"></textarea>
                             </div>
                         </div>
 
@@ -421,7 +487,7 @@
         @endif
 
     </x-panel>
-    <x-loader />
+    <x-loader target="guardarMascota, guardarEdicion" />
     @push('scripts')
         <script>
             Livewire.on('notify', (data) => {

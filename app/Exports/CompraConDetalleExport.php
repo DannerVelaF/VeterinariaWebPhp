@@ -20,13 +20,15 @@ class CompraConDetalleExport implements FromCollection, WithHeadings, WithMappin
             return [
                 $compra->codigo,
                 $compra->fecha_compra,
-                $compra->proveedor->nombre ?? '',
-                $compra->estado,
+                $compra->proveedor->ruc ?? '',
+                $compra->proveedor->nombre_proveedor ?? '',
+                $compra->numero_factura,
+                $compra->estadoCompra->nombre_estado_compra,
                 $detalle->producto->nombre_producto ?? '',
                 $detalle->cantidad,
                 $detalle->precio_unitario,
                 $detalle->sub_total,
-                $compra->trabajador->persona->user->username,
+                $compra->trabajador->persona->user->usuario,
                 $compra->observacion ?? '',
             ];
         })->toArray();
@@ -37,7 +39,9 @@ class CompraConDetalleExport implements FromCollection, WithHeadings, WithMappin
         return [
             'Código',
             'Fecha Compra',
+            'Ruc',
             'Proveedor',
+            'Nro Factura',
             'Estado',
             'Producto',
             'Cantidad',

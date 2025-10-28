@@ -2,10 +2,12 @@
 
 namespace App\Livewire;
 
+use App\Models\CategoriaServicio;
 use App\Models\Servicio;
 use Illuminate\Database\Eloquent\Builder;
 use PowerComponents\LivewirePowerGrid\Button;
 use PowerComponents\LivewirePowerGrid\Column;
+use PowerComponents\LivewirePowerGrid\Facades\Filter;
 use PowerComponents\LivewirePowerGrid\Facades\PowerGrid;
 use PowerComponents\LivewirePowerGrid\PowerGridComponent;
 use PowerComponents\LivewirePowerGrid\PowerGridFields;
@@ -16,9 +18,12 @@ final class ServicioTable extends PowerGridComponent
     protected $listeners = ['servicioRegistrado' => '$refresh'];
     public string $primaryKey = 'id_servicio';
     public string $sortField = 'id_servicio';
+    public array $categorias = [];
 
     public function setUp(): array
     {
+
+        $this->categorias = CategoriaServicio::select('id_categoria_servicio as id', 'nombre_categoria_servicio as name')->get()->toArray();
 
         return [
             PowerGrid::header(),
@@ -69,7 +74,26 @@ final class ServicioTable extends PowerGridComponent
 
     public function filters(): array
     {
-        return [];
+        return [
+            Filter::inputText('nombre_servicio')
+                ->placeholder('Buscar por nombre'),
+            Filter::select('estado', 'Estado')
+                ->dataSource([
+                    ['id' => 'activo', 'name' => 'activo'],
+                    ['id' => 'inactivo', 'name' => 'inactivo'],
+                ])
+                ->optionValue('id')
+                ->optionLabel('name'),
+            Filter::select('categoria_nombre', 'Categoría')
+                ->dataSource($this->categorias)
+                ->optionValue('id')
+                ->optionLabel('name')
+                ->builder(function (Builder $query, $value) {
+                    return $query->whereHas('categoriaServicio', function ($q) use ($value) {
+                        $q->where('id_categoria_servicio', $value);
+                    });
+                }),
+        ];
     }
 
     public function actions(Servicio $row): array

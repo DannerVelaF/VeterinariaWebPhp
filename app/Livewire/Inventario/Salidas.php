@@ -7,6 +7,7 @@ use App\Models\InventarioMovimiento;
 use App\Models\Lotes;
 use App\Models\Producto;
 use App\Models\TipoMovimiento;
+use App\Models\TipoUbicacion;
 use App\Models\Ventas;
 use Exception;
 use Illuminate\Support\Facades\DB;
@@ -28,26 +29,19 @@ class Salidas extends Component
     public $cantidad = "";
     public $top10salidas = [];
 
-    // Motivos predefinidos
-    public $motivosPredefinidos = [
-        'Venta',
-        'Producto defectuoso',
-        'Cambio',
-        'Devolución',
-        'Merma',
-        'Ajuste de inventario',
-        'Donación',
-        'Uso interno',
-        'Promoción',
-        'Otro' // Este permitirá texto personalizado
-    ];
+    public $motivosSalida = [];
+    public $showMotivoPersonalizado = false;
 
     public bool $showModal = false;
     public ?InventarioMovimiento $selectedSalida = null;
 
     public function mount()
     {
-        $this->productos = Producto::with("unidad")->where("estado", "activo")->get();
+        $this->productos = Producto::with(["unidad", "lotes" => function ($query) {
+            $query->where('estado', 'activo');
+        }])->where("estado", "activo")->get();
+
+        $this->motivosSalida = TipoMovimiento::all();
         $this->cargarSalidasRecientes();
     }
 
@@ -67,6 +61,7 @@ class Salidas extends Component
         if ($value) {
             $this->productoSeleccionado = Producto::with('unidad')->find($value);
             $this->cantidad = '';
+            $this->dispatch('stockUpdated');
         } else {
             $this->productoSeleccionado = null;
             $this->cantidad = '';
@@ -75,36 +70,46 @@ class Salidas extends Component
 
     public function updatedMotivo($value)
     {
-        // Si selecciona "Otro", limpiar el motivo personalizado para que pueda escribir
-        if ($value === 'Otro') {
-            $this->motivo_personalizado = '';
-        } else {
-            // Si selecciona cualquier otro motivo, limpiar el personalizado
+        // Mostrar campo personalizado solo si selecciona "Otro"
+        $this->showMotivoPersonalizado = ($value === 'otro');
+        if (!$this->showMotivoPersonalizado) {
             $this->motivo_personalizado = '';
         }
     }
 
     public function registrarSalida()
     {
-        // Normalizar cantidad
-        $this->cantidad = is_string($this->cantidad) ? floatval(str_replace(',', '.', $this->cantidad)) : (float)$this->cantidad;
-
-        // Determinar el motivo final
-        $motivoFinal = $this->motivo;
-        if ($this->motivo === 'Otro' && !empty($this->motivo_personalizado)) {
-            $motivoFinal = $this->motivo_personalizado;
-        }
-
+        // Validación inicial
         $this->validate([
             "id_producto" => "required|exists:productos,id_producto",
             'cantidad' => 'required|numeric|min:0.01|max:999999999.99',
             'ubicacion' => 'required|in:almacen,mostrador',
-            "motivo" => "required|in:" . implode(',', $this->motivosPredefinidos),
-            "motivo_personalizado" => $this->motivo === 'Otro' ? 'required|max:1000' : 'nullable',
+            "motivo" => "required",
+            "motivo_personalizado" => $this->motivo === 'otro' ? 'required|max:1000' : 'nullable',
         ], [
             'motivo.required' => 'Seleccione un motivo de salida.',
             'motivo_personalizado.required' => 'Cuando selecciona "Otro", debe especificar el motivo.',
         ]);
+
+        // Normalizar cantidad
+        $this->cantidad = is_string($this->cantidad) ? floatval(str_replace(',', '.', $this->cantidad)) : (float)$this->cantidad;
+
+        // Determinar el motivo final - SIEMPRE usar el texto personalizado si está disponible
+        $motivoFinal = $this->motivo_personalizado ?: $this->getNombreMotivo($this->motivo);
+
+        // Verificar stock total disponible (ambas ubicaciones)
+        $stockDisponible = $this->getStockActualProperty();
+        $stockTotal = $stockDisponible['total'];
+
+        if ($stockTotal < $this->cantidad) {
+            $this->dispatch(
+                'notify',
+                title: 'Error',
+                description: "Stock total insuficiente. Stock disponible: {$stockTotal}",
+                type: 'error'
+            );
+            return;
+        }
 
         // Variables para tracking del consumo
         $consumoInfo = [
@@ -154,10 +159,10 @@ class Salidas extends Component
                 // 4) Determinar estrategia de consumo
                 $cantidadRestante = (float) $this->cantidad;
 
-                // 5) Consumir primero de la ubicación primaria
+                // 5) Consumir primero de la ubicación primaria (la seleccionada)
                 $cantidadRestante = $this->consumirDeUbicacion($lotesTotales, $consumoInfo['ubicacion_primaria'], $cantidadRestante, $trabajador, $consumoInfo, $motivoFinal);
 
-                // 6) Si aún queda cantidad, consumir de la ubicación secundaria
+                // 6) Si aún queda cantidad, consumir de la ubicación secundaria AUTOMÁTICAMENTE
                 if ($cantidadRestante > 0) {
                     $cantidadRestante = $this->consumirDeUbicacion($lotesTotales, $consumoInfo['ubicacion_secundaria'], $cantidadRestante, $trabajador, $consumoInfo, $motivoFinal);
                 }
@@ -181,21 +186,31 @@ class Salidas extends Component
             });
 
             // Mensaje personalizado según el consumo
-            $mensaje = '✅ Salida registrada con éxito';
+            $mensaje = 'Salida registrada con éxito';
 
             if ($consumoInfo['secundaria'] > 0) {
-                // Se consumió de ambas ubicaciones
                 $mensaje .= " ({$consumoInfo['primaria']} de {$consumoInfo['ubicacion_primaria']} + {$consumoInfo['secundaria']} de {$consumoInfo['ubicacion_secundaria']})";
             } else {
-                // Solo se consumió de la ubicación primaria
                 $mensaje .= " ({$consumoInfo['primaria']} de {$consumoInfo['ubicacion_primaria']})";
             }
 
-            session()->flash('success', $mensaje);
+            $this->dispatch(
+                'notify',
+                title: 'Éxito',
+                description: $mensaje,
+                type: 'success'
+            );
+
             $this->resetForm();
             $this->dispatch('salidaRegistrada');
         } catch (Exception $e) {
-            session()->flash('error', 'Error al registrar la salida: ' . $e->getMessage());
+            $this->dispatch(
+                'notify',
+                title: 'Error',
+                description: 'Error al registrar la salida: ' . $e->getMessage(),
+                type: 'error'
+            );
+
             Log::error('Error al registrar salida', [
                 'error' => $e->getMessage(),
                 'id_producto' => $this->id_producto,
@@ -204,6 +219,20 @@ class Salidas extends Component
                 'motivo' => $motivoFinal
             ]);
         }
+    }
+
+    /**
+     * Obtener el nombre del motivo basado en el ID o valor
+     */
+    private function getNombreMotivo($motivoValue)
+    {
+        if ($motivoValue === 'otro') {
+            return $this->motivo_personalizado;
+        }
+
+        // Buscar en los motivos de la base de datos
+        $motivo = $this->motivosSalida->firstWhere('id_tipo_movimiento', $motivoValue);
+        return $motivo ? $motivo->nombre_tipo_movimiento : 'Motivo no especificado';
     }
 
     /**
@@ -216,7 +245,7 @@ class Salidas extends Component
             return $ubicacion === 'almacen'
                 ? (float)$lote->cantidad_almacenada > 0
                 : (float)$lote->cantidad_mostrada > 0;
-        })->sortBy('fecha_recepcion'); // FIFO
+        })->sortBy('fecha_recepcion');
 
         $cantidadConsumidaUbicacion = 0;
 
@@ -232,26 +261,26 @@ class Salidas extends Component
             $cantidadAUsar = min($cantidadRestante, $cantidadDisponible);
             $cantidadConsumidaUbicacion += $cantidadAUsar;
 
-            // 🔹 Reducir de la ubicación seleccionada
+            // Reducir de la ubicación seleccionada
             if ($ubicacion === 'almacen') {
                 $lote->cantidad_almacenada = round((float)$lote->cantidad_almacenada - $cantidadAUsar, 2);
             } else {
                 $lote->cantidad_mostrada = round((float)$lote->cantidad_mostrada - $cantidadAUsar, 2);
             }
 
-            // 🔹 Incrementar cantidad_vendida si existe
+            // Incrementar cantidad_vendida si existe
             if (Schema::hasColumn('lotes', 'cantidad_vendida')) {
                 $lote->cantidad_vendida = round((float)($lote->cantidad_vendida ?? 0) + $cantidadAUsar, 2);
             }
 
-            // 🔹 Marcar inactivo si ya no queda stock en ninguna ubicación
+            // Marcar inactivo si ya no queda stock
             if (($lote->cantidad_almacenada + $lote->cantidad_mostrada) <= 0) {
                 $lote->estado = 'vendido';
             }
 
             $lote->save();
 
-            // 🔹 Recalcular stock total real del producto
+            // Recalcular stock total real del producto
             $stockProductoDespues = Lotes::where('id_producto', $lote->id_producto)
                 ->where('estado', 'activo')
                 ->get()
@@ -259,42 +288,35 @@ class Salidas extends Component
                     return (float)$l->cantidad_almacenada + (float)$l->cantidad_mostrada;
                 });
 
-            // DEBUG
-            Log::info('Creando movimiento con motivo:', [
-                'motivoFinal' => $motivoFinal,
-                'cantidad' => $cantidadAUsar,
-                'ubicacion' => $ubicacion
-            ]);
-
-            // 🔹 Crear o reutilizar una venta dummy
+            // Crear o reutilizar una venta dummy
             $ventaDummy = Ventas::firstOrCreate(
                 [
-                    'fecha_venta' => now(),
+                    'fecha_venta' => now()->format('Y-m-d'),
                     'total' => 0,
                     'subtotal' => 0,
                     'descuento' => 0,
                     'impuesto' => 0,
                     'estado' => 'entregado',
-                    'id_cliente' => 1, // o un cliente genérico
+                    'id_cliente' => null,
                     'id_trabajador' => $trabajador->id_trabajador,
                     "fecha_registro" => now(),
                 ]
             );
 
-            // 🔹 Crear detalle_venta dummy
+            // Crear detalle_venta dummy - USAR EL MOTIVO FINAL (texto del usuario)
             $detalleVenta = DetalleVentas::create([
                 'id_venta' => $ventaDummy->id_venta,
                 'id_producto' => $this->id_producto,
-                'cantidad' => $cantidadAUsar,   // la misma que consumiste del lote
+                'cantidad' => $cantidadAUsar,
                 'precio_unitario' => 0,
                 'subtotal' => 0,
-                'motivo_salida' => $motivoFinal,
+                'motivo_salida' => $motivoFinal, // Usar el motivo final (texto del usuario)
             ]);
 
             $salidas = TipoMovimiento::where("nombre_tipo_movimiento", "salida")->first();
+            $ubicacionModel = TipoUbicacion::where("nombre_tipo_ubicacion", $ubicacion)->first();
 
-
-            // 🔹 Registrar movimiento
+            // Registrar movimiento - USAR EL MOTIVO FINAL (texto del usuario)
             InventarioMovimiento::create([
                 "id_tipo_movimiento" => $salidas->id_tipo_movimiento,
                 "cantidad_movimiento" => $cantidadAUsar,
@@ -303,16 +325,16 @@ class Salidas extends Component
                 "fecha_registro" => now(),
                 "id_lote" => $lote->id_lote,
                 "id_trabajador" => $trabajador->id_trabajador,
-                "ubicacion" => $ubicacion,
-                "motivo_salida" => $motivoFinal ?? 'Sin motivo especificado',
-                "tipo_movimiento_asociado"    => DetalleVentas::class,
-                "id_movimiento_asociado"      => $detalleVenta->id_detalle_venta,
+                "id_tipo_ubicacion" => $ubicacionModel->id_tipo_ubicacion,
+                "motivo" => $motivoFinal, // Usar el motivo final (texto del usuario)
+                "tipo_movimiento_asociado" => DetalleVentas::class,
+                "id_movimiento_asociado" => $detalleVenta->id_detalle_venta,
             ]);
 
             $cantidadRestante -= $cantidadAUsar;
         }
 
-        // 🔹 Actualizar el tracking del consumo
+        // Actualizar el tracking del consumo
         if ($ubicacion === $consumoInfo['ubicacion_primaria']) {
             $consumoInfo['primaria'] = $cantidadConsumidaUbicacion;
         } else {
@@ -333,7 +355,7 @@ class Salidas extends Component
 
         return view('livewire.inventario.salidas', [
             'salidas' => $salidas,
-            'motivosPredefinidos' => $this->motivosPredefinidos
+            'stockActual' => $this->getStockActualProperty()
         ]);
     }
 
@@ -345,7 +367,9 @@ class Salidas extends Component
         $this->cantidad = "";
         $this->motivo = "";
         $this->motivo_personalizado = "";
+        $this->showMotivoPersonalizado = false;
         $this->cargarSalidasRecientes();
+        $this->dispatch('stockUpdated');
     }
 
     public function getStockActualProperty()
@@ -358,7 +382,7 @@ class Salidas extends Component
             ];
         }
 
-        $lotes = Lotes::where('id_producto', $this->productoSeleccionado['id_producto'])
+        $lotes = Lotes::where('id_producto', $this->productoSeleccionado->id_producto)
             ->where('estado', 'activo')
             ->get();
 

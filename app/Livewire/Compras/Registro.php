@@ -239,7 +239,22 @@ class Registro extends Component
     public function closeModal(): void
     {
         $this->showModal = false;
+        $this->resetForm();
     }
+
+    public function resetForm()
+    {
+        $this->compra = [
+            'numero_factura' => '',
+            'fecha_compra' => '',
+            'observacion' => ''
+        ];
+
+        $this->detalleCompra = [
+            ['id_producto' => '', 'cantidad' => 0, 'precio_unitario' => 0]
+        ];
+    }
+
     public function agregarDetalle()
     {
         if (count($this->detalleCompra) < 50) { // límite por seguridad
@@ -288,7 +303,7 @@ class Registro extends Component
 
     public function exportarPdf()
     {
-        $compras = Compra::with(['proveedor', 'detalleCompra.producto'])->get();
+        $compras = Compra::with(['proveedor', 'detalleCompra.producto', 'estadoCompra'])->get();
 
         $pdf = Pdf::loadView('exports.compras_pdf', compact('compras'))
             ->setPaper('a4', 'landscape'); // opcional
@@ -300,7 +315,7 @@ class Registro extends Component
 
     public function exportarPdfOrdenCompra()
     {
-        $compra = Compra::with(['proveedor', 'detalleCompra.producto'])->find($this->compraSeleccionada->id_compra);
+        $compra = Compra::with(['proveedor', 'detalleCompra.producto', 'estadoCompra'])->find($this->compraSeleccionada->id_compra);
         $IGV = $this->IGV;
 
         $pdf = Pdf::loadView('exports.ordenCompra_pdf', compact('compra', 'IGV'))

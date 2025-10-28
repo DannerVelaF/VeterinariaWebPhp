@@ -2,29 +2,9 @@
 
     <x-tabs :tabs="['registro' => 'Registar salida', 'detalle' => 'Listado de salidas']" default="registro">
         <x-tab name="registro">
-            @if (session()->has('success'))
-                <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 4000)"
-                    x-transition:enter="transition ease-out duration-500"
-                    x-transition:enter-start="opacity-0 transform translate-y-2"
-                    x-transition:enter-end="opacity-100 transform translate-y-0"
-                    x-transition:leave="transition ease-in duration-500"
-                    x-transition:leave-start="opacity-100 transform translate-y-0"
-                    x-transition:leave-end="opacity-0 transform translate-y-2"
-                    class="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded">
-                    {{ session('success') }}
-                </div>
-            @endif
-            @if (session()->has('error'))
-                <div class="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded" x-data="{ show: true }"
-                    x-show="show" x-init="setTimeout(() => show = false, 4000)" x-transition:enter="transition ease-out duration-500"
-                    x-transition:enter-start="opacity-0 transform translate-y-2"
-                    x-transition:enter-end="opacity-100 transform translate-y-0"
-                    x-transition:leave="transition ease-in duration-500"
-                    x-transition:leave-start="opacity-100 transform translate-y-0"
-                    x-transition:leave-end="opacity-0 transform translate-y-2">
-                    {{ session('error') }}
-                </div>
-            @endif
+            {{-- ELIMINAR LOS MENSAJES DE SESSION FLASH --}}
+            {{-- @if (session()->has('success')) y @if (session()->has('error')) --}}
+
             <div class="bg-gray-50 rounded p-4 space-y-4 ">
 
                 <x-card class="h-auto max-w-full ">
@@ -50,8 +30,7 @@
                                 @foreach ($productos as $producto)
                                     <option value="{{ $producto->id_producto }}">
                                         {{ $producto->nombre_producto }} ({{ $producto->unidad->nombre_unidad }}) -
-                                        Stock:
-                                        {{ $producto->stock_actual }}
+                                        Stock: {{ $producto->stock_actual }}
                                     </option>
                                 @endforeach
                             </select>
@@ -68,57 +47,30 @@
                                 <p class="font-medium ">Stock actual del producto</p>
                                 <div class="grid grid-cols-3 gap-4 mt-2 text-sm">
                                     <div class="flex gap-2">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12"
-                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                            stroke-linecap="round" stroke-linejoin="round"
-                                            class="lucide lucide-package">
-                                            <path
-                                                d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z" />
-                                            <path d="M12 22V12" />
-                                            <polyline points="3.29 7 12 12 20.71 7" />
-                                            <path d="m7.5 4.27 9 5.15" />
-                                        </svg>
+                                        <!-- icono -->
                                         <span class="font-medium">Total: </span>
-                                        <span>{{ $this->stockActual['total'] }}</span>
+                                        <span>{{ $stockActual['total'] ?? 0 }}</span>
                                     </div>
                                     <div class="flex gap-2 items-center">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12"
-                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                            stroke-linecap="round" stroke-linejoin="round"
-                                            class="lucide lucide-warehouse">
-                                            <path d="M18 21V10a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1v11" />
-                                            <path
-                                                d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 1.132-1.803l7.95-3.974a2 2 0 0 1 1.837 0l7.948 3.974A2 2 0 0 1 22 8z" />
-                                            <path d="M6 13h12" />
-                                            <path d="M6 17h12" />
-                                        </svg>
+                                        <!-- icono -->
                                         <span class="font-medium">Almacén: </span>
-                                        <span>{{ $this->stockActual['almacen'] }}</span>
+                                        <span>{{ $stockActual['almacen'] ?? 0 }}</span>
                                     </div>
                                     <div class="flex gap-2">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12"
-                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                            stroke-linecap="round" stroke-linejoin="round"
-                                            class="lucide lucide-shopping-cart">
-                                            <circle cx="8" cy="21" r="1" />
-                                            <circle cx="19" cy="21" r="1" />
-                                            <path
-                                                d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12" />
-                                        </svg>
+                                        <!-- icono -->
                                         <span class="font-medium">Mostrador: </span>
-                                        <span>{{ $this->stockActual['mostrador'] }}</span>
+                                        <span>{{ $stockActual['mostrador'] ?? 0 }}</span>
                                     </div>
                                 </div>
                             </div>
                         @endif
-
                         <div class="flex gap-5 justify-between">
                             <div class="flex flex-col gap-2 w-full">
                                 <label for="cantidad" class="font-medium">Cantidad <span class="text-red-500">*</span>
                                 </label>
-                                <input type="number" id="cantidad" min="0" step="0.01"
+                                <input type="number" id="cantidad" min="1" step="1"
                                     class="border rounded px-2 py-1 focus:outline-none focus:ring focus:ring-red-300 border-gray-200"
-                                    placeholder="0.00" wire:model="cantidad">
+                                    placeholder="Cantidad de producto a salir" wire:model="cantidad">
                                 @error('cantidad')
                                     <p class="text-red-500 text-xs italic mt-1">
                                         {{ $message }}
@@ -143,9 +95,12 @@
                             <select wire:model.live="motivo" id="motivo"
                                 class="border rounded px-2 py-1 focus:outline-none focus:ring focus:ring-red-300 border-gray-200">
                                 <option value="">Seleccione un motivo...</option>
-                                @foreach ($motivosPredefinidos as $motivoOption)
-                                    <option value="{{ $motivoOption }}">{{ $motivoOption }}</option>
+                                @foreach ($motivosSalida as $motivoOption)
+                                    <option value="{{ $motivoOption->id_tipo_movimiento }}">
+                                        {{ $motivoOption->nombre_tipo_movimiento }}
+                                    </option>
                                 @endforeach
+                                <option value="otro">Otro (Especifique)</option>
                             </select>
 
                             @error('motivo')
@@ -154,8 +109,7 @@
                                 </p>
                             @enderror
 
-                            {{-- Campo para motivo personalizado --}}
-                            @if ($motivo === 'Otro')
+                            @if ($showMotivoPersonalizado)
                                 <div class="mt-2">
                                     <label for="motivo_personalizado" class="font-medium">Especifique el motivo
                                         <span class="text-red-500">*</span></label>
@@ -192,64 +146,280 @@
     </x-tabs>
 
     <div x-data x-init="$watch('$wire.showModal', value => {
-        if (value) { document.body.classList.add('overflow-hidden') } else { document.body.classList.remove('overflow-hidden') }
+        if (value) {
+            document.body.classList.add('overflow-hidden');
+            document.body.style.paddingRight = '0px';
+        } else {
+            document.body.classList.remove('overflow-hidden');
+            document.body.style.paddingRight = '';
+        }
     })">
         <div>
             @if ($showModal && $selectedSalida)
-                <div class="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
-                    <div class="bg-white rounded-xl shadow-xl w-1/2 p-6 max-h-[90vh] overflow-y-auto">
-                        <h2 class="text-xl font-bold mb-4">
-                            Detalles de salida #{{ $selectedSalida->id_movimiento }}
-                        </h2>
+                <!-- Fondo con backdrop -->
+                <div class="fixed inset-0 flex items-center justify-center z-50">
+                    <!-- Overlay -->
+                    <div class="absolute inset-0 bg-black/60 transition-opacity duration-300"
+                        wire:click="$set('showModal', false)"></div>
 
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <p><strong>Producto:</strong></p>
-                                <p class="text-gray-700">{{ $selectedSalida->lote->producto->nombre_producto }}
-                                </p>
+                    <!-- Modal -->
+                    <div class="relative bg-white rounded-xl shadow-2xl w-full max-w-4xl mx-4 max-h-[85vh] overflow-hidden transform transition-all duration-300 scale-100 opacity-100"
+                        x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 scale-95"
+                        x-transition:enter-end="opacity-100 scale-100" x-transition:leave="ease-in duration-200"
+                        x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95">
+
+                        <!-- Header -->
+                        <div class="px-6 py-4 flex items-center justify-between border-b border-gray-200 bg-white">
+                            <div class="flex items-center gap-3">
+                                <div class="bg-red-100 p-2 rounded-lg">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                                        viewBox="0 0 24 24" fill="none" stroke="red" stroke-width="2"
+                                        stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M5 12h14" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="text-lg font-medium text-gray-700">Detalles de Salida de Inventario</h3>
+                                    <p class="text-gray-500 text-sm">
+                                        Movimiento de inventario #{{ $selectedSalida->id_inventario_movimiento }} -
+                                        {{ $selectedSalida->fecha_movimiento->format('d/m/Y H:i') }}
+                                    </p>
+                                </div>
                             </div>
-                            <div>
-                                <p><strong>Cantidad:</strong></p>
-                                <p class="text-red-600 font-medium">-{{ $selectedSalida->cantidad_movimiento }}
-                                </p>
+                            <button wire:click="$set('showModal', false)"
+                                class="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                                </svg>
+                            </button>
+                        </div>
+
+                        <!-- Body -->
+                        <div class="overflow-y-auto p-6 bg-gray-50 max-h-[calc(85vh-120px)]">
+                            <!-- Información Principal -->
+                            <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-200 mb-6">
+                                <div class="flex items-center gap-2 mb-4 pb-3 border-b border-gray-200">
+                                    <div class="bg-blue-100 p-2 rounded-lg">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                                            viewBox="0 0 24 24" fill="none" stroke="blue" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                        </svg>
+                                    </div>
+                                    <h4 class="font-bold text-gray-800 text-lg">Información del Producto</h4>
+                                </div>
+
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <!-- Producto -->
+                                    <div class="flex flex-col">
+                                        <label class="text-sm font-medium text-gray-600 mb-1.5">Producto</label>
+                                        <div
+                                            class="p-3 bg-gray-50 rounded-lg border border-gray-200 flex items-center gap-2">
+                                            <p class="text-gray-800 font-medium">
+                                                {{ $selectedSalida->lote->producto->nombre_producto }}</p>
+                                            <p class="text-gray-500 text-sm mt-1">
+                                                ({{ $selectedSalida->lote->producto->unidad->nombre_unidad ?? 'Sin unidad' }})
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <!-- Cantidad -->
+                                    <div class="flex flex-col">
+                                        <label class="text-sm font-medium text-gray-600 mb-1.5">Cantidad
+                                            Retirada</label>
+                                        <div class="p-3 bg-red-50 rounded-lg border border-red-200">
+                                            <p class="text-red-700 font-bold text-lg">
+                                                -{{ $selectedSalida->cantidad_movimiento }}</p>
+                                        </div>
+                                    </div>
+
+                                    <!-- Lote -->
+                                    <div class="flex flex-col">
+                                        <label class="text-sm font-medium text-gray-600 mb-1.5">Código de Lote</label>
+                                        <div class="p-3 bg-purple-50 rounded-lg border border-purple-200">
+                                            <p class="text-purple-700 font-mono font-medium">
+                                                {{ $selectedSalida->lote->codigo_lote }}</p>
+                                        </div>
+                                    </div>
+
+                                    <!-- Stock Resultante -->
+                                    <div class="flex flex-col">
+                                        <label class="text-sm font-medium text-gray-600 mb-1.5">Stock
+                                            Resultante</label>
+                                        <div class="p-3 bg-green-50 rounded-lg border border-green-200">
+                                            <p class="text-green-700 font-medium">
+                                                {{ $selectedSalida->stock_resultante }}</p>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <div>
-                                <p><strong>Ubicación:</strong></p>
-                                <p class="capitalize">{{ $selectedSalida->ubicacion }}</p>
+
+                            <!-- Información de la Operación -->
+                            <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-200 mb-6">
+                                <div class="flex items-center gap-2 mb-4 pb-3 border-b border-gray-200">
+                                    <div class="bg-green-100 p-2 rounded-lg">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                                            viewBox="0 0 24 24" fill="none" stroke="green" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                                            <circle cx="9" cy="7" r="4" />
+                                            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                                            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                                        </svg>
+                                    </div>
+                                    <h4 class="font-bold text-gray-800 text-lg">Información de la Operación</h4>
+                                </div>
+
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <!-- Ubicación -->
+                                    <div class="flex flex-col">
+                                        <label class="text-sm font-medium text-gray-600 mb-1.5">Ubicación</label>
+                                        <div class="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                                            <p class="text-blue-700 font-medium capitalize">
+                                                {{ $selectedSalida->tipoUbicacion->nombre_tipo_ubicacion }}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <!-- Usuario -->
+                                    <div class="flex flex-col">
+                                        <label class="text-sm font-medium text-gray-600 mb-1.5">Registrado por</label>
+                                        <div class="p-3 bg-indigo-50 rounded-lg border border-indigo-200">
+                                            <p class="text-indigo-700 font-medium">
+                                                {{ $selectedSalida->trabajador->persona->user->usuario }}</p>
+                                            <p class="text-indigo-500 text-sm mt-1">
+                                                {{ $selectedSalida->trabajador->persona->nombre_completo ?? '' }}</p>
+                                        </div>
+                                    </div>
+
+                                    <!-- Fecha -->
+                                    <div class="flex flex-col">
+                                        <label class="text-sm font-medium text-gray-600 mb-1.5">Fecha y Hora</label>
+                                        <div
+                                            class="p-3 bg-orange-50 rounded-lg border border-orange-200 flex items-center gap-2">
+                                            <p class="text-orange-700 font-medium">
+                                                {{ $selectedSalida->fecha_movimiento->format('d/m/Y') }}</p>
+                                            <p class="text-orange-600 text-sm">
+                                                {{ $selectedSalida->fecha_movimiento->format('H:i:s') }}</p>
+                                        </div>
+                                    </div>
+
+                                    <!-- Tipo de Movimiento -->
+                                    <div class="flex flex-col">
+                                        <label class="text-sm font-medium text-gray-600 mb-1.5">Tipo de
+                                            Movimiento</label>
+                                        <div class="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                            <p class="text-gray-700 font-medium">
+                                                {{ $selectedSalida->tipo_movimiento->nombre_tipo_movimiento ?? 'Salida' }}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <div>
-                                <p><strong>Usuario:</strong></p>
-                                <p>{{ $selectedSalida->trabajador->persona->user->usuario }}</p>
-                            </div>
-                            <div class="col-span-2">
-                                <p><strong>Fecha:</strong></p>
-                                <p>{{ $selectedSalida->fecha_movimiento->format('d/m/Y H:i') }}</p>
-                            </div>
-                            <div class="col-span-2">
-                                <p><strong>Lote:</strong></p>
-                                <p>{{ $selectedSalida->lote->codigo_lote }}</p>
-                            </div>
-                            <div class="col-span-2">
-                                <p><strong>Motivo:</strong></p>
-                                <p class="text-gray-700 bg-gray-50 p-3 rounded-md mt-1">
+
+                            <!-- Motivo de Salida -->
+                            <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-200">
+                                <div class="flex items-center gap-2 mb-4 pb-3 border-b border-gray-200">
+                                    <div class="bg-yellow-100 p-2 rounded-lg">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                                            viewBox="0 0 24 24" fill="none" stroke="orange" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round">
+                                            <circle cx="12" cy="12" r="10" />
+                                            <line x1="12" y1="8" x2="12" y2="12" />
+                                            <line x1="12" y1="16" x2="12.01" y2="16" />
+                                        </svg>
+                                    </div>
+                                    <h4 class="font-bold text-gray-800 text-lg">Motivo de Salida</h4>
+                                </div>
+
+                                <div class="flex flex-col">
                                     @if (!empty($selectedSalida->motivo))
-                                        {{ $selectedSalida->motivo }}
+                                        <div class="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                                            <p class="text-gray-700 leading-relaxed">{{ $selectedSalida->motivo }}</p>
+                                        </div>
                                     @else
-                                        <span class="text-gray-400 italic">Sin motivo especificado</span>
+                                        <div
+                                            class="p-4 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                                                viewBox="0 0 24 24" fill="none" stroke="gray" stroke-width="2"
+                                                stroke-linecap="round" stroke-linejoin="round" class="mr-2">
+                                                <circle cx="12" cy="12" r="10" />
+                                                <line x1="12" y1="8" x2="12" y2="12" />
+                                                <line x1="12" y1="16" x2="12.01" y2="16" />
+                                            </svg>
+                                            <span class="text-gray-500 italic">Sin motivo especificado</span>
+                                        </div>
                                     @endif
-                                </p>
+                                </div>
                             </div>
                         </div>
-                        <div class="flex justify-end mt-4">
-                            <button wire:click="$set('showModal', false)"
-                                class="bg-gray-500 hover:bg-gray-700 text-white px-4 py-2 rounded-md">
-                                Cerrar
-                            </button>
+
+                        <!-- Footer -->
+                        <div class="border-t border-gray-200 bg-gray-50 px-6 py-4">
+                            <div class="flex justify-end gap-3">
+                                <button wire:click="$set('showModal', false)"
+                                    class="px-6 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-100 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2">
+                                    Cerrar
+                                </button>
+                                <button onclick="window.print()"
+                                    class="px-6 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 flex items-center gap-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                        stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="6 9 6 2 18 2 18 9" />
+                                        <path
+                                            d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+                                        <rect x="6" y="14" width="12" height="8" />
+                                    </svg>
+                                    Imprimir
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
             @endif
         </div>
     </div>
-    <x-loader />
+
+    <x-loader target="registrarSalida, updatedIdProducto" />
+
+    {{-- AGREGAR ESTE SCRIPT PARA MANEJAR EL STOCK --}}
+    @script
+        <script>
+            $wire.on('stockUpdated', () => {
+                // Forzar actualización del stock cuando se cambia de producto
+                console.log('Stock actualizado');
+            });
+        </script>
+    @endscript
+
+    @push('scripts')
+        <script>
+            Livewire.on('notify', (data) => {
+                Swal.fire({
+                    title: data.title,
+                    text: data.description,
+                    icon: data.type,
+                    timer: 2500,
+                    showConfirmButton: false,
+                    customClass: {
+                        popup: 'rounded-lg',
+                        title: 'text-lg font-semibold',
+                        htmlContainer: 'text-sm'
+                    }
+                });
+            });
+
+            // AGREGAR ESTE LISTENER PARA ACTUALIZAR EL STOCK EN TIEMPO REAL
+            document.addEventListener('livewire:init', () => {
+                Livewire.on('stockUpdated', () => {
+                    // El stock se actualiza automáticamente gracias a Livewire
+                    console.log('Stock actualizado automáticamente');
+                });
+            });
+        </script>
+    @endpush
 </div>

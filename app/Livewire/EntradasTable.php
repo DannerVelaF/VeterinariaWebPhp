@@ -5,6 +5,7 @@ namespace App\Livewire;
 use App\Models\InventarioMovimiento;
 use App\Models\Producto;
 use App\Models\Proveedor;
+use App\Models\TipoUbicacion;
 use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use PowerComponents\LivewirePowerGrid\Button;
@@ -28,8 +29,16 @@ final class EntradasTable extends PowerGridComponent
         config(['livewire-powergrid.filter' => 'outside']);
     }
 
+    public array $ubicaciones = [];
+    public array $proveedores = [];
+    public array $productos = [];
+
     public function setUp(): array
     {
+
+        $this->ubicaciones = TipoUbicacion::select('id_tipo_ubicacion as id', 'nombre_tipo_ubicacion as name')->get()->toArray();
+        $this->proveedores = Proveedor::select('id_proveedor as id', 'nombre_proveedor as name')->get()->toArray();
+        $this->productos = Producto::select('id_producto as id', 'nombre_producto as name')->get()->toArray();
 
         return [
             PowerGrid::header(),
@@ -76,7 +85,7 @@ final class EntradasTable extends PowerGridComponent
             ->add('ubicacion', function ($entrada) {
                 $icon = '';
 
-                if ($entrada->ubicacion === 'mostrador') {
+                if ($entrada->tipoUbicacion->nombre_tipo_ubicacion === 'mostrador') {
                     $icon = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
                                 viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
@@ -86,7 +95,7 @@ final class EntradasTable extends PowerGridComponent
                                 <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78
                                          a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12" />
                             </svg>';
-                } elseif ($entrada->ubicacion === 'almacen') {
+                } elseif ($entrada->tipoUbicacion->nombre_tipo_ubicacion === 'almacen') {
                     $icon = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
                                 viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
@@ -102,10 +111,10 @@ final class EntradasTable extends PowerGridComponent
 
                 return '<p class="capitalize flex items-center gap-2 text-sm">'
                     . $icon .
-                    '<span>' . $entrada->ubicacion . '</span>
+                    '<span>' . $entrada->tipoUbicacion->nombre_tipo_ubicacion . '</span>
                     </p>';
             })
-            ->add('usuario', fn($inventario) => $inventario->trabajador->persona->user->username)
+            ->add('usuario', fn($inventario) => $inventario->trabajador->persona->user->usuario)
             ->add('lote')
             ->add(
                 'fecha_recepcion',
@@ -155,11 +164,8 @@ final class EntradasTable extends PowerGridComponent
                 ->optionLabel('nombre_proveedor'),
 
 
-            Filter::select('ubicacion', 'ubicacion')
-                ->dataSource([
-                    ['id' => 'almacen', 'name' => 'Almacén'],
-                    ['id' => 'mostrador', 'name' => 'Mostrador'],
-                ])
+            Filter::select('ubicacion', 'inventario_movimientos.id_tipo_ubicacion')
+                ->dataSource($this->ubicaciones)  // ← Sin el array adicional
                 ->optionValue('id')
                 ->optionLabel('name'),
 
@@ -188,7 +194,7 @@ final class EntradasTable extends PowerGridComponent
 
                     // Filtrar por username con LIKE (contains)
                     return $query->whereHas('trabajador.persona.user', function ($q) use ($v) {
-                        $q->where('username', 'like', '%' . $v . '%');
+                        $q->where('usuario', 'like', '%' . $v . '%');
                     });
                 }),
             Filter::datePicker('fecha_recepcion', 'lotes.fecha_recepcion')
@@ -211,10 +217,10 @@ final class EntradasTable extends PowerGridComponent
     {
         return [
             Button::add('ver')
-                ->slot('👁 Ver')
+                ->slot('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-eye-icon lucide-eye"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>')
                 ->id()
                 ->class('pg-btn-white dark:bg-pg-primary-700')
-                ->dispatch('show-modal', ['rowId' => $row->id]),
+                ->dispatch('show-modal', ['rowId' => $row->id_inventario_movimiento]),
         ];
     }
 

@@ -103,8 +103,26 @@ class Trabajadores extends Component
                 'persona.nacionalidad' => 'required|string|max:50',
                 'persona.correo_electronico_personal' => 'required|email|max:150',
                 'persona.correo_electronico_secundario' => 'nullable|email|max:150',
-                'persona.numero_telefono_personal' => 'required|digits:9',
-                'persona.numero_telefono_secundario' => 'nullable|digits:9',
+                'persona.numero_telefono_personal' => [
+                    'required',
+                    'digits:9',
+                    'starts_with:9',
+                    function ($attribute, $value, $fail) {
+                        if (!empty($this->persona['numero_telefono_secundario']) && $value === $this->persona['numero_telefono_secundario']) {
+                            $fail('El número telefónico principal no puede ser igual al secundario.');
+                        }
+                    }
+                ],
+                'persona.numero_telefono_secundario' => [
+                    'nullable',
+                    'digits:9',
+                    'starts_with:9',
+                    function ($attribute, $value, $fail) {
+                        if (!empty($value) && $value === $this->persona['numero_telefono_personal']) {
+                            $fail('El número telefónico secundario no puede ser igual al principal.');
+                        }
+                    }
+                ],
             ], [
                 'required' => 'El campo es obligatorio.',
                 'before_or_equal' => 'El trabajador debe tener al menos 18 años de edad.',
@@ -115,6 +133,7 @@ class Trabajadores extends Component
                 'min' => 'El campo debe tener al menos :min caracteres.',
                 'exists' => 'El valor seleccionado no existe en la base de datos.',
                 'digits' => 'El campo debe tener exactamente :digits dígitos.',
+                'starts_with' => 'El número telefónico debe comenzar con 9.',
             ]);
         }
 
@@ -156,13 +175,32 @@ class Trabajadores extends Component
             $this->validateOnly($propertyName, [
                 'personaEditar.correo_electronico_personal' => 'required|email|max:150',
                 'personaEditar.correo_electronico_secundario' => 'nullable|email|max:150',
-                'personaEditar.numero_telefono_personal' => 'required|digits:9',
-                'personaEditar.numero_telefono_secundario' => 'nullable|digits:9',
+                'personaEditar.numero_telefono_personal' => [
+                    'required',
+                    'digits:9',
+                    'starts_with:9',
+                    function ($attribute, $value, $fail) {
+                        if (!empty($this->personaEditar['numero_telefono_secundario']) && $value === $this->personaEditar['numero_telefono_secundario']) {
+                            $fail('El número telefónico principal no puede ser igual al secundario.');
+                        }
+                    }
+                ],
+                'personaEditar.numero_telefono_secundario' => [
+                    'nullable',
+                    'digits:9',
+                    'starts_with:9',
+                    function ($attribute, $value, $fail) {
+                        if (!empty($value) && $value === $this->personaEditar['numero_telefono_personal']) {
+                            $fail('El número telefónico secundario no puede ser igual al principal.');
+                        }
+                    }
+                ],
             ], [
                 'required' => 'El campo es obligatorio.',
                 'email' => 'Ingrese un correo electrónico válido.',
                 'max' => 'El campo no puede exceder los :max caracteres.',
                 'digits' => 'El campo debe tener exactamente :digits dígitos.',
+                'starts_with' => 'El número telefónico debe comenzar con 9.',
             ]);
         }
 
@@ -309,8 +347,26 @@ class Trabajadores extends Component
                     // 📧 Contacto
                     'persona.correo_electronico_personal' => 'required|email|max:150',
                     'persona.correo_electronico_secundario' => 'nullable|email|max:150',
-                    'persona.numero_telefono_personal' => 'required|digits:9',
-                    'persona.numero_telefono_secundario' => 'nullable|digits:9',
+                    'persona.numero_telefono_personal' => [
+                        'required',
+                        'digits:9',
+                        'starts_with:9',
+                        function ($attribute, $value, $fail) {
+                            if (!empty($this->persona['numero_telefono_secundario']) && $value === $this->persona['numero_telefono_secundario']) {
+                                $fail('El número telefónico principal no puede ser igual al secundario.');
+                            }
+                        }
+                    ],
+                    'persona.numero_telefono_secundario' => [
+                        'nullable',
+                        'digits:9',
+                        'starts_with:9',
+                        function ($attribute, $value, $fail) {
+                            if (!empty($value) && $value === $this->persona['numero_telefono_personal']) {
+                                $fail('El número telefónico secundario no puede ser igual al principal.');
+                            }
+                        }
+                    ],
 
                     // 🏠 Dirección
                     'direccion.tipo_calle' => 'required|string|max:50',
@@ -338,6 +394,7 @@ class Trabajadores extends Component
                     'min' => 'El campo debe tener al menos :min caracteres.',
                     'exists' => 'El valor seleccionado no existe en la base de datos.',
                     'digits' => 'El campo debe tener exactamente :digits dígitos.',
+                    'starts_with' => 'El número telefónico debe comenzar con 9.',
                 ]
             )->validate();
 
@@ -521,8 +578,26 @@ class Trabajadores extends Component
                     // Persona (solo campos editables)
                     'personaEditar.correo_electronico_personal' => 'required|email|max:150',
                     'personaEditar.correo_electronico_secundario' => 'nullable|email|max:150',
-                    'personaEditar.numero_telefono_personal' => 'required|digits:9',
-                    'personaEditar.numero_telefono_secundario' => 'nullable|digits:9',
+                    'personaEditar.numero_telefono_personal' => [
+                        'required',
+                        'digits:9',
+                        'starts_with:9',
+                        function ($attribute, $value, $fail) {
+                            if (!empty($this->personaEditar['numero_telefono_secundario']) && $value === $this->personaEditar['numero_telefono_secundario']) {
+                                $fail('El número telefónico principal no puede ser igual al secundario.');
+                            }
+                        }
+                    ],
+                    'personaEditar.numero_telefono_secundario' => [
+                        'nullable',
+                        'digits:9',
+                        'starts_with:9',
+                        function ($attribute, $value, $fail) {
+                            if (!empty($value) && $value === $this->personaEditar['numero_telefono_personal']) {
+                                $fail('El número telefónico secundario no puede ser igual al principal.');
+                            }
+                        }
+                    ],
 
                     // Dirección
                     'direccionEditar.tipo_calle' => 'nullable|string|max:50',
@@ -546,6 +621,7 @@ class Trabajadores extends Component
                     'exists' => 'El valor seleccionado no existe en la base de datos.',
                     'digits' => 'El campo debe tener exactamente :digits dígitos.',
                     'numeric' => 'El campo debe ser un número válido.',
+                    'starts_with' => 'El número telefónico debe comenzar con 9.',
                 ]
             );
 
@@ -683,6 +759,8 @@ class Trabajadores extends Component
         $this->provinciaSeleccionada = '';
         $this->provincias = [];
         $this->distritos = [];
+        // Resetar errores
+        $this->resetErrorBag();
     }
 
     public function cerrarModal()

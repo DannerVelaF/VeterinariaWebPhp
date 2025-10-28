@@ -71,7 +71,8 @@ final class ProveedorTable extends PowerGridComponent
             Column::make('Ruc', 'ruc')
                 ->sortable()
                 ->searchable(),
-
+            Column::make('Estado', 'estado')
+                ->sortable(),
             Column::make('Telefono', 'telefono_contacto')
                 ->sortable()
                 ->searchable(),
@@ -85,13 +86,7 @@ final class ProveedorTable extends PowerGridComponent
                 ->searchable(),
             Column::make('Fecha Registro', 'fecha_registro')
                 ->sortable(),
-            Column::make('Estado', 'estado_boolean')
-                ->sortable()
-                ->searchable()
-                ->toggleable(
-                    trueLabel: 'activo',
-                    falseLabel: 'inactivo'
-                ),
+
 
             Column::action('Action')
         ];
@@ -99,7 +94,23 @@ final class ProveedorTable extends PowerGridComponent
 
     public function filters(): array
     {
-        return [];
+        return [
+            Filter::inputText('nombre_proveedor')
+                ->placeholder('Buscar por nombre'),
+            Filter::select('estado', 'Estado')
+                ->dataSource([
+                    ['id' => 'activo', 'name' => 'activo'],
+                    ['id' => 'inactivo', 'name' => 'inactivo'],
+                ])
+                ->optionValue('id')
+                ->optionLabel('name'),
+            Filter::inputText('ruc')
+                ->placeholder('Buscar por RUC'),
+            Filter::inputText('telefono_contacto')
+                ->placeholder('Buscar por teléfono'),
+            Filter::inputText('correo_electronico_empresa')
+                ->placeholder('Buscar por correo'),
+        ];
     }
 
     #[\Livewire\Attributes\On('edit')]

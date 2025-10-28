@@ -194,7 +194,7 @@
                                         <!-- Cantidad -->
                                         <div class="col-span-3 flex flex-col">
                                             <label class="text-sm font-medium text-gray-600">Cantidad</label>
-                                            <input type="number" min="1" step="0.01"
+                                            <input type="number" min="1" step="1"
                                                 wire:model="detalleCompra.{{ $index }}.cantidad"
                                                 class="border rounded px-2 py-1 focus:outline-none focus:ring focus:ring-blue-300 border-gray-200">
                                             @error('detalleCompra.' . $index . '.cantidad')
@@ -315,11 +315,21 @@
                             </div>
                             <div>
                                 <label class="font-medium">Fecha de orden</label>
-                                <p class="text-gray-700">{{ $compraSeleccionada->proveedor->nombre }}</p>
+                                <p class="text-gray-700">{{ $compraSeleccionada->fecha_compra }}</p>
+                            </div>
+                            <div>
+                                <label class="font-medium">Proveedor</label>
+                                <p class="text-gray-700">{{ $compraSeleccionada->proveedor->nombre_proveedor }}</p>
+                            </div>
+                            <div>
+                                <label class="font-medium">Nro Factura</label>
+                                <p class="text-gray-700">{{ $compraSeleccionada->numero_factura }}</p>
                             </div>
                             <div>
                                 <label class="font-medium">Estado</label>
-                                <p class="text-gray-700">{{ $compraSeleccionada->estado }}</p>
+                                <p class="text-gray-700 capitalize">
+                                    {{ $compraSeleccionada->estadoCompra->nombre_estado_compra }}
+                                </p>
                             </div>
                             <div>
                                 <label class="font-medium">Fecha de compra</label>

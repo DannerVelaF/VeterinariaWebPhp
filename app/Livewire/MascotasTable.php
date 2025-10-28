@@ -5,7 +5,9 @@ namespace App\Livewire;
 use App\Models\Mascota;
 use App\Models\Raza;
 use App\Models\Cliente;
+use App\Models\Especie;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 use PowerComponents\LivewirePowerGrid\Button;
 use PowerComponents\LivewirePowerGrid\Column;
 use PowerComponents\LivewirePowerGrid\Facades\Filter;
@@ -20,9 +22,14 @@ final class MascotasTable extends PowerGridComponent
     public string $primaryKey = 'id_mascota';
     public string $sortField = 'id_mascota';
 
+    public array $especies = [];
+    public array $razas = [];
+
+
     public function setUp(): array
     {
-
+        $this->especies = Especie::select('id_especie as id', 'nombre_especie as name')->get()->toArray();
+        $this->razas = Raza::select('id_raza as id', 'nombre_raza as name')->get()->toArray();
         return [
             PowerGrid::header(),
             PowerGrid::footer()
@@ -41,6 +48,7 @@ final class MascotasTable extends PowerGridComponent
         return [
             'cliente' => ['nombre_cliente'],
             'raza' => ['nombre_raza'],
+            'especie' => ['nombre_especie'],
         ];
     }
 
@@ -58,7 +66,8 @@ final class MascotasTable extends PowerGridComponent
             ->add('estado_boolean', fn($row) => $row->estado === 'activo')
             ->add('fecha_registro')
             ->add('cliente_nombre', fn($mascota) => $mascota->cliente?->persona->nombre . ' ' . $mascota->cliente->persona->apellido_paterno . ' ' . $mascota->cliente->persona->apellido_materno ?? '-')
-            ->add('raza_nombre', fn($mascota) => $mascota->raza?->nombre_raza ?? '-');
+            ->add('raza_nombre', fn($mascota) => $mascota->raza?->nombre_raza ?? '-')
+            ->add('especie_nombre', fn($mascota) => $mascota->raza?->especie->nombre_especie ?? '-');
     }
 
     public function columns(): array
@@ -75,6 +84,8 @@ final class MascotasTable extends PowerGridComponent
 
             Column::make('Raza', 'raza_nombre')
                 ->sortable(),
+            Column::make('Especie', 'especie_nombre')
+                ->sortable(),
 
             Column::make('Sexo', 'sexo')
                 ->sortable(),
@@ -89,9 +100,6 @@ final class MascotasTable extends PowerGridComponent
             Column::make('Fecha Nacimiento', 'fecha_nacimiento')
                 ->sortable(),
 
-            Column::make('Estado', 'estado_boolean')
-                ->sortable()
-                ->toggleable(trueLabel: 'activo', falseLabel: 'inactivo'),
 
             Column::make('Fecha Registro', 'fecha_registro')
                 ->sortable(),
@@ -118,6 +126,7 @@ final class MascotasTable extends PowerGridComponent
                 ])
                 ->optionValue('id')
                 ->optionLabel('name'),
+
         ];
     }
 

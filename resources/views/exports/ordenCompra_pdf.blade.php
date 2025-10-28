@@ -59,7 +59,8 @@
         <div class="title">Orden de Compra</div>
         <p><strong>Número de orden:</strong> {{ $compra->codigo }}</p>
         <p><strong>Proveedor:</strong> {{ $compra->proveedor->nombre_proveedor }}</p>
-        <p><strong>Estado:</strong class="capitalize"> {{ $compra->estado }}</p>
+        <p><strong>Nro Factura:</strong> {{ $compra->numero_factura }}</p>
+        <p><strong>Estado:</strong class="capitalize"> {{ $compra->estadoCompra->nombre_estado_compra }}</p>
         <p><strong>Fecha de compra:</strong> {{ $compra->fecha_compra }}</p>
         <p><strong>Fecha de registro:</strong> {{ $compra->fecha_registro }}</p>
 

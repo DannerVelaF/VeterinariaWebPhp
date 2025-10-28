@@ -21,12 +21,12 @@ final class SalidasTable extends PowerGridComponent
     public bool $showFilters = true;
     public string $primaryKey = 'id_inventario_movimiento';
     public string $sortField = 'id_inventario_movimiento';
+    public array $productos = [];
     public function setUp(): array
     {
-
+        $this->productos = Producto::select('id_producto as id', 'nombre_producto as name')->get()->toArray();
         return [
-            PowerGrid::header()
-                ->showSearchInput(),
+            PowerGrid::header(),
             PowerGrid::footer()
                 ->showPerPage()
                 ->showRecordCount(),
@@ -37,6 +37,7 @@ final class SalidasTable extends PowerGridComponent
     {
 
         $tipoSalida = \App\Models\TipoMovimiento::where("nombre_tipo_movimiento", "salida")->firstOrFail();
+
 
         return InventarioMovimiento::query()
             ->with(["trabajador", "lote.producto"])
@@ -61,14 +62,14 @@ final class SalidasTable extends PowerGridComponent
             ->add('fecha_movimiento_formatted', fn($inventario) =>
             $inventario->fecha_movimiento?->format('d/m/Y H:i'))
             ->add('ubicacion', function ($salida) {
-                $icon = $salida->ubicacion === 'mostrador'
+                $icon = $salida->tipoUbicacion->nombre_tipo_ubicacion === 'mostrador'
                     ? '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shopping-cart text-gray-600"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>'
                     : '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-warehouse text-gray-600"><path d="M18 21V10a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1v11"/><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 1.132-1.803l7.95-3.974a2 2 0 0 1 1.837 0l7.948 3.974A2 2 0 0 1 22 8z"/><path d="M6 13h12"/><path d="M6 17h12"/></svg>';
 
-                return '<p class="capitalize flex items-center gap-2 text-sm">' . $icon . '<span>' . $salida->ubicacion . '</span></p>';
+                return '<p class="capitalize flex items-center gap-2 text-sm">' . $icon . '<span>' . $salida->tipoUbicacion->nombre_tipo_ubicacion . '</span></p>';
             })
             ->add('motivo', fn($inventario) => $inventario->motivo)
-            ->add('usuario', fn($inventario) => $inventario->trabajador->persona->user->username)
+            ->add('usuario', fn($inventario) => $inventario->trabajador->persona->user->usuario)
             ->add('lote', fn($inventario) => $inventario->lote->codigo_lote);
     }
 
@@ -89,10 +90,6 @@ final class SalidasTable extends PowerGridComponent
 
             Column::make("Ubicación", "ubicacion"),
 
-            Column::make("Motivo", "motivo")
-                ->sortable()
-                ->searchable(),
-
             Column::make('Usuario', 'usuario'),
             Column::make('Lote', 'lote'),
             Column::action('Acciones')
@@ -101,18 +98,7 @@ final class SalidasTable extends PowerGridComponent
 
     public function filters(): array
     {
-        $motivosPredefinidos = [
-            'Venta',
-            'Producto defectuoso',
-            'Cambio',
-            'Devolución',
-            'Merma',
-            'Ajuste de inventario',
-            'Donación',
-            'Uso interno',
-            'Promoción',
-            'Otro'
-        ];
+
 
         return [
             Filter::select('ubicacion')
@@ -122,20 +108,24 @@ final class SalidasTable extends PowerGridComponent
                 ])
                 ->optionValue('id')
                 ->optionLabel('name'),
-
-            Filter::select('motivo', 'Motivo')
-                ->dataSource(collect($motivosPredefinidos)->map(function ($motivo) {
-                    return ['id' => $motivo, 'name' => $motivo];
-                })->toArray())
-                ->optionValue('id')
-                ->optionLabel('name'),
+            Filter::datePicker('fecha_movimiento', 'fecha_movimiento')
+                ->params([
+                    'dateFormat' => 'Y-m-d',
+                    'locale'     => 'es',
+                    'enableTime' => false,
+                ]),
 
             Filter::select('producto', 'productos.id_producto')
                 ->dataSource(
-                    Producto::orderBy('nombre_producto')->get()->toArray()
+                    $this->productos
                 )
-                ->optionValue('id_producto')
-                ->optionLabel('nombre_producto'),
+                ->optionValue('id')
+                ->optionLabel('name')
+                ->builder(function (Builder $query, $value) {
+                    return $query->whereHas("lote.producto", function ($q) use ($value) {
+                        $q->where('id_producto', $value);
+                    });
+                }),
 
         ];
     }
@@ -144,10 +134,10 @@ final class SalidasTable extends PowerGridComponent
     {
         return [
             Button::add('ver')
-                ->slot('👁 Ver')
+                ->slot('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-eye-icon lucide-eye"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>')
                 ->id()
                 ->class('pg-btn-white dark:bg-pg-primary-700')
-                ->dispatch('show-modal', ['rowId' => $row->id]),
+                ->dispatch('show-modal', ['rowId' => $row->id_inventario_movimiento]),
         ];
     }
 }

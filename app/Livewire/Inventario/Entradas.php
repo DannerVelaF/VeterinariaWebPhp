@@ -170,7 +170,7 @@ class Entradas extends Component
             'lote.cantidad_total'     => [
                 'required',
                 'numeric',
-                'min:0.01',
+                'min:1',
                 'max:999999999.99',
                 function ($attribute, $value, $fail) {
                     if ($this->productoSeleccionado && $value > $this->productoSeleccionado['cantidad']) {
@@ -189,15 +189,13 @@ class Entradas extends Component
                 },
             ],
             "lote.observacion"        => "max:1000",
-            'lote.precio_compra'      => 'required|numeric|min:0.01',
+            'lote.precio_compra'      => 'required|numeric|min:1',
         ], [
             'lote.cantidad_total.required' => 'Debe ingresar la cantidad.',
             'lote.cantidad_total.numeric' => 'La cantidad debe ser un número.',
             'lote.cantidad_total.min' => 'La cantidad debe ser mayor a 0.',
             'lote.cantidad_total.max' => 'La cantidad ingresada es demasiado grande.',
         ]);
-
-
 
         try {
             DB::transaction(function () {
@@ -217,19 +215,21 @@ class Entradas extends Component
                     "cantidad_almacenada" => $this->ubicacion === 'almacen' ? $this->lote['cantidad_total'] : 0,
                     "cantidad_mostrada"  => $this->ubicacion === 'mostrador' ? $this->lote['cantidad_total'] : 0,
                 ]);
+
                 // Obtener el trabajador del usuario autenticado
                 $trabajador = auth()->user()->persona->trabajador;
 
                 if (!$trabajador) {
                     throw new \Exception("El usuario autenticado no tiene un trabajador asociado");
                 }
+
                 $tipoUbicacion = TipoUbicacion::where('nombre_tipo_ubicacion', $this->ubicacion)->first();
 
                 if (!$tipoUbicacion) {
                     throw new \Exception("Tipo de ubicación no encontrado: " . $this->ubicacion);
                 }
-                $tipoEntrada = TipoMovimiento::where('nombre_tipo_movimiento', 'entrada')->first();
 
+                $tipoEntrada = TipoMovimiento::where('nombre_tipo_movimiento', 'entrada')->first();
 
                 InventarioMovimiento::create([
                     "cantidad_movimiento"       => $this->lote['cantidad_total'],
@@ -238,45 +238,61 @@ class Entradas extends Component
                     "fecha_registro"            => now(),
                     "id_lote"                   => $lote->id_lote,
                     "id_trabajador"             => $trabajador->id_trabajador,
-                    "id_tipo_movimiento"        => TipoMovimiento::where("nombre_tipo_movimiento", "entrada")->first()->id_tipo_movimiento,
-                    "id_tipo_ubicacion"         => $tipoUbicacion->id_tipo_ubicacion, // <--- Aquí va
+                    "id_tipo_movimiento"        => $tipoEntrada->id_tipo_movimiento,
+                    "id_tipo_ubicacion"         => $tipoUbicacion->id_tipo_ubicacion,
                     "tipo_movimiento_asociado"  => DetalleCompra::class,
+                    "motivo" => $this->lote['observacion'],
                     "id_movimiento_asociado"    => $this->lote['id_detalle_compra'],
                 ]);
-
 
                 $detalle = DetalleCompra::find($this->lote['id_detalle_compra']);
 
                 // Cantidad total pedida en la OC
                 $cantidadOC = $detalle->cantidad;
 
-                $tipoEntrada = TipoMovimiento::where("nombre_tipo_movimiento", "entrada")->first();
-
+                // Sumar todas las entradas registradas para este detalle (incluyendo la actual)
                 $cantidadRecibida = InventarioMovimiento::where('id_tipo_movimiento', $tipoEntrada->id_tipo_movimiento)
                     ->where('id_movimiento_asociado', $detalle->id_detalle_compra)
                     ->sum('cantidad_movimiento');
 
-                // Cantidad nueva que vamos a registrar
-                $cantidadNueva = $this->lote['cantidad_total'];
-
-                // Solo cambiar a "recibido" si se ha alcanzado o superado la cantidad de la OC
-                if ($cantidadRecibida + $cantidadNueva >= $cantidadOC) {
+                // ✅ CORRECCIÓN: Solo cambiar a "recibido" si se ha alcanzado EXACTAMENTE la cantidad de la OC
+                // No usar >= porque con entradas parciales podría marcar como recibido antes de tiempo
+                if ($cantidadRecibida >= $cantidadOC) {
                     $estadoRecibido = EstadoDetalleCompra::where('nombre_estado_detalle_compra', 'recibido')->first();
                     $detalle->id_estado_detalle_compra = $estadoRecibido->id_estado_detalle_compra;
                     $detalle->save();
+                } else {
+                    // ✅ Si aún hay cantidades pendientes, mantener como "pendiente"
+                    $estadoPendiente = EstadoDetalleCompra::where('nombre_estado_detalle_compra', 'pendiente')->first();
+                    $detalle->id_estado_detalle_compra = $estadoPendiente->id_estado_detalle_compra;
+                    $detalle->save();
                 }
 
-
-                // Verificar si todos los detalles de la orden de compra están recibidos
+                // ✅ CORRECCIÓN: Verificar si todos los detalles de la orden de compra están recibidos
                 $ordenCompra = $detalle->compra;
+
+                // Contar detalles que NO están en estado "recibido"
                 $pendientes = $ordenCompra->detalleCompra()
                     ->whereHas('estadoDetalleCompra', function ($q) {
-                        $q->where('nombre_estado_detalle_compra', 'pendiente');
+                        $q->where('nombre_estado_detalle_compra', '!=', 'recibido');
                     })->count();
 
+                // ✅ Solo marcar la OC como "recibida" cuando NO hay pendientes
                 if ($pendientes === 0) {
                     $estadoRecibido = EstadoCompras::where('nombre_estado_compra', 'recibido')->first();
                     $ordenCompra->id_estado_compra = $estadoRecibido->id_estado_compra;
+                    $ordenCompra->save();
+                } else {
+                    // ✅ Si hay al menos un detalle pendiente, la OC debe mantenerse como "aprobada" o "parcial"
+                    $estadoAprobado = EstadoCompras::where('nombre_estado_compra', 'aprobado')->first();
+                    // O si tienes un estado "parcial" para OC con entregas parciales
+                    $estadoParcial = EstadoCompras::where('nombre_estado_compra', 'parcial')->first();
+
+                    if ($estadoParcial) {
+                        $ordenCompra->id_estado_compra = $estadoParcial->id_estado_compra;
+                    } else {
+                        $ordenCompra->id_estado_compra = $estadoAprobado->id_estado_compra;
+                    }
                     $ordenCompra->save();
                 }
             });

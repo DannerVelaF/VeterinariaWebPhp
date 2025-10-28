@@ -44,4 +44,17 @@ class Producto extends Model
     {
         return $this->hasMany(Lotes::class, 'id_producto', 'id_producto');
     }
+
+    public function getStockActualAttribute()
+    {
+        if (!$this->relationLoaded('lotes')) {
+            $this->load(['lotes' => function ($query) {
+                $query->where('estado', 'activo');
+            }]);
+        }
+
+        return $this->lotes->sum(function ($lote) {
+            return (float)$lote->cantidad_almacenada + (float)$lote->cantidad_mostrada;
+        });
+    }
 }
