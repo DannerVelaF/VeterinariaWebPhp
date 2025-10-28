@@ -67,7 +67,7 @@ final class EspeciesTable extends PowerGridComponent
     public function filters(): array
     {
         return [
-            Filter::inputText('nombre_especie', 'Nombre'),
+            Filter::inputText('nombre_especie'),
 
         ];
     }
