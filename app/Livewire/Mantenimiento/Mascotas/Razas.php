@@ -2,7 +2,6 @@
 
 namespace App\Livewire\Mantenimiento\Mascotas;
 
-use App\Http\Requests\RazaRequest;
 use App\Models\Especie;
 use App\Models\Raza;
 use Exception;
@@ -10,11 +9,9 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Livewire\Component;
-use Illuminate\Support\Str;
 
 class Razas extends Component
 {
-
     protected $listeners = [
         'especiesUpdated' => 'refreshData',
     ];
@@ -34,7 +31,7 @@ class Razas extends Component
         'nombre_raza' => '',
         'descripcion' => '',
         'id_especie' => '',
-    ]; // array para editar
+    ];
 
     public function mount()
     {
@@ -47,21 +44,59 @@ class Razas extends Component
         $this->especies = Especie::where('estado', 'activo')->get();
     }
 
-    public $messajes = [
-        'raza.nombre_raza.required' => 'El nombre de la raza es obligatorio.',
-        'raza.nombre_raza.max' => 'El nombre no puede tener más de 100 caracteres.',
-        'raza.descripcion.max' => 'La descripción no puede tener más de 1000 caracteres.',
-        'raza.id_especie.required' => 'Debe seleccionar una especie.',
-        'raza.id_especie.exists' => 'La especie seleccionada no es válida.',
-    ];
+    // Validación en tiempo real para registro
+    public function updated($propertyName)
+    {
+        // Validar campos de raza en registro
+        if (str_starts_with($propertyName, 'raza.')) {
+            $this->validateOnly($propertyName, [
+                'raza.nombre_raza' => 'required|string|max:100|unique:razas,nombre_raza',
+                'raza.descripcion' => 'nullable|string|max:1000',
+                'raza.id_especie' => 'required|exists:especies,id_especie',
+            ], $this->getValidationMessages());
+        }
+
+        // Validar campos de raza en edición
+        if (str_starts_with($propertyName, 'razaEditar.')) {
+            $this->validateOnly($propertyName, [
+                'razaEditar.nombre_raza' => 'required|string|max:100|unique:razas,nombre_raza,' . ($this->razaEditar['id_raza'] ?? 'NULL') . ',id_raza',
+                'razaEditar.descripcion' => 'nullable|string|max:1000',
+                'razaEditar.id_especie' => 'required|exists:especies,id_especie',
+            ], $this->getValidationMessages());
+        }
+    }
+
+    // Mensajes de validación centralizados
+    private function getValidationMessages()
+    {
+        return [
+            'raza.nombre_raza.required' => 'El nombre de la raza es obligatorio.',
+            'raza.nombre_raza.string' => 'El nombre debe ser texto.',
+            'raza.nombre_raza.max' => 'El nombre no puede tener más de 100 caracteres.',
+            'raza.nombre_raza.unique' => 'Esta raza ya está registrada.',
+            'raza.descripcion.string' => 'La descripción debe ser texto.',
+            'raza.descripcion.max' => 'La descripción no puede tener más de 1000 caracteres.',
+            'raza.id_especie.required' => 'Debe seleccionar una especie.',
+            'raza.id_especie.exists' => 'La especie seleccionada no es válida.',
+
+            'razaEditar.nombre_raza.required' => 'El nombre de la raza es obligatorio.',
+            'razaEditar.nombre_raza.string' => 'El nombre debe ser texto.',
+            'razaEditar.nombre_raza.max' => 'El nombre no puede tener más de 100 caracteres.',
+            'razaEditar.nombre_raza.unique' => 'Esta raza ya está registrada.',
+            'razaEditar.descripcion.string' => 'La descripción debe ser texto.',
+            'razaEditar.descripcion.max' => 'La descripción no puede tener más de 1000 caracteres.',
+            'razaEditar.id_especie.required' => 'Debe seleccionar una especie.',
+            'razaEditar.id_especie.exists' => 'La especie seleccionada no es válida.',
+        ];
+    }
 
     public function guardarRaza()
     {
         $validatedData = $this->validate([
-            'raza.nombre_raza' => 'required|string|max:100',
+            'raza.nombre_raza' => 'required|string|max:100|unique:razas,nombre_raza',
             'raza.descripcion' => 'nullable|string|max:1000',
             'raza.id_especie' => 'required|exists:especies,id_especie',
-        ]);
+        ], $this->getValidationMessages());
 
         try {
             DB::transaction(function () use ($validatedData) {
@@ -72,7 +107,6 @@ class Razas extends Component
                 ]);
             });
 
-            // Si llegamos aquí, todo se guardó correctamente
             $this->dispatch('razaRegistrada');
             $this->dispatch('notify', title: 'Success', description: 'Raza registrada con éxito', type: 'success');
             $this->resetForm();
@@ -90,6 +124,10 @@ class Razas extends Component
             'descripcion' => '',
             'id_especie' => '',
         ];
+
+        // Limpiar errores de validación
+        $this->resetErrorBag();
+        $this->resetValidation();
     }
 
     #[\Livewire\Attributes\On('abrirModalRaza')]
@@ -107,14 +145,13 @@ class Razas extends Component
         $this->modalEditar = true;
     }
 
-
     public function guardarEdicion()
     {
         $validatedData = Validator::make($this->razaEditar, [
-            'nombre_raza' => 'required|string|max:100',
+            'nombre_raza' => 'required|string|max:100|unique:razas,nombre_raza,' . $this->razaEditar['id_raza'] . ',id_raza',
             'descripcion' => 'nullable|string|max:1000',
             'id_especie' => 'required|exists:especies,id_especie',
-        ])->validate();
+        ], $this->getValidationMessages())->validate();
 
         try {
             DB::transaction(function () use ($validatedData) {
@@ -126,9 +163,8 @@ class Razas extends Component
                 ]);
             });
 
-            // Si llegamos aquí, todo se guardó correctamente
             $this->dispatch('notify', title: 'Success', description: 'Raza actualizada con éxito', type: 'success');
-            $this->modalEditar = false;
+            $this->cerrarModal();
             $this->dispatch('razasUpdated');
         } catch (Exception $e) {
             $this->dispatch('notify', title: 'Error', description: 'Error al actualizar la raza: ' . $e->getMessage(), type: 'error');
@@ -146,6 +182,10 @@ class Razas extends Component
             'descripcion' => '',
             'id_especie' => '',
         ];
+
+        // Limpiar errores de validación
+        $this->resetErrorBag();
+        $this->resetValidation();
     }
 
     public function especie($especieId)

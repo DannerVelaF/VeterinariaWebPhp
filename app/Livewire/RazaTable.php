@@ -43,6 +43,7 @@ final class RazaTable extends PowerGridComponent
         return PowerGrid::fields()
             ->add('id_raza')
             ->add('nombre_raza')
+            ->add("Especie", fn($row) => $row->especie->nombre_especie)
             ->add('descripcion')
             ->add('estado')
             ->add('estado_boolean', fn($row) => $row->estado === 'activo')
@@ -57,6 +58,10 @@ final class RazaTable extends PowerGridComponent
                 ->searchable(),
 
             Column::make('Nombre', 'nombre_raza')
+                ->sortable()
+                ->searchable(),
+
+            Column::make('Especie', 'Especie')
                 ->sortable()
                 ->searchable(),
 

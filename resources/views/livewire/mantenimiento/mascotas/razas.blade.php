@@ -54,7 +54,7 @@
                                 class="text-red-500">*</span></label>
                         <input type="text" id="nombre_raza" name="nombre_raza" maxlength="255"
                             class="border rounded px-2 py-1 focus:outline-none focus:ring focus:ring-blue-300 @error('raza.nombre_raza') border-red-500 @enderror"
-                            placeholder="Ej. Labrador, Persa, Pastor Alemán..." wire:model="raza.nombre_raza">
+                            placeholder="Ej. Labrador, Persa, Pastor Alemán..." wire:model.change="raza.nombre_raza">
                         @error('raza.nombre_raza')
                             <p class="text-red-500 text-xs italic mt-1">{{ $message }}</p>
                         @enderror
@@ -82,7 +82,7 @@
                         <label for="descripcion" class="font-bold mb-1">Descripción</label>
                         <textarea id="descripcion" name="descripcion" rows="4" maxlength="1000"
                             class="border rounded px-2 py-1 focus:outline-none focus:ring focus:ring-blue-300 @error('raza.descripcion') border-red-500 @enderror"
-                            placeholder="Describe brevemente esta raza..." wire:model="raza.descripcion"></textarea>
+                            placeholder="Describe brevemente esta raza..." wire:model.change="raza.descripcion"></textarea>
                         @error('raza.descripcion')
                             <p class="text-red-500 text-xs italic mt-1">{{ $message }}</p>
                         @enderror
@@ -174,7 +174,7 @@
                                 <span>Nombre de la raza</span>
                                 <span class="text-red-500 ml-1">*</span>
                             </label>
-                            <input readonly type="text" wire:model="razaEditar.nombre_raza"
+                            <input readonly type="text" wire:model.change="razaEditar.nombre_raza"
                                 class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors placeholder-gray-400"
                                 placeholder="Ingresa el nombre de la raza">
                             @error('razaEditar.nombre_raza')
@@ -193,7 +193,7 @@
                         <!-- Campo Descripción -->
                         <div class="flex flex-col">
                             <label class="text-sm font-medium text-gray-700 mb-2">Descripción</label>
-                            <textarea wire:model="razaEditar.descripcion" rows="4"
+                            <textarea wire:model.change="razaEditar.descripcion" rows="4"
                                 class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors placeholder-gray-400 resize-none"
                                 placeholder="Describe las características de la raza..."></textarea>
                             @error('razaEditar.descripcion')
@@ -249,5 +249,5 @@
             });
         </script>
     @endpush
-    <x-loader />
+    <x-loader target="guardarRaza, guardarEdicion" />
 </x-panel>
