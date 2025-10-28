@@ -56,17 +56,10 @@ final class EspeciesTable extends PowerGridComponent
             Column::make('Nombre', 'nombre_especie')
                 ->sortable()
                 ->searchable(),
-            Column::make('Estado', 'estado')
-                ->sortable()
-                ->searchable(),
             Column::make('Fecha de Registro', 'fecha_registro')
                 ->searchable()
                 ->sortable(),
 
-            Column::make('Estado', 'estado_boolean')
-                ->sortable()
-                ->searchable()
-                ->toggleable('activo', 'inactivo'),
             Column::action('Acciones')
         ];
     }
@@ -75,13 +68,7 @@ final class EspeciesTable extends PowerGridComponent
     {
         return [
             Filter::inputText('nombre_especie', 'Nombre'),
-            Filter::select('estado', 'Estado')
-                ->dataSource([
-                    ['id' => 'activo', 'name' => 'activo'],
-                    ['id' => 'inactivo', 'name' => 'inactivo'],
-                ])
-                ->optionValue('id')
-                ->optionLabel('name'),
+
         ];
     }
 

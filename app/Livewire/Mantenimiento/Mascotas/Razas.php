@@ -107,11 +107,6 @@ class Razas extends Component
         $this->modalEditar = true;
     }
 
-    public function cerrarModal($razaId)
-    {
-        $this->modalEditar = false;
-    }
-
 
     public function guardarEdicion()
     {
@@ -141,7 +136,7 @@ class Razas extends Component
         }
     }
 
-    public function cerrarModlal()
+    public function cerrarModal()
     {
         $this->modalEditar = false;
         $this->razaSeleccionado = null;

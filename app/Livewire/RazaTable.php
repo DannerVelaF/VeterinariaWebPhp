@@ -60,15 +60,6 @@ final class RazaTable extends PowerGridComponent
                 ->sortable()
                 ->searchable(),
 
-            Column::make('Estado', 'estado')
-                ->sortable()
-                ->searchable(),
-
-            Column::make('Estado', 'estado_boolean')
-                ->sortable()
-                ->searchable()
-                ->toggleable('activo', 'inactivo'),
-
             Column::make('Fecha Registro', 'fecha_registro')
                 ->sortable()
                 ->searchable(),
@@ -81,13 +72,7 @@ final class RazaTable extends PowerGridComponent
     {
         return [
             Filter::inputText('nombre_raza', 'Nombre'),
-            Filter::select('estado', 'Estado')
-                ->dataSource([
-                    ['id' => 'activo', 'name' => 'activo'],
-                    ['id' => 'inactivo', 'name' => 'inactivo'],
-                ])
-                ->optionValue('id')
-                ->optionLabel('name'),
+
         ];
     }
 

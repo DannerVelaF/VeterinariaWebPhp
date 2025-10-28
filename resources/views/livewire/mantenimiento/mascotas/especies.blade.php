@@ -1,4 +1,8 @@
-<x-panel title="Gestión de Especies de Mascotas" class="max-w-7xl mx-auto">
+<x-panel title="Gestión de Especies de Mascotas" class="max-w-7xl mx-auto" :breadcrumbs="[
+    ['label' => 'Inicio', 'href' => '/', 'icon' => 'home'],
+    ['label' => 'Clientes', 'href' => route('mantenimiento.clientes'), 'icon' => 'ellipsis-horizontal'],
+    ['label' => 'Gestión de Especies', 'href' => route('mantenimiento.clientes.especies')],
+]">
     <x-tabs :tabs="['listado' => '📋 Detalle de especies registradas', 'registro' => '➕ Registrar nueva especie']" default="listado">
         <!-- TAB 1: LISTADO -->
         <x-tab name="listado">

@@ -1,5 +1,9 @@
 <div>
-    <x-panel title="Gestión de Mascotas" class="max-w-7xl mx-auto">
+    <x-panel title="Gestión de Mascotas" class="max-w-7xl mx-auto" :breadcrumbs="[
+        ['label' => 'Inicio', 'href' => '/', 'icon' => 'home'],
+        ['label' => 'Clientes', 'href' => route('mantenimiento.clientes'), 'icon' => 'ellipsis-horizontal'],
+        ['label' => 'Gestión de Mascotas', 'href' => route('mantenimiento.clientes.mascotas')],
+    ]">
         <x-tabs :tabs="['listado' => '📋 Listado de mascotas registradas', 'registro' => '➕ Registrar nueva mascota']" default="listado">
 
             <!-- TAB 1: LISTADO -->

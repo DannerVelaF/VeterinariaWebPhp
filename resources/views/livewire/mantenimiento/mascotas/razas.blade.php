@@ -1,4 +1,8 @@
-<x-panel title="Gestión de Razas de Mascotas" class="max-w-7xl mx-auto">
+<x-panel title="Gestión de Razas de Mascotas" class="max-w-7xl mx-auto" :breadcrumbs="[
+    ['label' => 'Inicio', 'href' => '/', 'icon' => 'home'],
+    ['label' => 'Clientes', 'href' => route('mantenimiento.clientes'), 'icon' => 'ellipsis-horizontal'],
+    ['label' => 'Gestión de Razas', 'href' => route('mantenimiento.clientes.razas')],
+]">
     <x-tabs :tabs="['listado' => '📋 Detalle de razas registradas', 'registro' => '➕ Registrar nueva raza']" default="listado">
 
         <!-- TAB 1: LISTADO -->
@@ -170,7 +174,7 @@
                                 <span>Nombre de la raza</span>
                                 <span class="text-red-500 ml-1">*</span>
                             </label>
-                            <input type="text" wire:model="razaEditar.nombre_raza"
+                            <input readonly type="text" wire:model="razaEditar.nombre_raza"
                                 class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors placeholder-gray-400"
                                 placeholder="Ingresa el nombre de la raza">
                             @error('razaEditar.nombre_raza')

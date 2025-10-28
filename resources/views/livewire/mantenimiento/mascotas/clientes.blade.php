@@ -1,4 +1,8 @@
-<x-panel title="Gestión de clientes">
+<x-panel title="Gestión de clientes" :breadcrumbs="[
+    ['label' => 'Inicio', 'href' => '/', 'icon' => 'home'],
+    ['label' => 'Mantenimiento', 'href' => '#'],
+    ['label' => 'Gestión de clientes'],
+]">
     <x-tabs :tabs="['listado' => '📋 Detalle clientes registrados', 'registro' => '➕ Registrar nuevo cliente']" default="listado">
         <!-- TAB 1: LISTADO -->
         <x-tab name="listado">
