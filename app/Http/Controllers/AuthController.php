@@ -156,8 +156,6 @@ class AuthController extends Controller
 
                 // Enviar el correo
                 Mail::to($correo)->send(new PasswordResetMail($resetLink));
-
-                Log::info('Correo de recuperación enviado', ['correo' => $correo]);
             } else {
                 Log::info('Solicitud de recuperación para correo no existente', ['correo' => $correo]);
             }
@@ -167,10 +165,6 @@ class AuthController extends Controller
                 'message' => 'Si el correo existe, recibirás un enlace de recuperación'
             ], 200);
         } catch (\Exception $e) {
-            Log::error('Error al recuperar la contraseña', [
-                'error' => $e->getMessage(),
-                'correo' => $request->email ?? 'No proporcionado' // Cambiado aquí también
-            ]);
 
             return response()->json([
                 'message' => 'Si el correo existe, recibirás un enlace de recuperación'
@@ -224,7 +218,6 @@ class AuthController extends Controller
                 'message' => $isValid ? 'Token válido' : 'Token inválido'
             ], 200);
         } catch (\Exception $e) {
-            Log::error('Error al verificar token', ['error' => $e->getMessage()]);
             return response()->json([
                 'valid' => false,
                 'message' => 'Error al verificar el enlace'
@@ -296,14 +289,14 @@ class AuthController extends Controller
 
             DB::commit();
 
-            Log::info('Contraseña restablecida correctamente', ['email' => $request->email]);
+
 
             return response()->json([
                 'message' => 'Contraseña restablecida correctamente'
             ], 200);
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Error al restablecer contraseña', ['error' => $e->getMessage()]);
+
             return response()->json([
                 'error' => 'Error al restablecer la contraseña',
                 'detalle' => $e->getMessage()

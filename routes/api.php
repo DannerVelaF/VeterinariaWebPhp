@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\Ventas\ProductosController;
 use App\Http\Controllers\Ventas\VentasController;
 use App\Http\Middleware\VerifyToken;
 use App\Mail\ConfirmarCorreoMail;
@@ -41,8 +42,9 @@ Route::prefix('/v1')->group(function () {
         Route::post("/reset-password", [AuthController::class, "resetPassword"]);
     });
 
-    Route::get('/ventas', [VentasController::class, "registrarVenta"]);
 
-
-    Route::middleware([VerifyToken::class])->group(function () {});
+    Route::middleware([VerifyToken::class])->group(function () {
+        Route::get("/productos", [ProductosController::class, "index"]);
+        Route::get("/categorias-productos", [ProductosController::class, "categorias"]);
+    });
 });
