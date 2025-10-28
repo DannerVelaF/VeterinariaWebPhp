@@ -5,6 +5,7 @@ namespace App\Livewire;
 use App\Models\InventarioMovimiento;
 use App\Models\Producto;
 use App\Models\TipoMovimiento;
+use App\Models\TipoUbicacion;
 use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use PowerComponents\LivewirePowerGrid\Button;
@@ -22,8 +23,11 @@ final class SalidasTable extends PowerGridComponent
     public string $primaryKey = 'id_inventario_movimiento';
     public string $sortField = 'id_inventario_movimiento';
     public array $productos = [];
+    public array $ubicaciones = [];
     public function setUp(): array
     {
+        $this->ubicaciones = TipoUbicacion::select('id_tipo_ubicacion as id', 'nombre_tipo_ubicacion as name')->get()->toArray();
+
         $this->productos = Producto::select('id_producto as id', 'nombre_producto as name')->get()->toArray();
         return [
             PowerGrid::header(),
@@ -101,13 +105,11 @@ final class SalidasTable extends PowerGridComponent
 
 
         return [
-            Filter::select('ubicacion')
-                ->dataSource([
-                    ['id' => 'almacen', 'name' => 'Almacén'],
-                    ['id' => 'mostrador', 'name' => 'Mostrador'],
-                ])
+            Filter::select('ubicacion', 'inventario_movimientos.id_tipo_ubicacion')
+                ->dataSource($this->ubicaciones)  // ← Sin el array adicional
                 ->optionValue('id')
                 ->optionLabel('name'),
+
             Filter::datePicker('fecha_movimiento', 'fecha_movimiento')
                 ->params([
                     'dateFormat' => 'Y-m-d',

@@ -232,7 +232,7 @@
                                 wire:click="$set('showModalDetalle', false)"></div>
 
                             <!-- Modal -->
-                            <div class="relative bg-white rounded-xl shadow-2xl w-full max-w-4xl mx-4 max-h-[85vh] overflow-hidden transform transition-all duration-300 scale-100 opacity-100"
+                            <div class="relative bg-white rounded-xl shadow-2xl w-full max-w-4xl mx-4 max-h-[90vh] overflow-hidden transform transition-all duration-300 scale-100 opacity-100"
                                 x-transition:enter="ease-out duration-300"
                                 x-transition:enter-start="opacity-0 scale-95"
                                 x-transition:enter-end="opacity-100 scale-100"
@@ -373,7 +373,7 @@
                                                     por</label>
                                                 <div class="p-3 bg-indigo-50 rounded-lg border border-indigo-200">
                                                     <p class="text-indigo-700 font-medium">
-                                                        {{ $selectedEntrada->trabajador->persona->user->username }}</p>
+                                                        {{ $selectedEntrada->trabajador->persona->user->usuario }}</p>
                                                     <p class="text-indigo-500 text-sm mt-1">
                                                         {{ $selectedEntrada->trabajador->persona->nombre_completo ?? '' }}
                                                     </p>
@@ -384,7 +384,8 @@
                                             <div class="flex flex-col">
                                                 <label class="text-sm font-medium text-gray-600 mb-1.5">Fecha y
                                                     Hora</label>
-                                                <div class="p-3 bg-orange-50 rounded-lg border border-orange-200">
+                                                <div
+                                                    class="p-3 bg-orange-50 rounded-lg border border-orange-200 flex items-center gap-2">
                                                     <p class="text-orange-700 font-medium">
                                                         {{ $selectedEntrada->fecha_movimiento->format('d/m/Y') }}</p>
                                                     <p class="text-orange-600 text-sm">
@@ -443,7 +444,11 @@
                                                     Recepción</label>
                                                 <div class="p-3 bg-purple-50 rounded-lg border border-purple-200">
                                                     <p class="text-purple-700 font-medium">
-                                                        {{ $selectedEntrada->lote->fecha_recepcion->format('d/m/Y') }}
+                                                        @if ($selectedEntrada->lote->fecha_recepcion)
+                                                            {{ \Carbon\Carbon::parse($selectedEntrada->lote->fecha_recepcion)->format('d/m/Y') }}
+                                                        @else
+                                                            <span class="text-gray-500 italic">No especificada</span>
+                                                        @endif
                                                     </p>
                                                 </div>
                                             </div>
@@ -453,12 +458,12 @@
                                                 <label class="text-sm font-medium text-gray-600 mb-1.5">Fecha de
                                                     Vencimiento</label>
                                                 <div
-                                                    class="p-3 bg-{{ $selectedEntrada->lote->fecha_vencimiento && $selectedEntrada->lote->fecha_vencimiento->isPast() ? 'red' : 'blue' }}-50 rounded-lg border border-{{ $selectedEntrada->lote->fecha_vencimiento && $selectedEntrada->lote->fecha_vencimiento->isPast() ? 'red' : 'blue' }}-200">
+                                                    class="p-3 bg-{{ $selectedEntrada->lote->fecha_vencimiento && \Carbon\Carbon::parse($selectedEntrada->lote->fecha_vencimiento)->isPast() ? 'red' : 'blue' }}-50 rounded-lg border border-{{ $selectedEntrada->lote->fecha_vencimiento && \Carbon\Carbon::parse($selectedEntrada->lote->fecha_vencimiento)->isPast() ? 'red' : 'blue' }}-200">
                                                     <p
-                                                        class="text-{{ $selectedEntrada->lote->fecha_vencimiento && $selectedEntrada->lote->fecha_vencimiento->isPast() ? 'red' : 'blue' }}-700 font-medium">
+                                                        class="text-{{ $selectedEntrada->lote->fecha_vencimiento && \Carbon\Carbon::parse($selectedEntrada->lote->fecha_vencimiento)->isPast() ? 'red' : 'blue' }}-700 font-medium">
                                                         @if ($selectedEntrada->lote->fecha_vencimiento)
-                                                            {{ $selectedEntrada->lote->fecha_vencimiento->format('d/m/Y') }}
-                                                            @if ($selectedEntrada->lote->fecha_vencimiento->isPast())
+                                                            {{ \Carbon\Carbon::parse($selectedEntrada->lote->fecha_vencimiento)->format('d/m/Y') }}
+                                                            @if (\Carbon\Carbon::parse($selectedEntrada->lote->fecha_vencimiento)->isPast())
                                                                 <span
                                                                     class="text-xs text-red-600 ml-2">(Vencido)</span>
                                                             @endif
@@ -506,18 +511,7 @@
                                             class="px-6 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-100 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2">
                                             Cerrar
                                         </button>
-                                        <button onclick="window.print()"
-                                            class="px-6 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 flex items-center gap-2">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
-                                                viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                <polyline points="6 9 6 2 18 2 18 9" />
-                                                <path
-                                                    d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
-                                                <rect x="6" y="14" width="12" height="8" />
-                                            </svg>
-                                            Imprimir
-                                        </button>
+
                                     </div>
                                 </div>
                             </div>
