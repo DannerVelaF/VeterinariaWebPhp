@@ -36,6 +36,9 @@ Route::prefix('/v1')->group(function () {
     Route::prefix('/auth')->group(function () {
         Route::post('/registro', [AuthController::class, "registro"]);
         Route::post("/login", [AuthController::class, "inicioSesion"]);
+        Route::post("/forgot-password", [AuthController::class, "recuperarContrasena"]);
+        Route::post("/verify-reset-token", [AuthController::class, "verifyResetToken"]);
+        Route::post("/reset-password", [AuthController::class, "resetPassword"]);
     });
 
     Route::get('/ventas', [VentasController::class, "registrarVenta"]);
