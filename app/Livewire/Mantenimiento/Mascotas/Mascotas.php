@@ -5,6 +5,7 @@ namespace App\Livewire\Mantenimiento\Mascotas;
 use App\Models\Mascota;
 use App\Models\Raza;
 use App\Models\Clientes;
+use App\Models\Colores;
 use App\Models\Especie;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -26,10 +27,11 @@ class Mascotas extends Component
         'nombre_mascota' => '',
         'fecha_nacimiento' => '',
         'sexo' => '',
-        'color_primario' => '',
+        'id_color' => '', // CAMBIO: De color_primario a id_color
         'peso_actual' => '',
         'observacion' => '',
     ];
+
 
     public $mascotaEditar = [
         'id_mascota' => null,
@@ -39,7 +41,7 @@ class Mascotas extends Component
         'nombre_mascota' => '',
         'fecha_nacimiento' => '',
         'sexo' => '',
-        'color_primario' => '',
+        'id_color' => '', // CAMBIO: De color_primario a id_color
         'peso_actual' => '',
         'observacion' => '',
     ];
@@ -49,6 +51,7 @@ class Mascotas extends Component
     public $resultadosClientes = [];
     public $clienteSeleccionado = null;
     public $razas = [];
+    public $colores = [];
     public $especies = [];
     public $mascotaSeleccionada = null;
     public $modalEditar = false;
@@ -66,8 +69,8 @@ class Mascotas extends Component
                 'mascota.id_raza' => 'required|exists:razas,id_raza',
                 'mascota.nombre_mascota' => 'required|string|max:150|regex:/^[\pL\s\-]+$/u',
                 'mascota.fecha_nacimiento' => 'nullable|date|before_or_equal:today',
-                'mascota.sexo' => 'nullable|in:Macho,Hembra',
-                'mascota.color_primario' => 'nullable|string|max:100',
+                'mascota.sexo' => 'nullable|in:macho,hembra',
+                'mascota.id_color' => 'required|exists:colores,id_color', // CAMBIO: Validación para id_color
                 'mascota.peso_actual' => 'nullable|numeric|min:0',
                 'mascota.observacion' => 'nullable|string|max:500',
             ], [
@@ -84,8 +87,8 @@ class Mascotas extends Component
                 'mascota.fecha_nacimiento.date' => 'La fecha de nacimiento debe ser una fecha válida.',
                 'mascota.fecha_nacimiento.before_or_equal' => 'La fecha de nacimiento no puede ser futura.',
                 'mascota.sexo.in' => 'El sexo debe ser Macho o Hembra.',
-                'mascota.color_primario.string' => 'El color primario debe ser texto.',
-                'mascota.color_primario.max' => 'El color primario no puede tener más de 100 caracteres.',
+                'mascota.id_color.required' => 'El color es obligatorio.', // NUEVO mensaje
+                'mascota.id_color.exists' => 'El color seleccionado no es válido.', // NUEVO mensaje
                 'mascota.peso_actual.numeric' => 'El peso debe ser un número.',
                 'mascota.peso_actual.min' => 'El peso no puede ser negativo.',
                 'mascota.observacion.string' => 'La observación debe ser texto.',
@@ -101,8 +104,8 @@ class Mascotas extends Component
                 'mascotaEditar.id_especie' => 'required|integer|exists:especies,id_especie',
                 'mascotaEditar.id_raza' => 'required|integer|exists:razas,id_raza',
                 'mascotaEditar.fecha_nacimiento' => 'nullable|date|before_or_equal:today',
-                'mascotaEditar.sexo' => 'required|string|in:Macho,Hembra',
-                'mascotaEditar.color_primario' => 'nullable|string|max:100',
+                'mascotaEditar.sexo' => 'required|string|in:macho,macho',
+                'mascotaEditar.id_color' => 'required|exists:colores,id_color', // CAMBIO
                 'mascotaEditar.peso_actual' => 'nullable|numeric|min:0',
                 'mascotaEditar.observacion' => 'nullable|string|max:500',
             ], [
@@ -123,8 +126,8 @@ class Mascotas extends Component
                 'mascotaEditar.sexo.required' => 'El sexo es obligatorio.',
                 'mascotaEditar.sexo.string' => 'El sexo debe ser texto.',
                 'mascotaEditar.sexo.in' => 'El sexo debe ser Macho o Hembra.',
-                'mascotaEditar.color_primario.string' => 'El color primario debe ser texto.',
-                'mascotaEditar.color_primario.max' => 'El color primario no puede tener más de 100 caracteres.',
+                'mascotaEditar.id_color.required' => 'El color es obligatorio.', // NUEVO
+                'mascotaEditar.id_color.exists' => 'El color seleccionado no es válido.', // NUEVO
                 'mascotaEditar.peso_actual.numeric' => 'El peso debe ser un número.',
                 'mascotaEditar.peso_actual.min' => 'El peso no puede ser negativo.',
                 'mascotaEditar.observacion.string' => 'La observación debe ser texto.',
@@ -158,12 +161,12 @@ class Mascotas extends Component
         'razas' => 'collection',
         'especies' => 'collection',
     ];
+
     public function mount()
     {
         $this->especies = Especie::where('estado', 'activo')->get();
         $this->razas = collect();
-
-        // Inicializar clienteSeleccionado como null
+        $this->colores = Colores::orderBy('nombre_color', 'asc')->get(); // Cargar colores ordenados
         $this->clienteSeleccionado = null;
     }
 
@@ -356,8 +359,8 @@ class Mascotas extends Component
             'mascota.id_raza' => 'required|exists:razas,id_raza',
             'mascota.nombre_mascota' => 'required|string|max:150|regex:/^[\pL\s\-]+$/u',
             'mascota.fecha_nacimiento' => 'required|date|before_or_equal:today',
-            'mascota.sexo' => 'required|in:Macho,Hembra',
-            'mascota.color_primario' => 'required|string|max:100',
+            'mascota.sexo' => 'required|in:macho,hembra',
+            'mascota.id_color' => 'required|exists:colores,id_color', // CAMBIO
             'mascota.peso_actual' => 'required|numeric|min:0',
             'mascota.observacion' => 'nullable|string|max:500',
         ], [
@@ -376,9 +379,8 @@ class Mascotas extends Component
             'mascota.fecha_nacimiento.before_or_equal' => 'La fecha de nacimiento no puede ser futura.',
             'mascota.sexo.required' => 'El sexo es obligatorio.',
             'mascota.sexo.in' => 'El sexo debe ser Macho o Hembra.',
-            'mascota.color_primario.required' => 'El color primario es obligatorio.',
-            'mascota.color_primario.string' => 'El color primario debe ser texto.',
-            'mascota.color_primario.max' => 'El color primario no puede tener más de 100 caracteres.',
+            'mascota.id_color.required' => 'El color es obligatorio.', // NUEVO
+            'mascota.id_color.exists' => 'El color seleccionado no es válido.', // NUEVO
             'mascota.peso_actual.required' => 'El peso actual es obligatorio.',
             'mascota.peso_actual.numeric' => 'El peso debe ser un número.',
             'mascota.peso_actual.min' => 'El peso no puede ser negativo.',
@@ -394,7 +396,7 @@ class Mascotas extends Component
                     'nombre_mascota' => $validatedData['mascota']['nombre_mascota'],
                     'fecha_nacimiento' => $validatedData['mascota']['fecha_nacimiento'] ?? null,
                     'sexo' => $validatedData['mascota']['sexo'] ?? null,
-                    'color_primario' => $validatedData['mascota']['color_primario'] ?? null,
+                    'id_color' => $validatedData['mascota']['id_color'], // CAMBIO
                     'peso_actual' => $validatedData['mascota']['peso_actual'] ?? null,
                     'observacion' => $validatedData['mascota']['observacion'] ?? null,
                     'estado' => 'activo',
@@ -433,7 +435,7 @@ class Mascotas extends Component
             'nombre_mascota' => '',
             'fecha_nacimiento' => '',
             'sexo' => '',
-            'color_primario' => '',
+            'id_color' => '', // CAMBIO
             'peso_actual' => '',
             'observacion' => '',
         ];
@@ -448,7 +450,6 @@ class Mascotas extends Component
         $this->edad_meses = null;
         $this->edad_humana = null;
 
-        // Limpiar errores de validación
         $this->resetErrorBag();
         $this->resetValidation();
     }
@@ -457,7 +458,7 @@ class Mascotas extends Component
     #[\Livewire\Attributes\On('abrirModalMascota')]
     public function abrirModalMascota($mascotaId)
     {
-        $this->mascotaSeleccionada = Mascota::with('raza.especie')->findOrFail($mascotaId);
+        $this->mascotaSeleccionada = Mascota::with('raza.especie', 'color')->findOrFail($mascotaId); // Incluir relación color
         $this->mascotaEditar = [
             'id_mascota' => $mascotaId,
             'id_cliente' => $this->mascotaSeleccionada->id_cliente,
@@ -466,7 +467,7 @@ class Mascotas extends Component
             'nombre_mascota' => $this->mascotaSeleccionada->nombre_mascota,
             'fecha_nacimiento' => $this->mascotaSeleccionada->fecha_nacimiento,
             'sexo' => $this->mascotaSeleccionada->sexo,
-            'color_primario' => $this->mascotaSeleccionada->color_primario,
+            'id_color' => $this->mascotaSeleccionada->id_color, // CAMBIO
             'peso_actual' => $this->mascotaSeleccionada->peso_actual,
             'observacion' => $this->mascotaSeleccionada->observacion,
         ];
@@ -515,14 +516,13 @@ class Mascotas extends Component
             'nombre_mascota' => '',
             'fecha_nacimiento' => '',
             'sexo' => '',
-            'color_primario' => '',
+            'id_color' => '', // CAMBIO
             'peso_actual' => '',
             'observacion' => '',
         ];
         $this->mascotaSeleccionada = null;
         $this->razas = collect();
 
-        // Limpiar errores
         $this->resetErrorBag();
         $this->resetValidation();
     }
@@ -535,8 +535,8 @@ class Mascotas extends Component
             'mascotaEditar.id_especie' => 'required|integer|exists:especies,id_especie',
             'mascotaEditar.id_raza' => 'required|integer|exists:razas,id_raza',
             'mascotaEditar.fecha_nacimiento' => 'nullable|date|before_or_equal:today',
-            'mascotaEditar.sexo' => 'required|string|in:Macho,Hembra',
-            'mascotaEditar.color_primario' => 'nullable|string|max:100',
+            'mascotaEditar.sexo' => 'required|string|in:macho,hembra',
+            'mascotaEditar.id_color' => 'required|exists:colores,id_color', // CAMBIO
             'mascotaEditar.peso_actual' => 'nullable|numeric|min:0',
             'mascotaEditar.observacion' => 'nullable|string|max:500',
         ], [
@@ -557,8 +557,8 @@ class Mascotas extends Component
             'mascotaEditar.sexo.required' => 'El sexo es obligatorio.',
             'mascotaEditar.sexo.string' => 'El sexo debe ser texto.',
             'mascotaEditar.sexo.in' => 'El sexo debe ser Macho o Hembra.',
-            'mascotaEditar.color_primario.string' => 'El color primario debe ser texto.',
-            'mascotaEditar.color_primario.max' => 'El color primario no puede tener más de 100 caracteres.',
+            'mascotaEditar.id_color.required' => 'El color es obligatorio.',
+            'mascotaEditar.id_color.exists' => 'El color seleccionado no es válido.',
             'mascotaEditar.peso_actual.numeric' => 'El peso debe ser un número.',
             'mascotaEditar.peso_actual.min' => 'El peso no puede ser negativo.',
             'mascotaEditar.observacion.string' => 'La observación debe ser texto.',
@@ -573,7 +573,7 @@ class Mascotas extends Component
             'nombre_mascota' => $this->mascotaEditar['nombre_mascota'],
             'fecha_nacimiento' => $this->mascotaEditar['fecha_nacimiento'],
             'sexo' => $this->mascotaEditar['sexo'],
-            'color_primario' => $this->mascotaEditar['color_primario'],
+            'id_color' => $this->mascotaEditar['id_color'], // CAMBIO
             'peso_actual' => $this->mascotaEditar['peso_actual'],
             'observacion' => $this->mascotaEditar['observacion'],
         ]);
@@ -588,6 +588,7 @@ class Mascotas extends Component
         return view('livewire.mantenimiento.mascotas.mascotas', [
             'razas' => $this->razas,
             'especies' => $this->especies,
+            'colores' => $this->colores, // Pasar colores a la vista
             'edad_meses' => $this->edad_meses,
             'edad_humana' => $this->edad_humana,
         ]);

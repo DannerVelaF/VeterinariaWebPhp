@@ -276,8 +276,8 @@
                             <select wire:model="mascota.sexo"
                                 class="border rounded px-3 py-2 focus:ring focus:ring-blue-300">
                                 <option value="">Seleccione</option>
-                                <option value="Macho">Macho</option>
-                                <option value="Hembra">Hembra</option>
+                                <option value="macho">Macho</option>
+                                <option value="hembra">Hembra</option>
                             </select>
                             @error('mascota.sexo')
                                 <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
@@ -307,11 +307,16 @@
 
                         <!-- COLOR PRIMARIO -->
                         <div class="flex flex-col">
-                            <label class="font-semibold mb-1">Color Primario</span></label>
-                            <input type="text" wire:model.change="mascota.color_primario"
-                                placeholder="Ej. Negro, Blanco, Marrón..."
-                                class="border rounded px-3 py-2 focus:ring focus:ring-blue-300 @error('mascota.color_primario') border-red-500 @enderror">
-                            @error('mascota.color_primario')
+                            <label class="font-semibold mb-1">Color Primario <span
+                                    class="text-red-500">*</span></label>
+                            <select wire:model="mascota.id_color"
+                                class="border rounded px-3 py-2 focus:ring focus:ring-blue-300 @error('mascota.id_color') border-red-500 @enderror">
+                                <option value="">Seleccione un color</option>
+                                @foreach ($colores as $color)
+                                    <option value="{{ $color->id_color }}">{{ $color->nombre_color }}</option>
+                                @endforeach
+                            </select>
+                            @error('mascota.id_color')
                                 <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                             @enderror
                         </div>
@@ -434,9 +439,14 @@
                             <!-- Color primario -->
                             <div>
                                 <label class="text-sm font-medium text-gray-700 mb-2">Color primario</label>
-                                <input type="text" wire:model.change="mascotaEditar.color_primario"
+                                <select wire:model.change="mascotaEditar.id_color"
                                     class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
-                                @error('mascotaEditar.color_primario')
+                                    <option value="">Seleccione un color</option>
+                                    @foreach ($colores as $color)
+                                        <option value="{{ $color->id_color }}">{{ $color->nombre_color }}</option>
+                                    @endforeach
+                                </select>
+                                @error('mascotaEditar.id_color')
                                     <span class="text-red-500 text-xs">{{ $message }}</span>
                                 @enderror
                             </div>

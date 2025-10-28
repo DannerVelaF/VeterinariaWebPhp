@@ -59,7 +59,7 @@ final class MascotasTable extends PowerGridComponent
             ->add('nombre_mascota')
             ->add('fecha_nacimiento')
             ->add('sexo')
-            ->add('color_primario')
+            ->add('color_primario', fn($mascota) => $mascota->color?->nombre_color ?? '-')
             ->add('peso_actual')
             ->add('observacion')
             ->add('estado')

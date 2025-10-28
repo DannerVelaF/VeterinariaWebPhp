@@ -19,10 +19,10 @@ class Mascota extends Model
         'nombre_mascota',
         'fecha_nacimiento',
         'sexo',
-        'color_primario',
         'peso_actual',
         'observacion',
         'estado',
+        "id_color",
         'fecha_registro',
         'fecha_actualizacion',
     ];
@@ -35,5 +35,10 @@ class Mascota extends Model
     public function raza()
     {
         return $this->belongsTo(Raza::class, "id_raza");
+    }
+
+    public function color()
+    {
+        return $this->belongsTo(Colores::class, "id_color");
     }
 }
