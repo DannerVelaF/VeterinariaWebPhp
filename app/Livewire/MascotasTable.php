@@ -111,7 +111,7 @@ final class MascotasTable extends PowerGridComponent
     public function filters(): array
     {
         return [
-            Filter::inputText('nombre_mascota', 'Nombre'),
+            Filter::inputText('nombre_mascota'),
             Filter::select('estado', 'Estado')
                 ->dataSource([
                     ['id' => 'activo', 'name' => 'activo'],
