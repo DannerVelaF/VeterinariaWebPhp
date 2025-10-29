@@ -46,5 +46,7 @@ Route::prefix('/v1')->group(function () {
     Route::middleware([VerifyToken::class])->group(function () {
         Route::get("/productos", [ProductosController::class, "index"]);
         Route::get("/categorias-productos", [ProductosController::class, "categorias"]);
+        Route::get('/productos-categorias', [ProductosController::class, 'countProductosCategorias']);
+        Route::get('/productos-destacados', [ProductosController::class, 'getProductosDestacados']);
     });
 });

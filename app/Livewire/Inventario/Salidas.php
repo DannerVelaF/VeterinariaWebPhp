@@ -41,7 +41,7 @@ class Salidas extends Component
             $query->where('estado', 'activo');
         }])->where("estado", "activo")->get();
 
-        $this->motivosSalida = TipoMovimiento::all();
+        $this->motivosSalida = TipoMovimiento::whereNotIn('nombre_tipo_movimiento', ['Salida', 'Entrada'])->get();
         $this->cargarSalidasRecientes();
     }
 

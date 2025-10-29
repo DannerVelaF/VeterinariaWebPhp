@@ -7,6 +7,7 @@ use App\Http\Resources\ProductoResponse;
 use App\Models\CategoriaProducto;
 use App\Models\Producto;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class ProductosController extends Controller
@@ -40,6 +41,55 @@ class ProductosController extends Controller
             Log::error('Error al obtener productos', ['error' => $e->getMessage()]);
             return response()->json([
                 'error' => 'Error al obtener productos',
+                'detalle' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function countProductosCategorias()
+    {
+        try {
+            $categorias = DB::table('productos as p')
+                ->join('categoria_productos as cp', 'p.id_categoria_producto', '=', 'cp.id_categoria_producto')
+                ->where('p.estado', 'activo')
+                ->select(
+                    'cp.id_categoria_producto as id_categoria_producto',
+                    'cp.nombre_categoria_producto as nombre_categoria',
+                    DB::raw('COUNT(p.id_producto) as cantidad_productos')
+                )
+                ->groupBy('cp.id_categoria_producto', 'cp.nombre_categoria_producto')
+                ->get();
+
+            return response()->json($categorias);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Error al obtener categorías',
+                'detalle' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getProductosDestacados()
+    {
+        try {
+            $productos = Producto::with(['categoria_producto', 'unidad', 'lotes'])
+                ->where('estado', 'activo')
+                ->whereHas('lotes', function ($query) {
+                    $query->where('estado', 'activo')
+                        ->where(function ($q) {
+                            $q->where('cantidad_almacenada', '>', 0)
+                                ->orWhere('cantidad_mostrada', '>', 0);
+                        });
+                })
+                ->orderBy('fecha_registro', 'desc')
+                ->limit(6)
+                ->get();
+
+            return response()->json($productos);
+        } catch (\Exception $e) {
+            Log::error('Error al obtener productos destacados', ['error' => $e->getMessage()]);
+            return response()->json([
+                'error' => 'Error al obtener productos destacados',
                 'detalle' => $e->getMessage()
             ], 500);
         }
