@@ -12,6 +12,24 @@ class VerificarPermiso
     public function handle(Request $request, Closure $next)
     {
         $user = Auth::user();
+
+        if (!$user) {
+            return redirect()
+                ->route('login')
+                ->with('error', 'Por favor inicia sesión para acceder a esta sección.');
+        }
+
+        // 🔴 VERIFICAR SI EL USUARIO ESTÁ ACTIVO
+        if ($user->estado !== 'activo') {
+            Auth::logout(); // Cerrar sesión del usuario inactivo
+
+            return redirect()
+                ->route('login')
+                ->with('error', 'Tu cuenta está inactiva. Por favor contacta con el administrador.');
+        }
+
+
+
         $rutaActual = $request->route()->getName();
 
         // Buscar la opción asociada a la ruta

@@ -20,6 +20,8 @@ use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
+
+
     public function registro(Request $request)
     {
         try {
