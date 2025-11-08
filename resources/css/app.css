@@ -13,6 +13,44 @@
 @import 'flatpickr/dist/flatpickr.min.css';
 @import '../../vendor/livewire/flux/dist/flux.css';
 
+@import 'tom-select/dist/css/tom-select.css';
+
+/* Estilos personalizados para Tom Select */
+.ts-control {
+  border: 1px solid #d1d5db !important;
+  border-radius: 0.5rem !important;
+  padding: 0.5rem 0.75rem !important;
+  background: white !important;
+}
+
+.ts-control.multi {
+  padding: 0.25rem 0.75rem !important;
+}
+
+.ts-wrapper.multi .ts-control > div {
+  background: #3b82f6 !important;
+  color: white !important;
+  border-radius: 0.375rem !important;
+  margin: 0.125rem !important;
+  padding: 0.25rem 0.5rem !important;
+  font-size: 0.75rem !important;
+}
+
+.ts-dropdown {
+  border: 1px solid #d1d5db !important;
+  border-radius: 0.5rem !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+}
+
+.ts-dropdown .option {
+  padding: 0.5rem 0.75rem !important;
+}
+
+.ts-dropdown .active {
+  background: #3b82f6 !important;
+  color: white !important;
+}
+
 @theme {
   --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif,
     'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';

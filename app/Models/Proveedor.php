@@ -36,7 +36,8 @@ class Proveedor extends Model
 
     public function productos()
     {
-        return $this->hasMany(Producto::class, "id_proveedor");
+        return $this->belongsToMany(Producto::class, 'producto_proveedores', 'id_proveedor', 'id_producto')
+            ->withTimestamps();
     }
 
     public function compras()

@@ -42,7 +42,6 @@ final class InventarioProductoTable extends PowerGridComponent
     {
         return PowerGrid::fields()
             ->add('nombre_producto')
-            ->add('proveedor', fn($producto) => $producto->proveedor->nombre_proveedor ?? 'N/A')
             ->add('categoria', fn($producto) => $producto->categoria_producto->nombre_categoria_producto ?? 'N/A')
             ->add('stock_total', fn($producto) => $producto->lotes->sum('cantidad_almacenada') + $producto->lotes->sum('cantidad_mostrada'))
             ->add('stock_almacen', fn($producto) => $producto->lotes->sum('cantidad_almacenada'))
@@ -53,7 +52,6 @@ final class InventarioProductoTable extends PowerGridComponent
     {
         return [
             Column::make('Producto', 'nombre_producto')->sortable()->searchable(),
-            Column::make('Proveedor', 'proveedor')->sortable(),
             Column::make('Categoría', 'categoria')->sortable(),
             Column::make('Stock Total', 'stock_total')->sortable(),
             Column::make('Stock Almacén', 'stock_almacen')->sortable(),

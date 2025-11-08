@@ -7,10 +7,8 @@
         <!-- TAB 1: LISTADO -->
         <x-tab name="listado">
             <div class="p-4">
-
                 <livewire:producto-table />
             </div>
-
         </x-tab>
 
         <!-- TAB 2: REGISTRO -->
@@ -52,7 +50,7 @@
                                 class="text-red-500">*</span></label>
                         <input type="text" id="nombre_producto" name="nombre_producto" maxlength="255"
                             class="border rounded px-2 py-1 focus:outline-none focus:ring focus:ring-blue-300 @error('producto.nombre_producto') border-red-500 @enderror"
-                            placeholder="Nombre del producto" wire:model="producto.nombre_producto">
+                            placeholder="Nombre del producto" wire:model.change="producto.nombre_producto">
                         @error('producto.nombre_producto')
                             <p class="text-red-500 text-xs italic mt-1">
                                 {{ $message }}
@@ -60,12 +58,11 @@
                         @enderror
                     </div>
 
-                    <div class="flex  justify-between">
-
+                    <div class="flex justify-between">
                         <div class="flex flex-col">
                             <label for="unidad" class="font-bold mb-1">Unidad <span
                                     class="text-red-500">*</span></label>
-                            <select wire:model="producto.id_unidad" id="unidad"
+                            <select wire:model.change="producto.id_unidad" id="unidad" wire:change="$refresh"
                                 class="border rounded px-2 py-1 focus:outline-none focus:ring focus:ring-blue-300 @error('producto.id_unidad') border-red-500 @enderror">
                                 <option value="">-- Seleccione una unidad --</option>
                                 @foreach ($unidades as $unidad)
@@ -78,12 +75,32 @@
                                 </p>
                             @enderror
                         </div>
+                        <!-- ✅ NUEVO CAMPO CONDICIONAL: CANTIDAD POR UNIDAD -->
+                        @if ($this->unidadRequiereCantidad())
+                            <div class="flex flex-col col-span-2">
+                                <label for="cantidad_por_unidad" class="font-bold mb-1">
+                                    Cantidad contenida en la unidad <span class="text-red-500">*</span>
+                                    <span class="text-xs text-gray-500 font-normal">
+                                        (ej: 12 unidades por caja)
+                                    </span>
+                                </label>
+                                <input type="number" id="cantidad_por_unidad" name="cantidad_por_unidad" min="1"
+                                    class="border rounded px-2 py-1 focus:outline-none focus:ring focus:ring-blue-300 @error('producto.cantidad_por_unidad') border-red-500 @enderror"
+                                    placeholder="Ej: 12, 24, 50..." wire:model.change="producto.cantidad_por_unidad">
+                                @error('producto.cantidad_por_unidad')
+                                    <p class="text-red-500 text-xs italic mt-1">
+                                        {{ $message }}
+                                    </p>
+                                @enderror
+                            </div>
+                        @endif
                         <div class="flex flex-col">
-                            <label for="unidad" class="font-bold mb-1">Precio unitario <span
+                            <label for="precio_unitario" class="font-bold mb-1">Precio unitario <span
                                     class="text-red-500">*</span></label>
-                            <input type="text" id="precio_unitario" name="precio_unitario" maxlength="255"
+                            <input type="number" id="precio_unitario" name="precio_unitario" min="1"
+                                step="1" maxlength="255"
                                 class="border rounded px-2 py-1 focus:outline-none focus:ring focus:ring-blue-300 @error('producto.precio_unitario') border-red-500 @enderror"
-                                placeholder="Precio unitario" wire:model="producto.precio_unitario">
+                                placeholder="Precio unitario" wire:model.change="producto.precio_unitario">
                             @error('producto.precio_unitario')
                                 <p class="text-red-500 text-xs italic mt-1">
                                     {{ $message }}
@@ -95,7 +112,7 @@
                     <div class="flex flex-col">
                         <label for="categoria" class="font-bold mb-1">Categoría <span
                                 class="text-red-500">*</span></label>
-                        <select wire:model="producto.id_categoria_producto" id="categoria"
+                        <select wire:model.change="producto.id_categoria_producto" id="categoria"
                             class="border rounded px-2 py-1 focus:outline-none focus:ring focus:ring-blue-300 @error('producto.id_categoria_producto') border-red-500 @enderror">
                             <option value="">-- Seleccione una categoría --</option>
                             @foreach ($categorias as $cate)
@@ -112,19 +129,77 @@
                     </div>
 
                     <div class="flex flex-col">
-                        <label for="proveedor" class="font-bold mb-1">Proveedor <span
+                        <label for="proveedores" class="font-bold mb-1">Proveedores <span
                                 class="text-red-500">*</span></label>
-                        <select wire:model="producto.id_proveedor" id="proveedor"
-                            class="border rounded px-2 py-1 focus:outline-none focus:ring focus:ring-blue-300 @error('producto.id_proveedor') border-red-500 @enderror">
-                            <option value="">-- Seleccione un proveedor --</option>
-                            @foreach ($proveedores as $prov)
-                                <option value="{{ $prov->id_proveedor }}">{{ $prov->nombre_proveedor }}</option>
-                            @endforeach
-                        </select>
-                        @error('producto.id_proveedor')
-                            <p class="text-red-500 text-xs italic mt-1">
-                                {{ $message }}
-                            </p>
+
+                        <div x-data="proveedoresSelect(@js($producto['proveedores_seleccionados']))" x-init="init()" class="relative">
+
+                            <!-- Input de búsqueda y selección -->
+                            <div class="border border-gray-300 rounded-lg px-3 py-2 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent transition-colors min-h-[42px] cursor-pointer"
+                                @click="open = !open">
+
+                                <!-- Chips de proveedores seleccionados -->
+                                <div class="flex flex-wrap gap-1">
+                                    <template x-for="proveedorId in selectedIds" :key="proveedorId">
+                                        <div
+                                            class="bg-blue-600 text-white px-2 py-1 rounded text-xs flex items-center gap-1">
+                                            <span x-text="getProveedorName(proveedorId)"></span>
+                                            <button type="button" @click.stop="removeProveedor(proveedorId)"
+                                                class="hover:bg-blue-700 rounded-full w-4 h-4 flex items-center justify-center">
+                                                ×
+                                            </button>
+                                        </div>
+                                    </template>
+
+                                    <!-- Placeholder cuando no hay selección -->
+                                    <span x-show="selectedIds.length === 0" class="text-gray-500">
+                                        -- Seleccione uno o varios proveedores --
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Dropdown -->
+                            <div x-show="open" x-transition @click.outside="open = false"
+                                class="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+
+                                <!-- Búsqueda -->
+                                <div class="p-2 border-b border-gray-200">
+                                    <input type="text" x-model="search" @input="filterProveedores()"
+                                        placeholder="Buscar proveedores..."
+                                        class="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+
+                                <!-- Lista de proveedores -->
+                                <div class="py-1">
+                                    <template x-for="proveedor in filteredProveedores" :key="proveedor.id_proveedor">
+                                        <div class="flex items-center px-3 py-2 hover:bg-blue-50 cursor-pointer"
+                                            @click="toggleProveedor(proveedor.id_proveedor)">
+
+                                            <input type="checkbox"
+                                                :checked="selectedIds.includes(proveedor.id_proveedor)"
+                                                class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2">
+
+                                            <span x-text="proveedor.nombre_proveedor"
+                                                :class="{ 'font-medium': selectedIds.includes(proveedor.id_proveedor) }">
+                                            </span>
+                                        </div>
+                                    </template>
+
+                                    <!-- Mensaje cuando no hay resultados -->
+                                    <div x-show="filteredProveedores.length === 0"
+                                        class="px-3 py-2 text-gray-500 text-sm">
+                                        No se encontraron proveedores
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Input oculto para Livewire -->
+                            <input type="hidden" x-model="selectedIdsString"
+                                wire:model="producto.proveedores_seleccionados">
+                        </div>
+
+                        @error('producto.proveedores_seleccionados')
+                            <p class="text-red-500 text-xs italic mt-1">{{ $message }}</p>
                         @enderror
                     </div>
 
@@ -169,8 +244,8 @@
                             </div>
                         </div>
 
-                        <input type="file" id="imagen_producto" wire:model="imagenProducto" accept="image/*"
-                            class="hidden">
+                        <input type="file" id="imagen_producto" wire:model.change="imagenProducto"
+                            accept="image/*" class="hidden">
 
                         @error('imagenProducto')
                             <p class="text-red-500 text-xs italic mt-1">{{ $message }}</p>
@@ -198,6 +273,9 @@
             </div>
         </x-tab>
     </x-tabs>
+
+    <!-- MODAL DE EDICIÓN (actualizado) -->
+    <!-- MODAL DE EDICIÓN (corregido) -->
     @if ($modalEditar)
         <div class="fixed inset-0 z-50 flex items-center justify-center p-4" x-data="{ show: true }" x-show="show"
             x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 scale-95"
@@ -326,7 +404,7 @@
                                     <!-- Unidad -->
                                     <div class="flex flex-col">
                                         <label class="font-semibold text-gray-700 mb-2 text-sm">Unidad</label>
-                                        <select wire:model="productoEditar.id_unidad"
+                                        <select wire:model="productoEditar.id_unidad" wire:change="$refresh"
                                             class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors">
                                             <option value="">-- Seleccione una unidad --</option>
                                             @foreach ($unidades as $unidad)
@@ -338,6 +416,25 @@
                                             <p class="text-red-500 text-xs italic mt-1">{{ $message }}</p>
                                         @enderror
                                     </div>
+
+                                    <!-- ✅ NUEVO CAMPO CONDICIONAL EN EDICIÓN: CANTIDAD POR UNIDAD -->
+                                    @if ($this->unidadEditarRequiereCantidad())
+                                        <div class="flex flex-col">
+                                            <label class="font-semibold text-gray-700 mb-2 text-sm">
+                                                Cantidad contenida en la unidad <span class="text-red-500">*</span>
+                                                <span class="text-xs text-gray-500 font-normal">
+                                                    (ej: 12 unidades por caja)
+                                                </span>
+                                            </label>
+                                            <input type="number" wire:model="productoEditar.cantidad_por_unidad"
+                                                min="1"
+                                                class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                                                placeholder="Ej: 12, 24, 50...">
+                                            @error('productoEditar.cantidad_por_unidad')
+                                                <p class="text-red-500 text-xs italic mt-1">{{ $message }}</p>
+                                            @enderror
+                                        </div>
+                                    @endif
                                 </div>
                             </div>
                         </div>
@@ -358,15 +455,85 @@
                                 </h3>
 
                                 <div class="flex flex-col">
-                                    <select wire:model="productoEditar.id_proveedor"
-                                        class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors">
-                                        <option value="">-- Seleccione proveedor --</option>
-                                        @foreach ($proveedores as $prov)
-                                            <option value="{{ $prov->id_proveedor }}">{{ $prov->nombre_proveedor }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                    @error('productoEditar.id_proveedor')
+                                    <label class="font-semibold text-gray-700 mb-2 text-sm">
+                                        Proveedores <span class="text-red-500">*</span>
+                                    </label>
+
+                                    <!-- Componente Alpine.js MEJORADO para el modal -->
+                                    <div x-data="proveedoresModalSelect(@js($productoEditar['proveedores_seleccionados'] ?? []), @js($proveedores))" x-init="init()"
+                                        class="relative max-h-[400px]">
+
+                                        <!-- Input de búsqueda y selección -->
+                                        <div class="border border-gray-300 rounded-lg px-3 py-2 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent transition-colors min-h-[42px] cursor-pointer"
+                                            @click="open = !open">
+
+                                            <!-- Chips de proveedores seleccionados -->
+                                            <div class="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
+                                                <template x-for="proveedorId in selectedIds" :key="proveedorId">
+                                                    <div
+                                                        class="bg-blue-600 text-white px-2 py-1 rounded text-xs flex items-center gap-1">
+                                                        <span x-text="getProveedorName(proveedorId)"></span>
+                                                        <button type="button"
+                                                            @click.stop="removeProveedor(proveedorId)"
+                                                            class="hover:bg-blue-700 rounded-full w-4 h-4 flex items-center justify-center">
+                                                            ×
+                                                        </button>
+                                                    </div>
+                                                </template>
+
+                                                <!-- Placeholder cuando no hay selección -->
+                                                <span x-show="selectedIds.length === 0" class="text-gray-500">
+                                                    -- Seleccione uno o varios proveedores --
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <!-- Dropdown CON ALTURA MÁXIMA -->
+                                        <div x-show="open" x-transition @click.outside="open = false"
+                                            class="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-40 overflow-y-auto"
+                                            style="max-height: 160px;"> <!-- Altura máxima fija -->
+
+                                            <!-- Búsqueda -->
+                                            <div class="p-2 border-b border-gray-200 sticky top-0 bg-white">
+                                                <input type="text" x-model="search" @input="filterProveedores()"
+                                                    placeholder="Buscar proveedores..."
+                                                    class="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                            </div>
+
+                                            <!-- Lista de proveedores -->
+                                            <div class="py-1">
+                                                <template x-for="proveedor in filteredProveedores"
+                                                    :key="proveedor.id_proveedor">
+                                                    <div class="flex items-center px-3 py-2 hover:bg-blue-50 cursor-pointer"
+                                                        @click="toggleProveedor(proveedor.id_proveedor)">
+
+                                                        <input type="checkbox"
+                                                            :checked="selectedIds.includes(proveedor.id_proveedor)"
+                                                            class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2">
+
+                                                        <span x-text="proveedor.nombre_proveedor"
+                                                            :class="{
+                                                                'font-medium': selectedIds.includes(proveedor
+                                                                    .id_proveedor)
+                                                            }">
+                                                        </span>
+                                                    </div>
+                                                </template>
+
+                                                <!-- Mensaje cuando no hay resultados -->
+                                                <div x-show="filteredProveedores.length === 0"
+                                                    class="px-3 py-2 text-gray-500 text-sm">
+                                                    No se encontraron proveedores
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Input oculto para Livewire -->
+                                        <input type="hidden" x-model="selectedIdsString"
+                                            wire:model="productoEditar.proveedores_seleccionados">
+                                    </div>
+
+                                    @error('productoEditar.proveedores_seleccionados')
                                         <p class="text-red-500 text-xs italic mt-1">{{ $message }}</p>
                                     @enderror
                                 </div>
@@ -511,11 +678,218 @@
                     }
                 });
             });
+
+            document.addEventListener('alpine:init', () => {
+                // Componente para el formulario principal
+                Alpine.data('proveedoresSelect', (initialSelected = []) => ({
+                    open: false,
+                    search: '',
+                    selectedIds: [],
+                    allProveedores: @json($proveedores),
+                    filteredProveedores: [],
+
+                    init() {
+                        // ✅ INICIALIZACIÓN ROBUSTA - Manejar diferentes formatos
+                        this.initializeSelectedIds(initialSelected);
+                        this.filteredProveedores = this.allProveedores;
+
+                        this.$watch('selectedIds', (value) => {
+                            this.syncWithLivewire();
+                        });
+
+                        // Sincronizar inicialmente
+                        this.syncWithLivewire();
+                    },
+
+                    initializeSelectedIds(initialValue) {
+                        if (Array.isArray(initialValue)) {
+                            this.selectedIds = initialValue;
+                        } else if (typeof initialValue === 'string') {
+                            try {
+                                const parsed = JSON.parse(initialValue);
+                                this.selectedIds = Array.isArray(parsed) ? parsed : [];
+                            } catch (e) {
+                                this.selectedIds = [];
+                            }
+                        } else {
+                            this.selectedIds = [];
+                        }
+                    },
+
+                    syncWithLivewire() {
+                        const hiddenInput = this.$el.querySelector('input[type="hidden"]');
+                        if (hiddenInput) {
+                            const arrayValue = Array.isArray(this.selectedIds) ? this.selectedIds : [];
+                            hiddenInput.value = JSON.stringify(arrayValue);
+                            hiddenInput.dispatchEvent(new Event('input', {
+                                bubbles: true
+                            }));
+                        }
+                    },
+
+                    filterProveedores() {
+                        if (!this.search.trim()) {
+                            this.filteredProveedores = this.allProveedores;
+                            return;
+                        }
+                        const searchLower = this.search.toLowerCase();
+                        this.filteredProveedores = this.allProveedores.filter(proveedor =>
+                            proveedor.nombre_proveedor.toLowerCase().includes(searchLower)
+                        );
+                    },
+
+                    toggleProveedor(proveedorId) {
+                        if (this.selectedIds.includes(proveedorId)) {
+                            this.removeProveedor(proveedorId);
+                        } else {
+                            this.addProveedor(proveedorId);
+                        }
+                    },
+
+                    addProveedor(proveedorId) {
+                        if (!this.selectedIds.includes(proveedorId)) {
+                            this.selectedIds.push(proveedorId);
+                            this.syncWithLivewire();
+                        }
+                    },
+
+                    removeProveedor(proveedorId) {
+                        this.selectedIds = this.selectedIds.filter(id => id != proveedorId);
+                        this.syncWithLivewire();
+                    },
+
+                    getProveedorName(proveedorId) {
+                        const proveedor = this.allProveedores.find(p => p.id_proveedor == proveedorId);
+                        return proveedor ? proveedor.nombre_proveedor : '';
+                    },
+
+                    get selectedIdsString() {
+                        return JSON.stringify(this.selectedIds);
+                    }
+                }));
+
+                // Componente ESPECÍFICO para el modal - CON RETRASO PARA EVITAR VALIDACIÓN TEMPRANA
+                Alpine.data('proveedoresModalSelect', (initialSelected = [], proveedoresData) => ({
+                    open: false,
+                    search: '',
+                    selectedIds: [],
+                    allProveedores: proveedoresData,
+                    filteredProveedores: [],
+                    initialized: false,
+
+                    init() {
+                        // ✅ RETRASAR LA INICIALIZACIÓN para evitar validación temprana
+                        setTimeout(() => {
+                            this.initializeSelectedIds(initialSelected);
+                            this.filteredProveedores = this.allProveedores;
+                            this.initialized = true;
+                            this.syncWithLivewire();
+                        }, 100);
+
+                        this.$watch('selectedIds', (value) => {
+                            if (this.initialized) {
+                                this.syncWithLivewire();
+                            }
+                        });
+                    },
+
+                    initializeSelectedIds(initialValue) {
+                        if (Array.isArray(initialValue)) {
+                            this.selectedIds = initialValue.map(id => id.toString());
+                        } else if (typeof initialValue === 'string') {
+                            try {
+                                const parsed = JSON.parse(initialValue);
+                                this.selectedIds = Array.isArray(parsed) ? parsed.map(id => id.toString()) :
+                                    [];
+                            } catch (e) {
+                                this.selectedIds = [];
+                            }
+                        } else {
+                            this.selectedIds = [];
+                        }
+                    },
+
+                    syncWithLivewire() {
+                        const hiddenInput = this.$el.querySelector('input[type="hidden"]');
+                        if (hiddenInput) {
+                            const arrayValue = Array.isArray(this.selectedIds) ? this.selectedIds : [];
+                            hiddenInput.value = JSON.stringify(arrayValue);
+                            hiddenInput.dispatchEvent(new Event('input', {
+                                bubbles: true
+                            }));
+                            console.log('Proveedores sincronizados:', arrayValue);
+                        }
+                    },
+
+                    filterProveedores() {
+                        if (!this.search.trim()) {
+                            this.filteredProveedores = this.allProveedores;
+                            return;
+                        }
+                        const searchLower = this.search.toLowerCase();
+                        this.filteredProveedores = this.allProveedores.filter(proveedor =>
+                            proveedor.nombre_proveedor.toLowerCase().includes(searchLower)
+                        );
+                    },
+
+                    toggleProveedor(proveedorId) {
+                        if (this.selectedIds.includes(proveedorId.toString())) {
+                            this.removeProveedor(proveedorId);
+                        } else {
+                            this.addProveedor(proveedorId);
+                        }
+                    },
+
+                    addProveedor(proveedorId) {
+                        const idStr = proveedorId.toString();
+                        if (!this.selectedIds.includes(idStr)) {
+                            this.selectedIds.push(idStr);
+                            this.syncWithLivewire();
+                        }
+                    },
+
+                    removeProveedor(proveedorId) {
+                        const idStr = proveedorId.toString();
+                        this.selectedIds = this.selectedIds.filter(id => id !== idStr);
+                        this.syncWithLivewire();
+                    },
+
+                    getProveedorName(proveedorId) {
+                        const proveedor = this.allProveedores.find(p => p.id_proveedor == proveedorId);
+                        return proveedor ? proveedor.nombre_proveedor : '';
+                    },
+
+                    get selectedIdsString() {
+                        return JSON.stringify(this.selectedIds);
+                    }
+                }));
+            });
+
+            // ✅ MEJORAR el evento de modal abierto
+            Livewire.on('modalEditarAbierto', () => {
+                console.log('Modal abierto - reinicializando componentes');
+
+                // Dar más tiempo para que el DOM se actualice completamente
+                setTimeout(() => {
+                    // Disparar un evento personalizado para reinicializar Alpine
+                    document.dispatchEvent(new CustomEvent('alpine:init-components'));
+                }, 150);
+            });
+
+            // ✅ Escuchar el evento personalizado para reinicialización
+            document.addEventListener('alpine:init-components', () => {
+                console.log('Reinicializando componentes Alpine en modal');
+                // Alpine se reinicializa automáticamente con los nuevos elementos
+            });
+
+            // Forzar reinicialización de Alpine cuando se abre el modal
+            Livewire.on('modalEditarAbierto', () => {
+                setTimeout(() => {
+                    console.log('Reinicializando componentes Alpine en modal');
+                }, 100);
+            });
         </script>
     @endpush
 
-    <div wire:loading wire:target="guardar | actualizarProducto"
-        @if ($imagenProducto) style="display:none;" @endif>
-        <x-loader />
-    </div>
+    <x-loader target="guardar,actualizarProducto" />
 </x-panel>

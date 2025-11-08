@@ -31,7 +31,6 @@ final class ProductoTable extends PowerGridComponent
     {
         // Cargar data para filtros dinámicos
         $this->categorias = CategoriaProducto::select('id_categoria_producto as id', 'nombre_categoria_producto as name')->get()->toArray();
-        $this->proveedores = Proveedor::select('id_proveedor as id', 'nombre_proveedor as name')->get()->toArray();
         $this->unidades = Unidades::select('id_unidad as id', 'nombre_unidad as name')->get()->toArray();
 
         // Estados predefinidos
@@ -51,7 +50,7 @@ final class ProductoTable extends PowerGridComponent
     public function datasource(): Builder
     {
         return Producto::query()
-            ->with(['categoria_producto', 'proveedor', 'unidad']);
+            ->with(['categoria_producto', 'proveedores', 'unidad']);
     }
 
     public function relationSearch(): array
@@ -63,9 +62,15 @@ final class ProductoTable extends PowerGridComponent
     {
         return PowerGrid::fields()
             ->add('nombre_producto')
+            ->add(
+                'nombre_producto_display',
+                fn($producto) =>
+                '<span title="' . e($producto->nombre_producto) . '" class="cursor-help whitespace-nowrap overflow-hidden text-ellipsis max-w-xs block">' .
+                    (strlen($producto->nombre_producto) > 15 ? substr($producto->nombre_producto, 0, 15) . '...' : $producto->nombre_producto) .
+                    '</span>'
+            )
             ->add('unidad_nombre', fn($producto) => $producto->unidad?->nombre_unidad ?? '-')
             ->add('categoria_nombre', fn($producto) => $producto->categoria_producto?->nombre_categoria_producto ?? '-')
-            ->add('proveedor_nombre', fn($producto) => $producto->proveedor?->nombre_proveedor ?? '-')
             ->add('precio_unitario')
             ->add('codigo_barras')
             ->add('fecha_registro')
@@ -76,12 +81,14 @@ final class ProductoTable extends PowerGridComponent
     public function columns(): array
     {
         return [
-            Column::make('Nombre producto', 'nombre_producto')->sortable()->searchable(),
+            Column::make('Nombre producto', 'nombre_producto_display')
+                ->sortable()
+                ->searchable()
+                ->headerAttribute('text-left'),
             Column::make('Unidad', 'unidad_nombre')->sortable()->searchable(),
             Column::make('Precio unitario (PEN)', 'precio_unitario')->sortable(),
             Column::make('Código de barras', 'codigo_barras')->sortable()->searchable(),
             Column::make('Categoría', 'categoria_nombre')->sortable()->searchable(),
-            Column::make('Proveedor', 'proveedor_nombre')->sortable()->searchable(),
             Column::make('Fecha creación', 'fecha_registro')->sortable(),
             Column::make('Estado', 'estado')->sortable(),
             Column::action('Acciones'),
@@ -103,16 +110,6 @@ final class ProductoTable extends PowerGridComponent
                     return $query->where('estado', $value);
                 }),
 
-            // 🔹 Filtro por proveedor
-            Filter::select('proveedor_nombre', 'Proveedor')
-                ->dataSource($this->proveedores)
-                ->optionValue('id')
-                ->optionLabel('name')
-                ->builder(function (Builder $query, $value) {
-                    return $query->whereHas('proveedor', function ($q) use ($value) {
-                        $q->where('id_proveedor', $value);
-                    });
-                }),
 
             // 🔹 Filtro por unidad
             Filter::select('unidad_nombre', 'Unidad')

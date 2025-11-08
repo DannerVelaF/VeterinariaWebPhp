@@ -19,9 +19,10 @@ class Producto extends Model
         'estado',
         'codigo_barras',
         'id_categoria_producto',
-        'id_proveedor',
+        //'id_proveedor',
         "precio_unitario",
         'id_unidad',
+        'cantidad_por_unidad',
         'fecha_registro',
         'fecha_actualizacion',
     ];
@@ -31,9 +32,11 @@ class Producto extends Model
         return $this->belongsTo(CategoriaProducto::class, "id_categoria_producto");
     }
 
-    public function proveedor()
+
+    public function proveedores()
     {
-        return $this->belongsTo(Proveedor::class, "id_proveedor");
+        return $this->belongsToMany(Proveedor::class, 'producto_proveedores', 'id_producto', 'id_proveedor')
+            ->withTimestamps();
     }
 
     public function unidad()

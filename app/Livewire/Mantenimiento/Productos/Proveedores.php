@@ -3,6 +3,7 @@
 namespace App\Livewire\Mantenimiento\Productos;
 
 use App\Models\Direccion;
+use App\Models\Producto;
 use App\Models\Proveedor;
 use App\Models\Ubigeo;
 use Illuminate\Support\Facades\DB;
@@ -32,6 +33,7 @@ class Proveedores extends Component
         'referencia' => '',
         'codigo_ubigeo' => ''
     ];
+    public $productos_seleccionados = [];
 
     public $tipos_calle = [
         'AV' => 'Avenida',
@@ -117,11 +119,17 @@ class Proveedores extends Component
         'direccionEditar.referencia.max' => 'La referencia no puede tener más de 255 caracteres.',
         'direccionEditar.codigo_ubigeo.required' => 'Debe seleccionar un distrito.',
         'direccionEditar.codigo_ubigeo.size' => 'El código de ubigeo debe tener exactamente 6 caracteres.',
+
+        'productos_seleccionados.required' => 'Debe seleccionar al menos un producto.',
+        'productos_seleccionados.array' => 'Los productos seleccionados deben ser un array válido.',
+        'productos_seleccionados.min' => 'Debe seleccionar al menos un producto.',
+        'productos_seleccionados.*.exists' => 'Uno de los productos seleccionados no es válido.',
     ];
 
     public $departamentos = [];
     public $provincias = [];
     public $distritos = [];
+    public $productos = []; // ✅ NUEVO: Lista de productos disponibles
 
     public $departamentoSeleccionado = '';
     public $provinciaSeleccionada = '';
@@ -138,6 +146,7 @@ class Proveedores extends Component
     public $provinciaSeleccionadaEditar = '';
     public $provinciasEditar = [];
     public $distritosEditar = [];
+    public $productos_seleccionados_editar = []; // ✅ NUEVO: Para edición
 
     public $loading = false;
     public $loadingUbigeo = false;
@@ -145,6 +154,7 @@ class Proveedores extends Component
     public function mount()
     {
         $this->departamentos = Ubigeo::select("departamento")->distinct()->pluck('departamento')->toArray();
+        $this->productos = Producto::where('estado', 'activo')->get(); // ✅ NUEVO: Cargar productos
         $this->resetForm();
     }
 
@@ -264,6 +274,14 @@ class Proveedores extends Component
                 'size' => 'El campo debe tener exactamente :size caracteres.',
             ]);
         }
+
+        // ✅ NUEVO: Validar productos seleccionados
+        if ($propertyName === 'productos_seleccionados') {
+            $this->validateOnly($propertyName, [
+                'productos_seleccionados' => 'required|array|min:1',
+                'productos_seleccionados.*' => 'exists:productos,id_producto',
+            ]);
+        }
     }
 
     public function updatedDepartamentoSeleccionado($value)
@@ -328,6 +346,8 @@ class Proveedores extends Component
 
     public function guardar()
     {
+        $this->convertirProductosAArray();
+
         $validatedData = $this->validate([
             'proveedor.nombre_proveedor' => 'required|string|max:255',
             'proveedor.ruc' => 'required|digits:11|unique:proveedores,ruc',
@@ -363,6 +383,8 @@ class Proveedores extends Component
             'direccion.zona' => 'required|string|max:255',
             'direccion.codigo_postal' => 'required|string|max:10',
             'direccion.referencia' => 'nullable|string|max:255',
+            'productos_seleccionados' => 'required|array|min:1', // ✅ NUEVO: Validación de productos
+            'productos_seleccionados.*' => 'exists:productos,id_producto', // ✅ NUEVO
         ]);
 
         try {
@@ -372,6 +394,10 @@ class Proveedores extends Component
                 $proveedor = Proveedor::create(array_merge($validatedData['proveedor'], [
                     'id_direccion' => $direccion->id_direccion
                 ]));
+
+                if (!empty($this->productos_seleccionados)) {
+                    $proveedor->productos()->sync($this->productos_seleccionados);
+                }
             });
 
             $this->dispatch('notify', title: 'Success', description: 'Proveedor creado correctamente.', type: 'success');
@@ -433,7 +459,7 @@ class Proveedores extends Component
     {
         $this->loading = true;
         try {
-            $this->proveedorSeleccionado = Proveedor::with(['direccion'])
+            $this->proveedorSeleccionado = Proveedor::with(['direccion', 'productos']) // ✅ NUEVO: Cargar productos
                 ->findOrFail($proveedorId);
 
             $this->proveedorEditar = [
@@ -457,6 +483,10 @@ class Proveedores extends Component
                 'zona' => $this->proveedorSeleccionado->direccion->zona ?? '',
                 'codigo_ubigeo' => $this->proveedorSeleccionado->direccion->codigo_ubigeo ?? '',
             ];
+
+            $this->productos_seleccionados_editar = $this->proveedorSeleccionado->productos
+                ->pluck('id_producto')
+                ->toArray();
 
             // Cargar ubigeo de forma síncrona
             $this->cargarUbigeoSincrono($this->direccionEditar['codigo_ubigeo'] ?? null);
@@ -509,6 +539,8 @@ class Proveedores extends Component
                 return;
             }
 
+            $this->convertirProductosEditarAArray();
+
             $validatedData = $this->validate([
                 'proveedorEditar.telefono_contacto' => [
                     'required',
@@ -542,6 +574,8 @@ class Proveedores extends Component
                 'direccionEditar.codigo_postal' => 'required|string|max:10',
                 'direccionEditar.referencia' => 'nullable|string|max:255',
                 'direccionEditar.codigo_ubigeo' => 'required|string|size:6',
+                'productos_seleccionados_editar' => 'required|array|min:1', // ✅ NUEVO
+                'productos_seleccionados_editar.*' => 'exists:productos,id_producto', // ✅ NUEVO
             ]);
 
             DB::transaction(function () {
@@ -558,6 +592,7 @@ class Proveedores extends Component
 
                 // Actualizar dirección
                 $this->proveedorSeleccionado->direccion->update($this->direccionEditar);
+                $this->proveedorSeleccionado->productos()->sync($this->productos_seleccionados_editar);
             });
 
             $this->cerrarModal();
@@ -578,12 +613,48 @@ class Proveedores extends Component
         }
     }
 
+    // ✅ NUEVO: Método para convertir productos a array
+    private function convertirProductosAArray()
+    {
+        if (is_string($this->productos_seleccionados)) {
+            try {
+                $productosArray = json_decode($this->productos_seleccionados, true);
+                $this->productos_seleccionados = is_array($productosArray) ? $productosArray : [];
+            } catch (\Exception $e) {
+                $this->productos_seleccionados = [];
+            }
+        }
+
+        if (!is_array($this->productos_seleccionados)) {
+            $this->productos_seleccionados = [];
+        }
+    }
+
+    // ✅ NUEVO: Método para convertir productos editar a array
+    private function convertirProductosEditarAArray()
+    {
+        if (is_string($this->productos_seleccionados_editar)) {
+            try {
+                $productosArray = json_decode($this->productos_seleccionados_editar, true);
+                $this->productos_seleccionados_editar = is_array($productosArray) ? $productosArray : [];
+            } catch (\Exception $e) {
+                $this->productos_seleccionados_editar = [];
+            }
+        }
+
+        if (!is_array($this->productos_seleccionados_editar)) {
+            $this->productos_seleccionados_editar = [];
+        }
+    }
+
+
     public function cerrarModal()
     {
         $this->modalEditar = false;
         $this->proveedorSeleccionado = null;
         $this->proveedorEditar = [];
         $this->direccionEditar = [];
+        $this->productos_seleccionados_editar = []; // ✅ NUEVO: Limpiar productos
         $this->departamentoSeleccionadoEditar = '';
         $this->provinciaSeleccionadaEditar = '';
         $this->provinciasEditar = [];
@@ -613,7 +684,7 @@ class Proveedores extends Component
             'referencia' => '',
             'codigo_ubigeo' => ''
         ];
-
+        $this->productos_seleccionados = []; // ✅ NUEVO: Limpiar productos
         $this->departamentoSeleccionado = '';
         $this->provinciaSeleccionada = '';
         $this->provincias = [];

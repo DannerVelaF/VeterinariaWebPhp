@@ -52,6 +52,8 @@ class Entradas extends Component
     public $ordenCompra = '';
     public $productosOC = []; // productos de la orden de compra
     public $proveedorOC = null; // proveedor de la OC
+    public $entradasRapidas = []; // Para entradas rápidas
+    public $showFormularioRapido = false;
 
     public function mount()
     {
@@ -72,42 +74,20 @@ class Entradas extends Component
         $this->productoSeleccionado = null;
         $this->lote['cantidad_total'] = '';
         $this->lote['precio_compra'] = '';
-
+        $this->entradasRapidas = [];
 
         if (!$this->ordenCompra) {
             $this->dispatch('notify', title: 'Error', description: 'No se ha introducido el código de orden de compra', type: 'error');
             return;
         }
 
+        // ✅ CORRECCIÓN: Cargar la relación de proveedores en los productos
         $compra = Compra::with([
+            'detalleCompra.producto.proveedores', // ← AGREGAR ESTA RELACIÓN
             'detalleCompra.producto.unidad',
             'detalleCompra.estadoDetalleCompra',
             'proveedor'
         ])->where('codigo', trim($this->ordenCompra))->first();
-
-        if (!$compra) {
-            $this->dispatch('notify', title: 'Error', description: 'No se encontró la orden de compra: ' . $this->ordenCompra, type: 'error');
-            return;
-        }
-
-        if ($compra->estadoCompra?->nombre_estado_compra === "pendiente") {
-            $this->dispatch('notify', title: 'Error', description: 'La orden de compra no ha sido aprobada', type: 'error');
-            $this->ordenCompra = "";
-            return;
-        }
-
-        if ($compra->estadoCompra?->nombre_estado_compra === "recibido") {
-            $this->dispatch('notify', title: 'Info', description: 'La orden de compra ya ha sido recibida', type: 'success');
-            $this->ordenCompra = "";
-            return;
-        }
-
-        if ($compra->estadoCompra?->nombre_estado_compra === "cancelado") {
-            $this->dispatch('notify', title: 'Error', description: 'La orden se encuentra cancelada', type: 'error');
-            $this->ordenCompra = "";
-            return;
-        }
-
 
         if (!$compra) {
             $this->dispatch('notify', title: 'Error', description: 'No se encontró la orden de compra: ' . $this->ordenCompra, type: 'error');
@@ -123,9 +103,16 @@ class Entradas extends Component
                     ->where('id_movimiento_asociado', $detalle->id_detalle_compra)
                     ->sum('cantidad_movimiento');
 
-
                 // Cantidad pendiente
                 $cantidadPendiente = $detalle->cantidad - $cantidadRecibida;
+
+                // ✅ VERIFICAR QUE EL PRODUCTO PERTENEZCA AL PROVEEDOR DE LA OC
+                $proveedorOC = $detalle->compra->proveedor;
+                $productoPertenece = $detalle->producto->proveedores->contains('id_proveedor', $proveedorOC->id_proveedor);
+
+                if (!$productoPertenece) {
+                    Log::warning("Producto {$detalle->producto->nombre_producto} no pertenece al proveedor {$proveedorOC->nombre_proveedor}");
+                }
 
                 return [
                     'id_producto' => $detalle->producto->id_producto,
@@ -135,8 +122,40 @@ class Entradas extends Component
                     'cantidad' => max($cantidadPendiente, 0), // evita números negativos
                     'codigo_barras' => $detalle->producto->codigo_barras,
                     'estado' => $cantidadPendiente <= 0 ? 'recibido' : 'pendiente',
+                    'pertenece_proveedor' => $productoPertenece, // ✅ NUEVO: Para debug
+                    'cantidad_original' => $detalle->cantidad,
+                    'cantidad_recibida' => $cantidadRecibida,
                 ];
-            })->values();
+            })
+            ->filter(function ($producto) {
+                // ✅ FILTRAR SOLO PRODUCTOS QUE PERTENEZCAN AL PROVEEDOR
+                return $producto['pertenece_proveedor'] === true;
+            })
+            ->values();
+
+        // Inicializar entradas rápidas
+        foreach ($this->productosOC as $producto) {
+            if ($producto['cantidad'] > 0) {
+                $this->entradasRapidas[$producto['id_detalle_compra']] = [
+                    'cantidad' => $producto['cantidad'],
+                    'ubicacion' => 'almacen',
+                    'fecha_vencimiento' => null, // ✅ Inicializar como null en lugar de cadena vacía
+                    'observacion' => ''
+                ];
+            }
+        }
+
+        $this->showFormularioRapido = count($this->productosOC) > 1;
+    }
+
+    // ✅ CORRECCIÓN: Método para contar productos pendientes
+    public function getProductosPendientesCountProperty()
+    {
+        if (!$this->productosOC instanceof \Illuminate\Support\Collection) {
+            $this->productosOC = collect($this->productosOC);
+        }
+
+        return $this->productosOC->where('cantidad', '>', 0)->count();
     }
 
     public function updatedIdProducto($value)
@@ -148,23 +167,37 @@ class Entradas extends Component
             $this->lote['precio_compra'] = $this->productoSeleccionado['precio_compra'];
             $this->lote['cantidad_total'] = $this->productoSeleccionado['cantidad'];
             $this->lote['id_detalle_compra'] = $this->productoSeleccionado['id_detalle_compra'];
+
+            // ✅ MOSTRAR ADVERTENCIA SI EL PRODUCTO NO PERTENECE AL PROVEEDOR
+            if (isset($this->productoSeleccionado['pertenece_proveedor']) && !$this->productoSeleccionado['pertenece_proveedor']) {
+                $this->dispatch('notify', title: 'Advertencia', description: 'Este producto no está asociado al proveedor de la orden de compra.', type: 'warning');
+            }
         } else {
             $this->lote['precio_compra'] = '';
             $this->lote['cantidad_total'] = '';
+            $this->lote['id_detalle_compra'] = '';
         }
     }
 
-    public function generarCodigoLote()
+    public function generarCodigoLote($codigoBarras = null)
     {
-        do {
-            $codigo = "LT." . $this->productoSeleccionado['codigo_barras'] . "-" . random_int(100, 999);
-        } while (Lotes::where('codigo_lote', $codigo)->exists());
+        if (!$codigoBarras) {
+            // ✅ FALLBACK: Generar código alternativo si no hay código de barras
+            do {
+                $codigo = "LT-" . Str::random(8) . "-" . random_int(100, 999);
+            } while (Lotes::where('codigo_lote', $codigo)->exists());
+        } else {
+            do {
+                $codigo = "LT." . $codigoBarras . "-" . random_int(100, 999);
+            } while (Lotes::where('codigo_lote', $codigo)->exists());
+        }
 
-        $this->lote['codigo_lote'] = $codigo;
+        return $codigo;
     }
 
     public function registrar()
     {
+        // ✅ AGREGAR VALIDACIÓN PARA VERIFICAR RELACIÓN PRODUCTO-PROVEEDOR
         $this->validate([
             "id_producto"             => "required|exists:detalle_compras,id_detalle_compra",
             'lote.cantidad_total'     => [
@@ -175,6 +208,11 @@ class Entradas extends Component
                 function ($attribute, $value, $fail) {
                     if ($this->productoSeleccionado && $value > $this->productoSeleccionado['cantidad']) {
                         $fail('La cantidad recibida no puede ser mayor a la cantidad de la orden de compra (' . $this->productoSeleccionado['cantidad'] . ').');
+                    }
+
+                    // ✅ VALIDACIÓN ADICIONAL: Verificar que el producto pertenezca al proveedor
+                    if ($this->productoSeleccionado && isset($this->productoSeleccionado['pertenece_proveedor']) && !$this->productoSeleccionado['pertenece_proveedor']) {
+                        $fail('El producto seleccionado no está asociado al proveedor de esta orden de compra.');
                     }
                 },
             ],
@@ -199,102 +237,72 @@ class Entradas extends Component
 
         try {
             DB::transaction(function () {
-                $this->generarCodigoLote();
+                // ✅ CORRECCIÓN: Obtener el ID del trabajador de forma segura
+                $idTrabajador = auth()->user()->persona->trabajador->id_trabajador ?? null;
 
-                $fechaVencimiento = $this->lote['fecha_vencimiento'] ?: null;
+                if (!$idTrabajador) {
+                    throw new \Exception("No se pudo identificar al trabajador. Verifique que el usuario tenga un perfil de trabajador asociado.");
+                }
 
+                // ✅ VERIFICACIÓN FINAL ANTES DE CREAR EL LOTE
+                $detalleCompra = DetalleCompra::with(['producto.proveedores', 'compra.proveedor'])
+                    ->find($this->lote['id_detalle_compra']);
+
+                if (!$detalleCompra) {
+                    throw new \Exception("Detalle de compra no encontrado");
+                }
+
+                // Verificar que el producto pertenezca al proveedor de la OC
+                $proveedorOC = $detalleCompra->compra->proveedor;
+                $productoPertenece = $detalleCompra->producto->proveedores->contains('id_proveedor', $proveedorOC->id_proveedor);
+
+                if (!$productoPertenece) {
+                    throw new \Exception("El producto '{$detalleCompra->producto->nombre_producto}' no está asociado al proveedor '{$proveedorOC->nombre_proveedor}'");
+                }
+
+                $this->lote['codigo_lote'] = $this->generarCodigoLote($detalleCompra->producto->codigo_barras);
+
+                // ✅ CORRECCIÓN: Usar el accessor stock_actual del modelo Producto
+                $stockActual = $detalleCompra->producto->stock_actual;
+
+                // Crear el lote
                 $lote = Lotes::create([
-                    "id_producto"       => $this->productoSeleccionado['id_producto'],
-                    "cantidad_total"    => $this->lote['cantidad_total'],
-                    "precio_compra"     => $this->lote['precio_compra'],
-                    "fecha_recepcion"   => $this->lote['fecha_recepcion'],
-                    "fecha_vencimiento" => $fechaVencimiento,
-                    "estado"            => "activo",
-                    "observacion"       => $this->lote['observacion'],
-                    "codigo_lote"       => $this->lote['codigo_lote'],
-                    "cantidad_almacenada" => $this->ubicacion === 'almacen' ? $this->lote['cantidad_total'] : 0,
-                    "cantidad_mostrada"  => $this->ubicacion === 'mostrador' ? $this->lote['cantidad_total'] : 0,
+                    'codigo_lote' => $this->lote['codigo_lote'],
+                    'cantidad_total' => $this->lote['cantidad_total'],
+                    'cantidad_almacenada' => $this->ubicacion === 'almacen' ? $this->lote['cantidad_total'] : 0,
+                    'cantidad_mostrada' => $this->ubicacion === 'mostrador' ? $this->lote['cantidad_total'] : 0,
+                    'cantidad_vendida' => 0,
+                    'fecha_recepcion' => $this->lote['fecha_recepcion'],
+                    'fecha_vencimiento' => $this->lote['fecha_vencimiento'] ?: null,
+                    'observacion' => $this->lote['observacion'],
+                    'precio_compra' => $this->lote['precio_compra'],
+                    'id_producto' => $detalleCompra->producto->id_producto,
+                    'estado' => 'activo',
                 ]);
 
-                // Obtener el trabajador del usuario autenticado
-                $trabajador = auth()->user()->persona->trabajador;
+                // Obtener tipo de movimiento de entrada
+                $tipoEntrada = TipoMovimiento::where("nombre_tipo_movimiento", "entrada")->first();
 
-                if (!$trabajador) {
-                    throw new \Exception("El usuario autenticado no tiene un trabajador asociado");
+                if (!$tipoEntrada) {
+                    throw new \Exception("No se encontró el tipo de movimiento 'entrada' en el sistema.");
                 }
 
-                $tipoUbicacion = TipoUbicacion::where('nombre_tipo_ubicacion', $this->ubicacion)->first();
+                // ✅ CORRECCIÓN: Calcular stock resultante usando el accessor
+                $stockResultante = $stockActual + $this->lote['cantidad_total'];
 
-                if (!$tipoUbicacion) {
-                    throw new \Exception("Tipo de ubicación no encontrado: " . $this->ubicacion);
-                }
-
-                $tipoEntrada = TipoMovimiento::where('nombre_tipo_movimiento', 'entrada')->first();
-
+                // Crear movimiento de inventario
                 InventarioMovimiento::create([
-                    "cantidad_movimiento"       => $this->lote['cantidad_total'],
-                    "stock_resultante"          => $lote->cantidad_total,
-                    "fecha_movimiento"          => now(),
-                    "fecha_registro"            => now(),
-                    "id_lote"                   => $lote->id_lote,
-                    "id_trabajador"             => $trabajador->id_trabajador,
-                    "id_tipo_movimiento"        => $tipoEntrada->id_tipo_movimiento,
-                    "id_tipo_ubicacion"         => $tipoUbicacion->id_tipo_ubicacion,
-                    "tipo_movimiento_asociado"  => DetalleCompra::class,
-                    "motivo" => $this->lote['observacion'],
-                    "id_movimiento_asociado"    => $this->lote['id_detalle_compra'],
+                    'cantidad_movimiento' => $this->lote['cantidad_total'],
+                    'stock_resultante' => $stockResultante,
+                    'fecha_movimiento' => now(),
+                    'id_tipo_movimiento' => $tipoEntrada->id_tipo_movimiento,
+                    'id_movimiento_asociado' => $detalleCompra->id_detalle_compra,
+                    'id_lote' => $lote->id_lote,
+                    'id_trabajador' => $idTrabajador,
+                    'id_tipo_ubicacion' => $this->ubicacion === 'almacen' ? 1 : 2,
                 ]);
 
-                $detalle = DetalleCompra::find($this->lote['id_detalle_compra']);
-
-                // Cantidad total pedida en la OC
-                $cantidadOC = $detalle->cantidad;
-
-                // Sumar todas las entradas registradas para este detalle (incluyendo la actual)
-                $cantidadRecibida = InventarioMovimiento::where('id_tipo_movimiento', $tipoEntrada->id_tipo_movimiento)
-                    ->where('id_movimiento_asociado', $detalle->id_detalle_compra)
-                    ->sum('cantidad_movimiento');
-
-                // ✅ CORRECCIÓN: Solo cambiar a "recibido" si se ha alcanzado EXACTAMENTE la cantidad de la OC
-                // No usar >= porque con entradas parciales podría marcar como recibido antes de tiempo
-                if ($cantidadRecibida >= $cantidadOC) {
-                    $estadoRecibido = EstadoDetalleCompra::where('nombre_estado_detalle_compra', 'recibido')->first();
-                    $detalle->id_estado_detalle_compra = $estadoRecibido->id_estado_detalle_compra;
-                    $detalle->save();
-                } else {
-                    // ✅ Si aún hay cantidades pendientes, mantener como "pendiente"
-                    $estadoPendiente = EstadoDetalleCompra::where('nombre_estado_detalle_compra', 'pendiente')->first();
-                    $detalle->id_estado_detalle_compra = $estadoPendiente->id_estado_detalle_compra;
-                    $detalle->save();
-                }
-
-                // ✅ CORRECCIÓN: Verificar si todos los detalles de la orden de compra están recibidos
-                $ordenCompra = $detalle->compra;
-
-                // Contar detalles que NO están en estado "recibido"
-                $pendientes = $ordenCompra->detalleCompra()
-                    ->whereHas('estadoDetalleCompra', function ($q) {
-                        $q->where('nombre_estado_detalle_compra', '!=', 'recibido');
-                    })->count();
-
-                // ✅ Solo marcar la OC como "recibida" cuando NO hay pendientes
-                if ($pendientes === 0) {
-                    $estadoRecibido = EstadoCompras::where('nombre_estado_compra', 'recibido')->first();
-                    $ordenCompra->id_estado_compra = $estadoRecibido->id_estado_compra;
-                    $ordenCompra->save();
-                } else {
-                    // ✅ Si hay al menos un detalle pendiente, la OC debe mantenerse como "aprobada" o "parcial"
-                    $estadoAprobado = EstadoCompras::where('nombre_estado_compra', 'aprobado')->first();
-                    // O si tienes un estado "parcial" para OC con entregas parciales
-                    $estadoParcial = EstadoCompras::where('nombre_estado_compra', 'parcial')->first();
-
-                    if ($estadoParcial) {
-                        $ordenCompra->id_estado_compra = $estadoParcial->id_estado_compra;
-                    } else {
-                        $ordenCompra->id_estado_compra = $estadoAprobado->id_estado_compra;
-                    }
-                    $ordenCompra->save();
-                }
+                // ✅ NO necesitamos actualizar stock_actual porque se calcula dinámicamente
             });
 
             $this->dispatch('notify', title: 'Success', description: 'Entrada registrada con éxito. Código de lote: ' . $this->lote['codigo_lote'], type: 'success');
@@ -306,9 +314,104 @@ class Entradas extends Component
         }
     }
 
+    public function registrarEntradasRapidas()
+    {
+        try {
+            DB::transaction(function () {
+                $entradasRegistradas = 0;
+
+                // ✅ CORRECCIÓN: Obtener el ID del trabajador de forma segura
+                $idTrabajador = auth()->user()->persona->trabajador->id_trabajador ?? null;
+
+                if (!$idTrabajador) {
+                    throw new \Exception("No se pudo identificar al trabajador. Verifique que el usuario tenga un perfil de trabajador asociado.");
+                }
+
+                foreach ($this->entradasRapidas as $idDetalleCompra => $entrada) {
+                    if (empty($entrada['cantidad']) || $entrada['cantidad'] <= 0) {
+                        continue;
+                    }
+
+                    $detalleCompra = DetalleCompra::with(['producto.proveedores', 'compra.proveedor'])
+                        ->find($idDetalleCompra);
+
+                    if (!$detalleCompra) {
+                        continue;
+                    }
+
+                    // Verificar cantidad máxima
+                    $productoOC = collect($this->productosOC)->firstWhere('id_detalle_compra', $idDetalleCompra);
+                    $cantidadMaxima = $productoOC ? $productoOC['cantidad'] : 0;
+
+                    if ($entrada['cantidad'] > $cantidadMaxima) {
+                        throw new \Exception("La cantidad para {$detalleCompra->producto->nombre_producto} no puede ser mayor a {$cantidadMaxima}");
+                    }
+
+                    // ✅ CORRECCIÓN: Convertir fecha_vencimiento vacía a null
+                    $fechaVencimiento = !empty($entrada['fecha_vencimiento']) ? $entrada['fecha_vencimiento'] : null;
+
+                    // ✅ CORRECCIÓN: Usar el accessor stock_actual del modelo Producto
+                    $stockActual = $detalleCompra->producto->stock_actual;
+
+                    // Generar código de lote
+                    $codigoLote = $this->generarCodigoLote($detalleCompra->producto->codigo_barras);
+
+                    // Crear el lote
+                    $lote = Lotes::create([
+                        'codigo_lote' => $codigoLote,
+                        'cantidad_total' => $entrada['cantidad'],
+                        'cantidad_almacenada' => $entrada['ubicacion'] === 'almacen' ? $entrada['cantidad'] : 0,
+                        'cantidad_mostrada' => $entrada['ubicacion'] === 'mostrador' ? $entrada['cantidad'] : 0,
+                        'cantidad_vendida' => 0,
+                        'fecha_recepcion' => $this->lote['fecha_recepcion'],
+                        'fecha_vencimiento' => $fechaVencimiento,
+                        'observacion' => $entrada['observacion'] ?? '',
+                        'precio_compra' => $productoOC['precio_compra'],
+                        'id_producto' => $detalleCompra->producto->id_producto,
+                        'estado' => 'activo',
+                    ]);
+
+                    // Obtener tipo de movimiento de entrada
+                    $tipoEntrada = TipoMovimiento::where("nombre_tipo_movimiento", "entrada")->first();
+
+                    if (!$tipoEntrada) {
+                        throw new \Exception("No se encontró el tipo de movimiento 'entrada' en el sistema.");
+                    }
+
+                    // ✅ CORRECCIÓN: Calcular stock resultante usando el accessor
+                    $stockResultante = $stockActual + $entrada['cantidad'];
+
+                    // Crear movimiento de inventario
+                    InventarioMovimiento::create([
+                        'cantidad_movimiento' => $entrada['cantidad'],
+                        'stock_resultante' => $stockResultante,
+                        'fecha_movimiento' => now(),
+                        'id_tipo_movimiento' => $tipoEntrada->id_tipo_movimiento,
+                        'id_movimiento_asociado' => $detalleCompra->id_detalle_compra,
+                        'id_lote' => $lote->id_lote,
+                        'id_trabajador' => $idTrabajador,
+                        'id_tipo_ubicacion' => $entrada['ubicacion'] === 'almacen' ? 1 : 2,
+                    ]);
+
+                    $entradasRegistradas++;
+                }
+
+                if ($entradasRegistradas === 0) {
+                    throw new \Exception("No se registró ninguna entrada. Verifique las cantidades ingresadas.");
+                }
+            });
+
+            $this->dispatch('notify', title: 'Success', description: "Se registraron {$entradasRegistradas} entradas correctamente.", type: 'success');
+            $this->resetForm();
+            $this->dispatch('entradasUpdated');
+        } catch (Exception $e) {
+            $this->dispatch('notify', title: 'Error', description: 'Error al registrar las entradas: ' . $e->getMessage(), type: 'error');
+            Log::error('Error al registrar entradas rápidas', ['error' => $e->getMessage()]);
+        }
+    }
+
     public function render()
     {
-
         return view('livewire.inventario.entradas');
     }
 
@@ -329,9 +432,12 @@ class Entradas extends Component
             "precio_compra" => "",
             "codigo_lote" => "",
         ];
+        $this->entradasRapidas = [];
+        $this->showFormularioRapido = false;
 
         $this->mount();
     }
+
     public function getStockActualProperty()
     {
         if (!$this->productoSeleccionado) {
@@ -342,21 +448,29 @@ class Entradas extends Component
             ];
         }
 
-        // Sumar los lotes activos del producto
-        $lotes = Lotes::where('id_producto', $this->productoSeleccionado['id_producto'])
-            ->where('estado', 'activo')
-            ->get();
+        // ✅ CORRECCIÓN: Usar el modelo Producto para obtener el stock
+        $producto = Producto::with(['lotes' => function ($query) {
+            $query->where('estado', 'activo');
+        }])->find($this->productoSeleccionado['id_producto']);
 
-        $total = $lotes->sum('cantidad_total');
-        $almacen = $lotes->sum('cantidad_almacenada');
-        $mostrador = $lotes->sum('cantidad_mostrada');
+        if (!$producto) {
+            return [
+                'total' => 0,
+                'almacen' => 0,
+                'mostrador' => 0,
+            ];
+        }
+
+        $lotes = $producto->lotes;
 
         return [
-            'total' => $total,
-            'almacen' => $almacen,
-            'mostrador' => $mostrador,
+            'total' => $producto->stock_actual, // ✅ Usa el accessor
+            'almacen' => $lotes->sum('cantidad_almacenada'),
+            'mostrador' => $lotes->sum('cantidad_mostrada'),
         ];
     }
+
+
 
     #[\Livewire\Attributes\On('show-modal')]
     public function showModal(int $rowId): void

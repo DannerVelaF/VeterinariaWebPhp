@@ -62,7 +62,7 @@
                         <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
                     </svg>
                 </div>
-                <p class="font-medium text-3xl">${{ $precioCompraTotal }}</p>
+                <p class="font-medium text-3xl">PEN{{ $precioCompraTotal }}</p>
             </div>
         </x-card>
     </div>
@@ -182,6 +182,9 @@
                                                 @foreach ($productos as $producto)
                                                     <option value="{{ $producto->id_producto }}">
                                                         {{ $producto->nombre_producto }}
+                                                        @if ($producto->unidad)
+                                                            - {{ $producto->unidad->nombre_unidad }}
+                                                        @endif
                                                     </option>
                                                 @endforeach
                                             </select>

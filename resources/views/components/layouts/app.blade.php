@@ -9,6 +9,8 @@
         @livewireStyles
         <link rel="shortcut icon" href="/images/pets.png" type="image/x-icon">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+        <!-- En el head -->
+        <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
     </head>
 
     <body class="bg-gray-50 antialiased">
@@ -137,6 +139,8 @@
         <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
         <script src="https://unpkg.com/lucide@latest"></script>
 
+        <!-- Antes de cerrar el body -->
+        <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
     </body>
 
 </html>

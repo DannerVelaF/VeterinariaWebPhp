@@ -24,6 +24,7 @@ final class EntradasTable extends PowerGridComponent
     public string $primaryKey = 'id_inventario_movimiento';
     public string $sortField = 'id_inventario_movimiento';
     use WithExport;
+
     public function boot(): void
     {
         config(['livewire-powergrid.filter' => 'outside']);
@@ -35,7 +36,6 @@ final class EntradasTable extends PowerGridComponent
 
     public function setUp(): array
     {
-
         $this->ubicaciones = TipoUbicacion::select('id_tipo_ubicacion as id', 'nombre_tipo_ubicacion as name')->get()->toArray();
         $this->proveedores = Proveedor::select('id_proveedor as id', 'nombre_proveedor as name')->get()->toArray();
         $this->productos = Producto::select('id_producto as id', 'nombre_producto as name')->get()->toArray();
@@ -53,8 +53,10 @@ final class EntradasTable extends PowerGridComponent
         return InventarioMovimiento::query()
             ->join('lotes', 'inventario_movimientos.id_lote', '=', 'lotes.id_lote')
             ->join('productos', 'lotes.id_producto', '=', 'productos.id_producto')
-            ->join('proveedores', 'productos.id_proveedor', '=', 'proveedores.id_proveedor')
-            ->with(['lote.producto.proveedor', 'trabajador.persona.user'])
+            // ✅ CORRECCIÓN: Usar la tabla pivote para la relación con proveedores
+            ->join('producto_proveedores', 'productos.id_producto', '=', 'producto_proveedores.id_producto')
+            ->join('proveedores', 'producto_proveedores.id_proveedor', '=', 'proveedores.id_proveedor')
+            ->with(['lote.producto.proveedores', 'trabajador.persona.user'])
             ->select(
                 'inventario_movimientos.*',
                 'productos.id_producto',
@@ -63,6 +65,8 @@ final class EntradasTable extends PowerGridComponent
                 'proveedores.nombre_proveedor as proveedor',
                 'lotes.codigo_lote as lote'
             )
+            // ✅ CORRECCIÓN: Agregar distinct para evitar duplicados por la relación muchos a muchos
+            ->distinct('inventario_movimientos.id_inventario_movimiento')
             ->orderBy('inventario_movimientos.fecha_movimiento', 'desc');
     }
 
@@ -74,9 +78,8 @@ final class EntradasTable extends PowerGridComponent
     public function fields(): PowerGridFields
     {
         return PowerGrid::fields()
-
-            ->add('producto')  // ya es un string gracias al alias en el select
-            ->add('proveedor') // igual
+            ->add('producto')
+            ->add('proveedor')
             ->add('cantidad_movimiento', fn($inventario) =>
             '<span class="bg-[#374151] text-white px-3 rounded-md text-sm">
                     +' . $inventario->cantidad_movimiento . '
@@ -126,21 +129,15 @@ final class EntradasTable extends PowerGridComponent
     public function columns(): array
     {
         return [
-
-
             Column::make('Producto', 'producto', 'productos.nombre_producto')->sortable(),
             Column::make('Proveedor', 'proveedor', 'proveedores.nombre_proveedor')
                 ->sortable(),
-
             Column::make('Cantidad', 'cantidad_movimiento')
                 ->sortable()
                 ->searchable(),
-
             Column::make('Fecha movimiento', 'fecha_movimiento')
                 ->sortable(),
-
             Column::make("Ubicacion", "ubicacion"),
-
             Column::make('Usuario', 'usuario'),
             Column::make('Lote', 'lote'),
             Column::make('Fecha recepcion', 'fecha_recepcion'),
@@ -151,8 +148,6 @@ final class EntradasTable extends PowerGridComponent
     public function filters(): array
     {
         return [
-            // 1er arg = field (lo que añadiste en fields()->add('producto'))
-            // 2do arg = columna/alias real en la query (id_producto)
             Filter::select('producto', 'productos.id_producto')
                 ->dataSource(Producto::orderBy('nombre_producto')->get()->toArray())
                 ->optionValue('id_producto')
@@ -163,9 +158,8 @@ final class EntradasTable extends PowerGridComponent
                 ->optionValue('id_proveedor')
                 ->optionLabel('nombre_proveedor'),
 
-
             Filter::select('ubicacion', 'inventario_movimientos.id_tipo_ubicacion')
-                ->dataSource($this->ubicaciones)  // ← Sin el array adicional
+                ->dataSource($this->ubicaciones)
                 ->optionValue('id')
                 ->optionLabel('name'),
 
@@ -178,9 +172,7 @@ final class EntradasTable extends PowerGridComponent
             Filter::inputText('usuario')
                 ->placeholder('Usuario (contiene)...')
                 ->builder(function (Builder $query, $value) {
-                    // Normalizar el valor (puede venir como string o como array)
                     if (is_array($value)) {
-                        // intentar varias claves comunes; si no existe, tomar el primer elemento
                         $v = $value['value'] ?? $value['search'] ?? array_values($value)[0] ?? '';
                     } else {
                         $v = (string) $value;
@@ -192,7 +184,6 @@ final class EntradasTable extends PowerGridComponent
                         return $query;
                     }
 
-                    // Filtrar por username con LIKE (contains)
                     return $query->whereHas('trabajador.persona.user', function ($q) use ($v) {
                         $q->where('usuario', 'like', '%' . $v . '%');
                     });
@@ -205,7 +196,6 @@ final class EntradasTable extends PowerGridComponent
                 ]),
         ];
     }
-
 
     #[\Livewire\Attributes\On('edit')]
     public function edit($rowId): void
@@ -223,16 +213,4 @@ final class EntradasTable extends PowerGridComponent
                 ->dispatch('show-modal', ['rowId' => $row->id_inventario_movimiento]),
         ];
     }
-
-    /*
-    public function actionRules($row): array
-    {
-       return [
-            // Hide button edit for ID 1
-            Rule::button('edit')
-                ->when(fn($row) => $row->id === 1)
-                ->hide(),
-        ];
-    }
-    */
 }

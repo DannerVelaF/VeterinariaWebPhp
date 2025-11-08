@@ -43,7 +43,7 @@ final class LotesTable extends PowerGridComponent
 
     public function datasource(): Builder
     {
-        return Lotes::query(["producto.proveedor"])->orderBy('fecha_registro', 'desc');;
+        return Lotes::query(["producto.proveedores"])->orderBy('fecha_registro', 'desc');;
     }
 
     public function relationSearch(): array
@@ -63,7 +63,6 @@ final class LotesTable extends PowerGridComponent
             ->add('fecha_recepcion')
             ->add('fecha_vencimiento')
             ->add('estado')
-            ->add('proveedor', fn($lote) => $lote->producto->proveedor->nombre_proveedor)
             ->add('fecha_registro');
     }
 
@@ -97,10 +96,6 @@ final class LotesTable extends PowerGridComponent
             Column::make('Estado', 'estado')
                 ->sortable()
                 ->hidden()
-                ->searchable(),
-
-            Column::make('Proveedor', 'proveedor')
-                ->sortable()
                 ->searchable(),
 
             Column::make('Fecha de registro', 'fecha_registro')

@@ -90,8 +90,11 @@ class Registro extends Component
         $this->productos = [];
 
         if (!empty($value)) {
-            $this->productos = Producto::with(['proveedor', 'unidad'])
-                ->where('id_proveedor', $value)
+            // ✅ CORRECCIÓN: Usar la relación muchos a muchos
+            $this->productos = Producto::with(['proveedores', 'unidad'])
+                ->whereHas('proveedores', function ($query) use ($value) {
+                    $query->where('proveedores.id_proveedor', $value);
+                })
                 ->where('estado', 'activo')
                 ->get();
         }

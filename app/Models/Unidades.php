@@ -15,10 +15,14 @@ class Unidades extends Model
     protected $fillable = [
         'id_unidad',
         "nombre_unidad",
+        "estado",
+        'contiene_unidades',
         'fecha_registro',
         'fecha_actualizacion',
     ];
-
+    protected $casts = [
+        'contiene_unidades' => 'boolean', // ✅ Cast a booleano
+    ];
     public function productos()
     {
         return $this->hasMany(Producto::class, "id_unidad");
