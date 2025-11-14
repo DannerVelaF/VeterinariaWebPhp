@@ -160,10 +160,28 @@ class RegistrarVenta extends Component
         $this->calcularTotales();
     }
 
-    public function inicializarDetalleVenta()
+    /* public function inicializarDetalleVenta()
     {
         $this->detalleVenta = [
             ['tipo_item' => 'producto', 'id_item' => '', 'cantidad' => 1, 'precio_unitario' => 0]
+        ];
+        
+        $this->venta = [
+            'fecha_venta' => now()->format('Y-m-d'),
+            'observacion' => '',
+            'descuento' => 0
+        ];
+    } */
+   public function inicializarDetalleVenta()
+    {
+        $this->detalleVenta = [
+            [
+                'tipo_item' => 'producto', 
+                'id_item' => '', 
+                'cantidad' => 1, 
+                'precio_unitario' => 0,
+                'precio_referencial' => 0 // Para comparación de servicios
+            ]
         ];
         
         $this->venta = [
@@ -254,7 +272,7 @@ class RegistrarVenta extends Component
         $this->totalGeneral = $subtotalConDescuento + $this->totalImpuesto;
     }
 
-    public function cargarPrecioUnitario($index)
+    /* public function cargarPrecioUnitario($index)
     {
         $detalle = $this->detalleVenta[$index];
         
@@ -272,9 +290,35 @@ class RegistrarVenta extends Component
         }
         
         $this->calcularTotales();
+    } */
+
+    public function cargarPrecioUnitario($index)
+    {
+        $detalle = $this->detalleVenta[$index];
+        
+        if ($detalle['tipo_item'] === 'producto' && $detalle['id_item']) {
+            $producto = Producto::find($detalle['id_item']);
+            if ($producto) {
+                $this->detalleVenta[$index]['precio_unitario'] = $producto->precio_venta;
+            }
+        } elseif ($detalle['tipo_item'] === 'servicio' && $detalle['id_item']) {
+            $servicio = Servicio::find($detalle['id_item']);
+            if ($servicio) {
+                // Guardar el precio referencial para comparación
+                $this->detalleVenta[$index]['precio_referencial'] = $servicio->precio;
+                
+                // Solo cargar el precio referencial si el precio actual es 0 (valor inicial)
+                // Esto permite que si el usuario ya modificó el precio, no se sobreescriba
+                if (empty($this->detalleVenta[$index]['precio_unitario']) || $this->detalleVenta[$index]['precio_unitario'] == 0) {
+                    $this->detalleVenta[$index]['precio_unitario'] = $servicio->precio;
+                }
+            }
+        }
+        
+        $this->calcularTotales();
     }
 
-    public function agregarDetalle()
+    /* public function agregarDetalle()
     {
         if (count($this->detalleVenta) < 50) {
             $this->detalleVenta[] = [
@@ -282,6 +326,18 @@ class RegistrarVenta extends Component
                 'id_item' => '', 
                 'cantidad' => 1, 
                 'precio_unitario' => 0
+            ];
+        }
+    } */
+   public function agregarDetalle()
+    {
+        if (count($this->detalleVenta) < 50) {
+            $this->detalleVenta[] = [
+                'tipo_item' => 'producto', 
+                'id_item' => '', 
+                'cantidad' => 1, 
+                'precio_unitario' => 0,
+                'precio_referencial' => 0 // Para comparación de servicios
             ];
         }
     }

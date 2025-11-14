@@ -290,19 +290,74 @@
                                             @enderror
                                         </div>
 
-                                        <!-- Precio Unitario -->
+                                        <!-- Precio Unitario con Tooltip -->
                                         <div class="col-span-2 flex flex-col">
-                                            <label class="text-sm font-medium text-gray-600">Precio Unit.</label>
-                                            <input type="number" 
-                                                min="0.01" 
-                                                step="0.01"
-                                                wire:model.live="detalleVenta.{{ $index }}.precio_unitario"
-                                                class="border rounded px-2 py-1 focus:outline-none focus:ring focus:ring-blue-300 border-gray-200 text-sm">
+                                            <label class="text-sm font-medium text-gray-600">
+                                                Precio Unit.
+                                                @if($detalle['tipo_item'] == 'servicio' && $detalle['id_item'])
+                                                    @php
+                                                        $servicioSeleccionado = \App\Models\Servicio::find($detalle['id_item']);
+                                                        $precioReferencial = $servicioSeleccionado ? $servicioSeleccionado->precio : 0;
+                                                        $precioActual = $detalle['precio_unitario'] ?? 0;
+                                                        $esPrecioModificado = $precioReferencial > 0 && $precioActual != $precioReferencial;
+                                                    @endphp
+                                                    @if($precioReferencial > 0)
+                                                        <span class="text-xs font-normal block {{ $esPrecioModificado ? 'text-yellow-600' : 'text-green-600' }}"
+                                                            title="{{ $esPrecioModificado ? 'Precio modificado del valor referencial' : 'Precio referencial del servicio' }}">
+                                                            Ref: S/ {{ number_format($precioReferencial, 2) }}
+                                                            @if($esPrecioModificado)
+                                                                • 💰 Modificado
+                                                            @endif
+                                                        </span>
+                                                    @endif
+                                                @endif
+                                            </label>
+                                            
+                                            <div class="relative">
+                                                <input type="number" 
+                                                    min="0.01" 
+                                                    step="0.01"
+                                                    wire:model.live="detalleVenta.{{ $index }}.precio_unitario"
+                                                    class="border rounded px-2 py-1 focus:outline-none focus:ring focus:ring-blue-300 text-sm transition-all duration-300 w-full
+                                                        @if($detalle['tipo_item'] == 'servicio' && $detalle['id_item'])
+                                                            @php
+                                                                $servicio = \App\Models\Servicio::find($detalle['id_item']);
+                                                                $precioRef = $servicio ? $servicio->precio : 0;
+                                                                $precioAct = $detalle['precio_unitario'] ?? 0;
+                                                                $modificado = $precioRef > 0 && $precioAct != $precioRef;
+                                                            @endphp
+                                                            @if($modificado)
+                                                                bg-yellow-50 border-yellow-400 text-yellow-700 font-medium shadow-sm
+                                                            @else
+                                                                bg-blue-50 border-blue-300
+                                                            @endif
+                                                        @else
+                                                            border-gray-200
+                                                        @endif"
+                                                    placeholder="0.00"
+                                                    title="@if($detalle['tipo_item'] == 'servicio') Puede ajustar el precio según las características específicas @endif">
+                                                
+                                                @if($detalle['tipo_item'] == 'servicio' && $detalle['id_item'])
+                                                    @php
+                                                        $servicio = \App\Models\Servicio::find($detalle['id_item']);
+                                                        $precioRef = $servicio ? $servicio->precio : 0;
+                                                        $precioAct = $detalle['precio_unitario'] ?? 0;
+                                                        $modificado = $precioRef > 0 && $precioAct != $precioRef;
+                                                    @endphp
+                                                    @if($modificado)
+                                                        <div class="absolute right-2 top-1/2 transform -translate-y-1/2">
+                                                            <span class="text-yellow-500 text-sm" title="Precio modificado del valor referencial">
+                                                                💰
+                                                            </span>
+                                                        </div>
+                                                    @endif
+                                                @endif
+                                            </div>
+                                            
                                             @error('detalleVenta.' . $index . '.precio_unitario')
                                                 <span class="text-red-500 text-sm">{{ $message }}</span>
                                             @enderror
                                         </div>
-
                                         <!-- Subtotal -->
                                         <div class="col-span-2 flex flex-col">
                                             <label class="text-sm font-medium text-gray-600">Subtotal</label>
