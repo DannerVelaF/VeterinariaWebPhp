@@ -58,6 +58,8 @@ class ProductosController extends Controller
                     DB::raw('COUNT(p.id_producto) as cantidad_productos')
                 )
                 ->groupBy('cp.id_categoria_producto', 'cp.nombre_categoria_producto')
+                ->orderByDesc('cantidad_productos')
+                ->limit(6)
                 ->get();
 
             return response()->json($categorias);

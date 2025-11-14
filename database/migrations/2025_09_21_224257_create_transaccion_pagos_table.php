@@ -6,56 +6,56 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('transaccion_pagos', function (Blueprint $table) {
             $table->id("id_transaccion_pago")
                 ->comment("Llave primaria. Identificador único de la transacción de pago.");
 
-            $table->unsignedBigInteger("id_venta")
-                ->comment("Llave foránea hacia la tabla ventas. Indica la venta asociada a la transacción.");
-            $table->foreign("id_venta")
-                ->references("id_venta")
-                ->on("ventas")
-                ->onDelete("cascade");
+            $table->foreignId("id_venta")
+                ->constrained("ventas", "id_venta")
+                ->onDelete("cascade")
+                ->comment("Venta asociada a esta transacción");
 
-            $table->unsignedBigInteger("id_metodo")
-                ->comment("Llave foránea hacia la tabla metodo_pagos. Indica el método de pago utilizado.");
-            $table->foreign("id_metodo")
-                ->references("id_metodo_pago")
-                ->on("metodo_pagos")
-                ->onDelete("restrict");
+            $table->foreignId("id_metodo_pago")
+                ->constrained("metodo_pagos", "id_metodo_pago")
+                ->comment("Método de pago utilizado");
 
-            $table->decimal("monto", 12, 2)
-                ->comment("Monto de la transacción.");
+            $table->decimal("monto", 10, 2)
+                ->comment("Monto total de la transacción");
 
             $table->string("referencia", 100)
-                ->comment("Referencia de la transacción, por ejemplo número de tarjeta o comprobante.");
-
-            $table->enum("estado", ["pendiente", "completada", "rechazada", "reversada"])
-                ->default("pendiente")
-                ->comment("Estado actual de la transacción de pago.");
-
-            $table->text("datos_adicionales")
                 ->nullable()
-                ->comment("Información adicional de la transacción. Campo opcional.");
+                ->comment("Número de referencia, operación, voucher, etc.");
+
+            $table->enum("estado", [
+                'pendiente',
+                'completado',
+                'fallido',
+                'refundido'
+            ])->default('pendiente')
+                ->comment("Estado actual de la transacción");
+
+            $table->timestamp("fecha_pago")
+                ->nullable()
+                ->comment("Fecha y hora en que se realizó el pago");
+
+            $table->string("comprobante_url", 500)
+                ->nullable()
+                ->comment("URL del comprobante de pago subido por el cliente");
+
+            $table->json("datos_adicionales")
+                ->nullable()
+                ->comment("Datos adicionales en formato JSON (IP, user agent, etc.)");
 
             $table->timestamp("fecha_registro")
-                ->useCurrent()
-                ->comment("Fecha de creación del registro de la transacción de pago.");
+                ->useCurrent();
 
             $table->timestamp("fecha_actualizacion")
-                ->nullable()
-                ->comment("Fecha de la última actualización del registro.");
+                ->nullable();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('transaccion_pagos');
