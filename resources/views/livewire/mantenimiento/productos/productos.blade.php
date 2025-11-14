@@ -882,12 +882,6 @@
                 // Alpine se reinicializa automáticamente con los nuevos elementos
             });
 
-            // Forzar reinicialización de Alpine cuando se abre el modal
-            Livewire.on('modalEditarAbierto', () => {
-                setTimeout(() => {
-                    console.log('Reinicializando componentes Alpine en modal');
-                }, 100);
-            });
         </script>
     @endpush
 

@@ -27,27 +27,54 @@ class AuthController extends Controller
         try {
             DB::beginTransaction();
 
-            // 🔹 Crear persona
-            $persona = Persona::create([
-                "id_tipo_documento" => $request->id_tipo_documento,
-                "numero_documento" => $request->numeroDocumento,
-                "nombre" => $request->nombre,
-                "apellido_paterno" => $request->apellidoPaterno,
-                "apellido_materno" => $request->apellidoMaterno,
-                "fecha_nacimiento" => $request->fechaNacimiento,
-                "nacionalidad" => $request->nacionalidad,
-                "correo_electronico_personal" => $request->correo,
-                "numero_telefono_personal" => $request->telefono,
-                "fecha_registro" => now(),
-            ]);
+            // 🔹 BUSCAR PERSONA EXISTENTE
+            $persona = Persona::where('numero_documento', $request->numeroDocumento)
+                ->where('id_tipo_documento', $request->id_tipo_documento)
+                ->first();
 
-            // 🔹 Crear cliente (relacionado a persona)
-            $cliente = Clientes::create([
-                "id_persona" => $persona->id_persona,
-                "fecha_creacion" => now(),
-            ]);
+            if (!$persona) {
+                // 🔹 CASO 1: Persona NUEVA
+                $persona = Persona::create([
+                    "id_tipo_documento" => $request->id_tipo_documento,
+                    "numero_documento" => $request->numeroDocumento,
+                    "nombre" => $request->nombre,
+                    "apellido_paterno" => $request->apellidoPaterno,
+                    "apellido_materno" => $request->apellidoMaterno,
+                    "fecha_nacimiento" => $request->fechaNacimiento,
+                    "nacionalidad" => $request->nacionalidad,
+                    "correo_electronico_personal" => $request->correo,
+                    "numero_telefono_personal" => $request->telefono,
+                    "fecha_registro" => now(),
+                ]);
 
-            // 🔹 Crear usuario (relacionado a cliente/persona)
+                // Crear cliente para persona nueva
+                Clientes::create([
+                    "id_persona" => $persona->id_persona,
+                    "fecha_creacion" => now(),
+                ]);
+            } else {
+                // 🔹 CASO 2: Persona EXISTENTE - Actualizar datos
+                $persona->update([
+                    "nombre" => $request->nombre,
+                    "apellido_paterno" => $request->apellidoPaterno,
+                    "apellido_materno" => $request->apellidoMaterno,
+                    "fecha_nacimiento" => $request->fechaNacimiento,
+                    "nacionalidad" => $request->nacionalidad,
+                    "correo_electronico_personal" => $request->correo,
+                    "numero_telefono_personal" => $request->telefono,
+                    "fecha_actualizacion" => now(),
+                ]);
+            }
+
+            // 🔹 VERIFICAR que no tenga usuario ya registrado
+            $usuarioExistente = User::where('id_persona', $persona->id_persona)->first();
+            if ($usuarioExistente) {
+                return response()->json([
+                    'error' => 'Esta persona ya tiene un usuario registrado'
+                ], 400);
+            }
+
+            // 🔹 Crear usuario
             $usuario = User::create([
                 "usuario" => $request->usuario,
                 "contrasena" => Hash::make($request->contrasena),
@@ -66,6 +93,7 @@ class AuthController extends Controller
                 'usuario' => $usuario,
                 'token' => $token
             ], 201);
+
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
@@ -92,7 +120,9 @@ class AuthController extends Controller
             }
 
             // Buscar persona y su usuario
-            $persona = Persona::where("correo_electronico_personal", $request->correo)->first();
+            $persona = Persona::where("correo_electronico_personal", $request->correo)
+                ->with(['user', 'cliente'])
+                ->first();
 
             if (!$persona || !$persona->user) {
                 return response()->json(['error' => 'Usuario no encontrado'], 404);
@@ -103,13 +133,27 @@ class AuthController extends Controller
                 return response()->json(['error' => 'Contraseña incorrecta'], 401);
             }
 
+            if (!$persona->cliente) {
+                Log::error("Error en cliente");
+                return response()->json([
+                    'error' => 'Acceso restringido. Solo clientes pueden acceder al ecommerce.'
+                ], 403);
+            }
+
+            // Actualizamos ultimo login
+            $persona->user->update([
+                "ultimo_login" => now()
+            ]);
+
             // Generar JWT
             $token = JWTAuth::fromUser($persona->user);
 
             // Retornar el Resource
             return (new LoginResponse($persona))
                 ->additional(['token' => $token]);
+
         } catch (\Exception $e) {
+            Log::error("Error al iniciar sesión", ["error" => $e->getMessage()]);
             return response()->json([
                 'error' => 'Error al iniciar sesión',
                 'detalle' => $e->getMessage()
@@ -305,4 +349,99 @@ class AuthController extends Controller
             ], 500);
         }
     }
+
+    public function verificarDniExistente(Request $request){
+        try {
+            $validate = Validator::make($request->all(), [
+                'dni' => 'required|string',
+                'tipo_documento_id' => 'required|integer'
+            ]);
+
+            if ($validate->fails()) {
+                return response()->json([
+                    "message" => "El dni y tipo de documento son requeridos",
+                    "errors" => $validate->errors()
+                ], 400);
+            }
+
+            $persona = Persona::where("numero_documento", $request->dni)
+                ->where("id_tipo_documento", $request->tipo_documento_id)
+                ->with("user")
+                ->first();
+
+            if (!$persona) {
+                // No existe la persona - disponible para registro completo
+                Log::info("Documento disponible para registro completo");
+                return response()->json([
+                    "existe" => false,
+                    "message" => "Documento disponible para registro"
+                ], 200);
+            }
+
+            if ($persona->user != null) {
+                // Persona existe Y tiene usuario - ya está registrado en el sistema
+                Log::info("El documento ya cuenta con un usuario creado");
+                return response()->json([
+                    "existe" => true,
+                    "sin_usuario" => false, // ← IMPORTANTE: false porque SÍ tiene usuario
+                    "message" => "El documento ya está registrado en el sistema",
+                    "user" => $persona->user,
+                    "correo" => $persona->correo_electronico_personal
+                ], 200);
+            } else {
+                // Persona existe pero NO tiene usuario - caso especial
+                Log::info("Persona existe pero sin usuario del sistema");
+                return response()->json([
+                    "existe" => true,
+                    "sin_usuario" => true, // ← IMPORTANTE: true porque NO tiene usuario
+                    "message" => "Documento registrado pero sin usuario del sistema",
+                    "persona" => $persona,
+                    "correo" => $persona->correo_electronico_personal
+                ], 200);
+            }
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Error al buscar el usuario existente',
+                'detalle' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function verificarUsuarioExistente(Request $request){
+        try {
+            $validate = Validator::make($request->all(), [
+                'usuario' => 'required|string'
+            ]);
+
+            if ($validate->fails()) {
+                return response()->json([
+                    "message" => "El usuario es requerido",
+                    "errors" => $validate->errors()
+                ], 400);
+            }
+
+            // 🔹 CORRECCIÓN: El campo correcto es "usuario" no "nombre_usuario"
+            $user = User::where("usuario", $request->usuario)->first();
+
+            if ($user) {
+                return response()->json([
+                    "existe" => true,
+                    "message" => "El nombre de usuario ya está en uso"
+                ], 200);
+            }
+
+            return response()->json([
+                "existe" => false,
+                "message" => "Nombre de usuario disponible"
+            ], 200);
+
+        } catch (\Exception $e){
+            return response()->json([
+                'error' => 'Error al buscar el usuario existente',
+                'detalle' => $e->getMessage()
+            ], 500);
+        }
+    }
+
 }

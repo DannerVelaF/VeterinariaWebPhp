@@ -25,6 +25,9 @@ class LoginResponse extends JsonResource
                 "usuario" => $this->user->usuario,
                 "estado" => $this->user->estado,
             ],
+            "cliente" => [
+                "id_clietne" => $this->cliente->id_cliente
+            ]
         ];
     }
 }

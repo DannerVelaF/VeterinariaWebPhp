@@ -35,4 +35,9 @@ class Direccion extends Model
     {
         return $this->belongsTo(Ubigeo::class, "codigo_ubigeo");
     }
+
+    public function persona()
+    {
+        return $this->hasOne(Persona::class, 'id_direccion', 'id_direccion');
+    }
 }
