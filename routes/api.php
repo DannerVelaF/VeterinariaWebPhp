@@ -12,7 +12,7 @@ use App\Models\Ubigeo;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use App\Http\Controllers\User\UserController;
-use App\Http\Controllers\user\UbigeoController;
+use App\Http\Controllers\User\UbigeoController;
 
 Route::prefix('/v1')->group(function () {
 
