@@ -46,4 +46,5 @@ class DetalleVentas extends Model
     {
         return $this->morphMany(InventarioMovimiento::class, 'movimentable');
     }
+
 }

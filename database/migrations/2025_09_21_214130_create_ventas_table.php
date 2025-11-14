@@ -29,6 +29,11 @@ return new class extends Migration
                 ->default(0)
                 ->comment("Monto de impuestos aplicado a la venta.");
 
+            // En la migración de ventas, agregar:
+            $table->string('codigo', 20)
+                ->unique()
+                ->comment("Código interno único de la venta. Máximo 50 caracteres.");
+
             $table->decimal("total", 12, 2)
                 ->comment("Monto total de la venta después de descuentos e impuestos.");
 
@@ -36,9 +41,15 @@ return new class extends Migration
                 ->nullable()
                 ->comment("Observaciones adicionales sobre la venta.");
 
-            $table->enum("estado", ["pendiente", "entregado", "cancelado"])
+            /* $table->enum("estado", ["pendiente", "entregado", "cancelado"])
                 ->default("pendiente")
-                ->comment("Estado de la venta. Valores: pendiente, entregado, cancelado.");
+                ->comment("Estado de la venta. Valores: pendiente, entregado, cancelado."); */
+            $table->unsignedBigInteger("id_estado_venta")
+                ->comment("Llave foránea hacia la tabla estado_ventas_fisicas. Indica el estado de la venta.");
+            $table->foreign("id_estado_venta")
+                ->references("id_estado_venta_fisica")
+                ->on("estado_ventas_fisicas")
+                ->onDelete("cascade");
 
             $table->unsignedBigInteger("id_cliente")
                 ->comment("Llave foránea hacia la tabla clientes. Indica el cliente asociado a la venta.");

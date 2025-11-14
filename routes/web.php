@@ -10,7 +10,12 @@ use App\Livewire\Auth\TwoFactorAuthentication;
 
 // 🔹 Páginas principales
 use App\Livewire\Inicio;
-use App\Livewire\Ventas\RegistroVenta;
+
+// 🔹 Módulos de ventas
+//use App\Livewire\Ventas\RegistroVenta;
+use App\Livewire\Ventas\RegistroVenta as RegistroVenta;
+use App\Livewire\Ventas\RegistrarVenta as RegistrarVenta;
+
 
 // 🔹 Módulos de gestión
 use App\Livewire\Mantenimiento\Productos\Registro as MantenimientoProductos;
@@ -105,7 +110,8 @@ Route::middleware('auth')->group(function () {
         | Ventas
         |--------------------------------------------------------------------------
         */
-        Route::get('/ventas', RegistroVenta::class)->name('ventas');
+        //Route::get('/ventas', RegistroVenta::class)->name('ventas');
+        Route::get('/ventas/registrar', RegistrarVenta::class)->name('ventas.registrar');
 
         /*
         |--------------------------------------------------------------------------

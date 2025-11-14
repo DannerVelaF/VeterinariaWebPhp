@@ -14,12 +14,13 @@ class Ventas extends Model
     protected $fillable = [
         "id_venta",
         "fecha_venta",
+        "codigo",
         "subtotal",
         "total",
         "descuento",
         "impuesto",
-        "observaciones",
-        "estado",
+        "observacion",
+        "id_estado_venta",
         "id_cliente",
         "id_trabajador",
         "fecha_registro",
@@ -38,5 +39,10 @@ class Ventas extends Model
     public function detalleVentas()
     {
         return $this->hasMany(DetalleVentas::class, "id_venta");
+    }
+
+    public function estadoVenta()
+    {
+        return $this->belongsTo(EstadoVentas::class, "id_estado_venta", "id_estado_venta_fisica");
     }
 }

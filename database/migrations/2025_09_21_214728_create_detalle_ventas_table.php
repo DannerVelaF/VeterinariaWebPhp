@@ -21,6 +21,16 @@ return new class extends Migration
             $table->decimal("precio_unitario", 12, 2)
                 ->comment("Precio unitario del producto o servicio.");
 
+            /* $table->unsignedBigInteger("id_estado_detalle_venta_fisica")
+                ->comment("Llave foránea hacia la tabla estado_detalle_ventas_fisicas. Indica el estado del detalle de venta.");
+            $table->foreign("id_estado_detalle_venta_fisica")
+                ->references("id_estado_detalle_venta_fisica")
+                ->on("estado_detalle_ventas_fisicas")
+                ->onDelete("cascade"); */
+
+            $table->string("estado", 20)
+                ->comment("Estado del detalle de venta (activo, cancelado, devuelto, etc.)."); 
+
             $table->decimal("subtotal", 12, 2)
                 ->comment("Subtotal de este ítem (cantidad * precio_unitario).");
 
