@@ -30,7 +30,7 @@ final class InventarioProductoTable extends PowerGridComponent
 
     public function datasource(): Builder
     {
-        return Producto::query()->with(['lotes.inventarios', 'proveedor', 'categoria_producto']);
+        return Producto::query()->with(['lotes.inventarios', 'proveedores', 'categoria_producto']);
     }
 
     public function relationSearch(): array
@@ -67,10 +67,6 @@ final class InventarioProductoTable extends PowerGridComponent
                 ->optionValue('id_producto')
                 ->optionLabel('nombre_producto'),
 
-            Filter::select('proveedor', 'productos.id_proveedor')
-                ->dataSource(\App\Models\Proveedor::all()->toArray())
-                ->optionValue('id_proveedor')
-                ->optionLabel('nombre_proveedor'),
 
             Filter::select('categoria', 'productos.id_categoria_producto')
                 ->dataSource(\App\Models\CategoriaProducto::all()->toArray())
