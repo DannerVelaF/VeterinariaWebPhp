@@ -29,7 +29,7 @@ class RegistrarVenta extends Component
     public $servicios = [];
     public $clientes = [];
     public $clienteSeleccionado = '';
-    
+
     // Filtros
     public $categoriasProductos = [];
     public $categoriasServicios = [];
@@ -37,7 +37,7 @@ class RegistrarVenta extends Component
     public $categoriaProductoSeleccionada = '';
     public $categoriaServicioSeleccionada = '';
     public $proveedorSeleccionado = '';
-    
+
     // Estadísticas
     public $cantVentasPendientes = 0;
     public $cantVentasCompletadas = 0;
@@ -165,7 +165,7 @@ class RegistrarVenta extends Component
         $this->detalleVenta = [
             ['tipo_item' => 'producto', 'id_item' => '', 'cantidad' => 1, 'precio_unitario' => 0]
         ];
-        
+
         $this->venta = [
             'fecha_venta' => now()->format('Y-m-d'),
             'observacion' => '',
@@ -176,14 +176,14 @@ class RegistrarVenta extends Component
     {
         $this->detalleVenta = [
             [
-                'tipo_item' => 'producto', 
-                'id_item' => '', 
-                'cantidad' => 1, 
+                'tipo_item' => 'producto',
+                'id_item' => '',
+                'cantidad' => 1,
                 'precio_unitario' => 0,
                 'precio_referencial' => 0 // Para comparación de servicios
             ]
         ];
-        
+
         $this->venta = [
             'fecha_venta' => now()->format('Y-m-d'),
             'observacion' => '',
@@ -191,7 +191,7 @@ class RegistrarVenta extends Component
         ];
     }
 
-    public function generarCodigoVenta()
+        public function generarCodigoVenta()
     {
         $año = Carbon::now()->format('Y');
         $mes = Carbon::now()->format('m');
@@ -230,20 +230,18 @@ class RegistrarVenta extends Component
 
     public function updated($property)
     {
-        // Recalcular totales cuando cambien los detalles o el descuento
-        if (str_starts_with($property, 'detalleVenta') || $property === 'venta.descuento') {
-            $this->calcularTotales();
-        }
-        
-        // Cargar precio unitario cuando se seleccione un producto o servicio
+        // Validar automáticamente cuando cambien campos numéricos
         if (str_starts_with($property, 'detalleVenta')) {
             $parts = explode('.', $property);
             if (count($parts) === 3) {
                 $index = $parts[1];
                 $field = $parts[2];
-                
+
+                if (in_array($field, ['cantidad', 'precio_unitario'])) {
+                    $this->validarYCast($field, $index);
+                }
+
                 if ($field === 'tipo_item') {
-                    // Cuando cambia el tipo, resetear los valores
                     $this->detalleVenta[$index]['id_item'] = '';
                     $this->detalleVenta[$index]['precio_unitario'] = 0;
                     if ($this->detalleVenta[$index]['tipo_item'] === 'servicio') {
@@ -254,6 +252,11 @@ class RegistrarVenta extends Component
                 }
             }
         }
+
+        if ($property === 'venta.descuento') {
+            $this->venta['descuento'] = $this->asegurarNumero($this->venta['descuento']);
+            $this->calcularTotales();
+        }
     }
 
     public function calcularTotales()
@@ -261,21 +264,55 @@ class RegistrarVenta extends Component
         $this->subtotal = 0;
 
         foreach ($this->detalleVenta as $detalle) {
-            if ($detalle['id_item'] && $detalle['cantidad'] > 0 && $detalle['precio_unitario'] > 0) {
-                $this->subtotal += $detalle['precio_unitario'] * $detalle['cantidad'];
+            // Asegurar que los valores sean numéricos
+            $cantidad = $this->asegurarNumero($detalle['cantidad'] ?? 0);
+            $precio = $this->asegurarNumero($detalle['precio_unitario'] ?? 0);
+
+            if ($detalle['id_item'] && $cantidad > 0 && $precio > 0) {
+                $this->subtotal += $precio * $cantidad;
             }
         }
 
-        $descuento = $this->venta['descuento'] ?? 0;
+        $descuento = $this->asegurarNumero($this->venta['descuento'] ?? 0);
         $subtotalConDescuento = $this->subtotal - $descuento;
         $this->totalImpuesto = $subtotalConDescuento * $this->IGV;
         $this->totalGeneral = $subtotalConDescuento + $this->totalImpuesto;
     }
 
+    private function asegurarNumero($valor)
+    {
+        if (is_numeric($valor)) {
+            return floatval($valor);
+        }
+
+        if (is_string($valor)) {
+            $limpio = preg_replace('/[^0-9.]/', '', $valor);
+            return $limpio === '' ? 0 : floatval($limpio);
+        }
+
+        return 0;
+    }
+
+// Método auxiliar para limpiar valores
+    private function limpiarValorNumerico($valor)
+    {
+        if (is_string($valor)) {
+            // Remover caracteres no numéricos excepto punto decimal
+            $valor = preg_replace('/[^0-9.]/', '', $valor);
+        }
+
+        // Si está vacío o no es numérico, retornar 0
+        if ($valor === '' || !is_numeric($valor)) {
+            return 0;
+        }
+
+        return floatval($valor);
+    }
+
     /* public function cargarPrecioUnitario($index)
     {
         $detalle = $this->detalleVenta[$index];
-        
+
         if ($detalle['tipo_item'] === 'producto' && $detalle['id_item']) {
             $producto = Producto::find($detalle['id_item']);
             if ($producto) {
@@ -288,25 +325,25 @@ class RegistrarVenta extends Component
                 $this->detalleVenta[$index]['precio_unitario'] = $servicio->precio;
             }
         }
-        
+
         $this->calcularTotales();
     } */
 
     public function cargarPrecioUnitario($index)
     {
         $detalle = $this->detalleVenta[$index];
-        
+
         if ($detalle['tipo_item'] === 'producto' && $detalle['id_item']) {
             $producto = Producto::find($detalle['id_item']);
             if ($producto) {
-                $this->detalleVenta[$index]['precio_unitario'] = $producto->precio_venta;
+                $this->detalleVenta[$index]['precio_unitario'] = $producto->precio_unitario;
             }
         } elseif ($detalle['tipo_item'] === 'servicio' && $detalle['id_item']) {
             $servicio = Servicio::find($detalle['id_item']);
             if ($servicio) {
                 // Guardar el precio referencial para comparación
                 $this->detalleVenta[$index]['precio_referencial'] = $servicio->precio;
-                
+
                 // Solo cargar el precio referencial si el precio actual es 0 (valor inicial)
                 // Esto permite que si el usuario ya modificó el precio, no se sobreescriba
                 if (empty($this->detalleVenta[$index]['precio_unitario']) || $this->detalleVenta[$index]['precio_unitario'] == 0) {
@@ -314,7 +351,7 @@ class RegistrarVenta extends Component
                 }
             }
         }
-        
+
         $this->calcularTotales();
     }
 
@@ -322,9 +359,9 @@ class RegistrarVenta extends Component
     {
         if (count($this->detalleVenta) < 50) {
             $this->detalleVenta[] = [
-                'tipo_item' => 'producto', 
-                'id_item' => '', 
-                'cantidad' => 1, 
+                'tipo_item' => 'producto',
+                'id_item' => '',
+                'cantidad' => 1,
                 'precio_unitario' => 0
             ];
         }
@@ -333,15 +370,65 @@ class RegistrarVenta extends Component
     {
         if (count($this->detalleVenta) < 50) {
             $this->detalleVenta[] = [
-                'tipo_item' => 'producto', 
-                'id_item' => '', 
-                'cantidad' => 1, 
+                'tipo_item' => 'producto',
+                'id_item' => '',
+                'cantidad' => 1,
                 'precio_unitario' => 0,
                 'precio_referencial' => 0 // Para comparación de servicios
             ];
         }
     }
 
+    public function validarYCast($campo, $index)
+    {
+        if (!isset($this->detalleVenta[$index][$campo])) {
+            return;
+        }
+
+        $valor = $this->detalleVenta[$index][$campo];
+
+        // Si es null o vacío, establecer valor por defecto
+        if ($valor === null || $valor === '') {
+            $this->detalleVenta[$index][$campo] = $campo === 'cantidad' ? 1 : 0;
+            $this->calcularTotales();
+            return;
+        }
+
+        // Remover todo excepto números y punto decimal (para precios)
+        if ($campo === 'precio_unitario') {
+            $valorLimpio = preg_replace('/[^0-9.]/', '', $valor);
+            // Remover puntos decimales extras, dejar solo uno
+            $partes = explode('.', $valorLimpio);
+            if (count($partes) > 2) {
+                $valorLimpio = $partes[0] . '.' . $partes[1];
+            }
+        } else {
+            // Para cantidad, solo números enteros
+            $valorLimpio = preg_replace('/[^0-9]/', '', $valor);
+        }
+
+        // Si después de limpiar está vacío, poner valor por defecto
+        if ($valorLimpio === '') {
+            $valorLimpio = $campo === 'cantidad' ? '1' : '0';
+        }
+
+        // Convertir a número
+        $valorNumerico = $campo === 'cantidad' ? intval($valorLimpio) : floatval($valorLimpio);
+
+        // Validar rangos mínimos
+        if ($campo === 'cantidad' && $valorNumerico < 1) {
+            $valorNumerico = 1;
+        }
+
+        if ($campo === 'precio_unitario' && $valorNumerico < 0) {
+            $valorNumerico = 0;
+        }
+
+        // Actualizar el valor en el array
+        $this->detalleVenta[$index][$campo] = $valorNumerico;
+
+        $this->calcularTotales();
+    }
     public function eliminarDetalle($index)
     {
         if (count($this->detalleVenta) > 1) {
@@ -383,8 +470,10 @@ class RegistrarVenta extends Component
         foreach ($this->detalleVenta as $index => $detalle) {
             if ($detalle['tipo_item'] === 'producto') {
                 $producto = Producto::find($detalle['id_item']);
-                if ($producto && $producto->stock_actual < $detalle['cantidad']) {
-                    $this->addError("detalleVenta.{$index}.cantidad", 
+                $cantidadSolicitada = floatval($detalle['cantidad']);
+
+                if ($producto && $producto->stock_actual < $cantidadSolicitada) {
+                    $this->addError("detalleVenta.{$index}.cantidad",
                         "Stock insuficiente para {$producto->nombre_producto}. Stock disponible: {$producto->stock_actual}");
                     return;
                 }
@@ -401,10 +490,10 @@ class RegistrarVenta extends Component
                     "codigo" => $this->codigoVenta,
                     "id_trabajador" => auth()->user()->persona->trabajador->id_trabajador,
                     "fecha_venta" => $this->venta['fecha_venta'],
-                    "subtotal" => $this->subtotal,
-                    "descuento" => $this->venta['descuento'] ?? 0,
-                    "impuesto" => $this->totalImpuesto,
-                    "total" => $this->totalGeneral,
+                    "subtotal" => floatval($this->subtotal),
+                    "descuento" => floatval($this->venta['descuento'] ?? 0),
+                    "impuesto" => floatval($this->totalImpuesto),
+                    "total" => floatval($this->totalGeneral),
                     "observacion" => $this->venta['observacion'],
                     "id_estado_venta" => $estadoVentaPendiente->id_estado_venta_fisica,
                     "fecha_registro" => now(),
@@ -413,11 +502,14 @@ class RegistrarVenta extends Component
 
                 // Crear detalles de venta
                 foreach ($this->detalleVenta as $detalle) {
+                    $precio = floatval($detalle['precio_unitario']);
+                    $cantidad = floatval($detalle['cantidad']);
+
                     $detalleData = [
                         "id_venta" => $venta->id_venta,
-                        "cantidad" => $detalle['cantidad'],
-                        "precio_unitario" => $detalle['precio_unitario'],
-                        "subtotal" => $detalle['precio_unitario'] * $detalle['cantidad'],
+                        "cantidad" => $cantidad,
+                        "precio_unitario" => $precio,
+                        "subtotal" => $precio * $cantidad,
                         "tipo_item" => $detalle['tipo_item'],
                         "estado" => 'activo',
                         "fecha_registro" => now(),
@@ -426,11 +518,9 @@ class RegistrarVenta extends Component
 
                     if ($detalle['tipo_item'] === 'producto') {
                         $detalleData['id_producto'] = $detalle['id_item'];
-                        // Actualizar stock del producto
-                        $producto = Producto::find($detalle['id_item']);
-                        if ($producto) {
-                            $producto->decrement('stock', $detalle['cantidad']);
-                        }
+
+                        // ACTUALIZAR STOCK A TRAVÉS DE LOTES
+                        $this->actualizarStockProducto($detalle['id_item'], $cantidad);
                     } else {
                         $detalleData['id_servicio'] = $detalle['id_item'];
                     }
@@ -442,13 +532,54 @@ class RegistrarVenta extends Component
             $this->resetForm();
             $this->closeModal();
             $this->mount();
-            
+
             $this->dispatch('notify', title: 'Success', description: 'Venta registrada correctamente ✅', type: 'success');
             $this->dispatch('ventasUpdated');
-            
+
         } catch (\Exception $e) {
             Log::error('Error al registrar la venta', ['error' => $e->getMessage()]);
             $this->dispatch('notify', title: 'Error', description: 'Error al registrar la venta: ' . $e->getMessage(), type: 'error');
+        }
+    }
+
+    private function actualizarStockProducto($productoId, $cantidadVendida)
+    {
+        $producto = Producto::with(['lotes' => function($query) {
+            $query->where('estado', 'activo')
+                ->orderBy('fecha_vencimiento', 'asc'); // Primero los que vencen antes
+        }])->find($productoId);
+
+        if (!$producto) {
+            throw new \Exception("Producto no encontrado");
+        }
+
+        $cantidadRestante = $cantidadVendida;
+
+        foreach ($producto->lotes as $lote) {
+            if ($cantidadRestante <= 0) break;
+
+            // Primero descontar de cantidad_mostrada
+            if ($lote->cantidad_mostrada > 0) {
+                $cantidadADescontar = min($lote->cantidad_mostrada, $cantidadRestante);
+                $lote->cantidad_mostrada -= $cantidadADescontar;
+                $lote->cantidad_vendida += $cantidadADescontar;
+                $cantidadRestante -= $cantidadADescontar;
+            }
+
+            // Si aún queda cantidad, descontar de cantidad_almacenada
+            if ($cantidadRestante > 0 && $lote->cantidad_almacenada > 0) {
+                $cantidadADescontar = min($lote->cantidad_almacenada, $cantidadRestante);
+                $lote->cantidad_almacenada -= $cantidadADescontar;
+                $lote->cantidad_vendida += $cantidadADescontar;
+                $cantidadRestante -= $cantidadADescontar;
+            }
+
+            $lote->save();
+        }
+
+        // Si no hay suficiente stock en todos los lotes
+        if ($cantidadRestante > 0) {
+            throw new \Exception("Stock insuficiente para el producto {$producto->nombre_producto}. Faltan: {$cantidadRestante} unidades");
         }
     }
 
@@ -466,7 +597,7 @@ class RegistrarVenta extends Component
             $this->dispatch('notify', title: 'Success', description: 'Venta completada correctamente ✅', type: 'success');
             $this->closeModalDetalle();
             $this->dispatch('ventasUpdated');
-            
+
         } catch (\Exception $e) {
             $this->dispatch('notify', title: 'Error', description: 'Error al completar la venta: ' . $e->getMessage(), type: 'error');
         }
@@ -488,7 +619,7 @@ class RegistrarVenta extends Component
                     $detalle->save();
 
                     if ($detalle->tipo_item === 'producto' && $detalle->producto) {
-                        $detalle->producto->increment('stock', $detalle->cantidad);
+                        $this->revertirStockProducto($detalle->producto->id_producto, $detalle->cantidad);
                     }
                 }
             });
@@ -496,9 +627,35 @@ class RegistrarVenta extends Component
             $this->dispatch('notify', title: 'Success', description: 'Venta cancelada correctamente ❌', type: 'success');
             $this->closeModalDetalle();
             $this->dispatch('ventasUpdated');
-            
+
         } catch (\Exception $e) {
             $this->dispatch('notify', title: 'Error', description: 'Error al cancelar la venta: ' . $e->getMessage(), type: 'error');
+        }
+    }
+
+    private function revertirStockProducto($productoId, $cantidadARevertir)
+    {
+        $producto = Producto::with(['lotes' => function($query) {
+            $query->where('estado', 'activo')
+                ->orderBy('fecha_vencimiento', 'desc'); // Revertir en los lotes más recientes
+        }])->find($productoId);
+
+        if (!$producto) return;
+
+        $cantidadRestante = $cantidadARevertir;
+
+        foreach ($producto->lotes as $lote) {
+            if ($cantidadRestante <= 0) break;
+
+            // Revertir primero a cantidad_almacenada
+            if ($lote->cantidad_vendida > 0) {
+                $cantidadARevertirLote = min($lote->cantidad_vendida, $cantidadRestante);
+                $lote->cantidad_vendida -= $cantidadARevertirLote;
+                $lote->cantidad_almacenada += $cantidadARevertirLote;
+                $cantidadRestante -= $cantidadARevertirLote;
+            }
+
+            $lote->save();
         }
     }
 
@@ -541,9 +698,9 @@ class RegistrarVenta extends Component
     public function showModal(int $rowId): void
     {
         $this->ventaSeleccionada = Ventas::with([
-            'detalleVentas.producto', 
-            'detalleVentas.servicio', 
-            'cliente.persona', 
+            'detalleVentas.producto',
+            'detalleVentas.servicio',
+            'cliente.persona',
             'trabajador.persona.user',
             'estadoVenta'
         ])->find($rowId);

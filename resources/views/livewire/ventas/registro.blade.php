@@ -211,7 +211,7 @@
 
 
 
-                        
+
                         <!-- Detalles de Productos/Servicios -->
                         <div class="space-y-4">
                             <div class="flex justify-between items-center">
@@ -226,7 +226,7 @@
                                     Agregar item
                                 </button>
                             </div>
-                            
+
                             <div class="max-h-[300px] overflow-y-auto space-y-2">
                                 @foreach ($detalleVenta as $index => $detalle)
                                     <div class="grid grid-cols-12 gap-2 items-end p-2 border rounded-lg bg-gray-50">
@@ -279,12 +279,14 @@
                                         <!-- Cantidad -->
                                         <div class="col-span-2 flex flex-col">
                                             <label class="text-sm font-medium text-gray-600">Cantidad</label>
-                                            <input type="number" 
-                                                min="1" 
-                                                step="1"
-                                                wire:model.live="detalleVenta.{{ $index }}.cantidad"
-                                                @if($detalle['tipo_item'] == 'servicio') disabled @endif
-                                                class="border rounded px-2 py-1 focus:outline-none focus:ring focus:ring-blue-300 border-gray-200 text-sm @if($detalle['tipo_item'] == 'servicio') bg-gray-100 @endif">
+                                            <input type="text"
+                                                   wire:model.live="detalleVenta.{{ $index }}.cantidad"
+                                                   wire:keydown.debounce.500ms="validarYCast('cantidad', {{ $index }})"
+                                                   @if($detalle['tipo_item'] == 'servicio') disabled @endif
+                                                   pattern="[0-9]*"
+                                                   inputmode="numeric"
+                                                   class="border rounded px-2 py-1 focus:outline-none focus:ring focus:ring-blue-300 border-gray-200 text-sm @if($detalle['tipo_item'] == 'servicio') bg-gray-100 @endif"
+                                                   placeholder="1">
                                             @error('detalleVenta.' . $index . '.cantidad')
                                                 <span class="text-red-500 text-sm">{{ $message }}</span>
                                             @enderror
@@ -312,31 +314,31 @@
                                                     @endif
                                                 @endif
                                             </label>
-                                            
+
                                             <div class="relative">
-                                                <input type="number" 
-                                                    min="0.01" 
-                                                    step="0.01"
-                                                    wire:model.live="detalleVenta.{{ $index }}.precio_unitario"
-                                                    class="border rounded px-2 py-1 focus:outline-none focus:ring focus:ring-blue-300 text-sm transition-all duration-300 w-full
-                                                        @if($detalle['tipo_item'] == 'servicio' && $detalle['id_item'])
-                                                            @php
-                                                                $servicio = \App\Models\Servicio::find($detalle['id_item']);
-                                                                $precioRef = $servicio ? $servicio->precio : 0;
-                                                                $precioAct = $detalle['precio_unitario'] ?? 0;
-                                                                $modificado = $precioRef > 0 && $precioAct != $precioRef;
-                                                            @endphp
-                                                            @if($modificado)
-                                                                bg-yellow-50 border-yellow-400 text-yellow-700 font-medium shadow-sm
-                                                            @else
-                                                                bg-blue-50 border-blue-300
-                                                            @endif
-                                                        @else
-                                                            border-gray-200
-                                                        @endif"
-                                                    placeholder="0.00"
-                                                    title="@if($detalle['tipo_item'] == 'servicio') Puede ajustar el precio según las características específicas @endif">
-                                                
+                                                <input type="text"
+                                                       wire:model.live="detalleVenta.{{ $index }}.precio_unitario"
+                                                       wire:keydown.debounce.500ms="validarYCast('precio_unitario', {{ $index }})"
+                                                       pattern="[0-9.]*"
+                                                       inputmode="decimal"
+                                                       class="border rounded px-2 py-1 focus:outline-none focus:ring focus:ring-blue-300 text-sm transition-all duration-300 w-full
+        @if($detalle['tipo_item'] == 'servicio' && $detalle['id_item'])
+            @php
+                $servicio = \App\Models\Servicio::find($detalle['id_item']);
+                $precioRef = $servicio ? $servicio->precio : 0;
+                $precioAct = $detalle['precio_unitario'] ?? 0;
+                $modificado = $precioRef > 0 && $precioAct != $precioRef;
+            @endphp
+            @if($modificado)
+                bg-yellow-50 border-yellow-400 text-yellow-700 font-medium shadow-sm
+            @else
+                bg-blue-50 border-blue-300
+            @endif
+        @else
+            border-gray-200
+        @endif"
+                                                       placeholder="0.00">
+
                                                 @if($detalle['tipo_item'] == 'servicio' && $detalle['id_item'])
                                                     @php
                                                         $servicio = \App\Models\Servicio::find($detalle['id_item']);
@@ -353,7 +355,7 @@
                                                     @endif
                                                 @endif
                                             </div>
-                                            
+
                                             @error('detalleVenta.' . $index . '.precio_unitario')
                                                 <span class="text-red-500 text-sm">{{ $message }}</span>
                                             @enderror
@@ -361,7 +363,7 @@
                                         <!-- Subtotal -->
                                         <div class="col-span-2 flex flex-col">
                                             <label class="text-sm font-medium text-gray-600">Subtotal</label>
-                                            <input type="text" 
+                                            <input type="text"
                                                 readonly
                                                 value="S/ {{ number_format(($detalle['cantidad'] ?? 0) * ($detalle['precio_unitario'] ?? 0), 2) }}"
                                                 class="border rounded px-2 py-1 bg-gray-100 border-gray-200 text-sm font-medium">
@@ -420,7 +422,7 @@
                                 class="bg-gray-500 hover:bg-gray-700 text-white px-6 py-2 rounded-md transition">
                                 Cancelar
                             </button>
-                            <button type="submit" 
+                            <button type="submit"
                                 class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition">
                                 Registrar Venta
                             </button>
@@ -446,7 +448,7 @@
                         <div class="flex gap-2">
                             <button title="Descargar Comprobante" wire:click="exportarPdfVenta"
                                 class="bg-gray-500 hover:bg-gray-700 text-white px-3 py-2 rounded-md">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" 
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
                                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-text">
                                     <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/>
                                     <path d="M14 2v4a2 2 0 0 0 2 2h4"/>
@@ -457,7 +459,7 @@
                             </button>
                         </div>
                     </div>
-                    
+
                     <div class="grid grid-cols-2 gap-4 mb-4">
                         <div>
                             <label class="font-medium text-sm text-gray-600">Código de venta</label>
@@ -471,7 +473,7 @@
                             <label class="font-medium text-sm text-gray-600">Cliente</label>
                             <p class="text-gray-800">
                                 @if($ventaSeleccionada->cliente && $ventaSeleccionada->cliente->persona)
-                                    {{ $ventaSeleccionada->cliente->persona->nombres }} 
+                                    {{ $ventaSeleccionada->cliente->persona->nombres }}
                                     {{ $ventaSeleccionada->cliente->persona->apellido_paterno ?? '' }}
                                 @else
                                     Cliente no disponible
@@ -486,7 +488,7 @@
                             <label class="font-medium text-sm text-gray-600">Vendedor</label>
                             <p class="text-gray-800">
                                 @if($ventaSeleccionada->trabajador && $ventaSeleccionada->trabajador->persona)
-                                    {{ $ventaSeleccionada->trabajador->persona->nombres }} 
+                                    {{ $ventaSeleccionada->trabajador->persona->nombres }}
                                     {{ $ventaSeleccionada->trabajador->persona->apellido_paterno ?? '' }}
                                 @else
                                     Vendedor no disponible
@@ -564,7 +566,7 @@
                     <!-- Botones de Acción -->
                     <div class="flex justify-end gap-2 mt-6">
                         @if($ventaSeleccionada->estadoVenta->nombre_estado_venta_fisica == 'pendiente')
-                            <button wire:click="completarVenta" 
+                            <button wire:click="completarVenta"
                                 class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md text-sm">
                                 Completar Venta
                             </button>

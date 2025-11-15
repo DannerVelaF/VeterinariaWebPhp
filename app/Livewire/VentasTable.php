@@ -54,28 +54,28 @@ final class VentasTable extends PowerGridComponent
     {
         return PowerGrid::fields()
             ->add('id_venta')
-            ->add('fecha_venta_formatted', fn($venta) => 
+            ->add('fecha_venta_formatted', fn($venta) =>
                 Carbon::parse($venta->fecha_venta)->format('d/m/Y')
             )
-            ->add('fecha_registro_formatted', fn($venta) => 
+            ->add('fecha_registro_formatted', fn($venta) =>
                 Carbon::parse($venta->fecha_registro)->format('d/m/Y H:i')
             )
-            ->add('estado_badge', fn($venta) => 
+            ->add('estado_badge', fn($venta) =>
                 $this->getEstadoBadge($venta->estadoVenta->nombre_estado_venta_fisica)
             )
-            ->add('subtotal_formatted', fn($venta) => 
+            ->add('subtotal_formatted', fn($venta) =>
                 'S/ ' . number_format($venta->subtotal, 2)
             )
-            ->add('descuento_formatted', fn($venta) => 
+            ->add('descuento_formatted', fn($venta) =>
                 'S/ ' . number_format($venta->descuento, 2)
             )
-            ->add('total_formatted', fn($venta) => 
+            ->add('total_formatted', fn($venta) =>
                 'S/ ' . number_format($venta->total, 2)
             )
-            ->add('cliente_nombre', fn($venta) => 
-                $venta->cliente ? $venta->cliente->nombre_cliente : 'N/A'
+            ->add('cliente_nombre', fn($venta) =>
+                $venta->cliente ? $venta->cliente->persona->nombre : 'N/A'
             )
-            ->add('vendedor', fn($venta) => 
+            ->add('vendedor', fn($venta) =>
                 $venta->trabajador && $venta->trabajador->persona && $venta->trabajador->persona->user
                     ? $venta->trabajador->persona->user->usuario
                     : '-'
@@ -91,7 +91,7 @@ final class VentasTable extends PowerGridComponent
         ];
 
         $class = $badgeClasses[$estado] ?? 'bg-gray-100 text-gray-800';
-        
+
         return '<span class="px-2 py-1 rounded-full text-xs font-medium capitalize ' . $class . '">' . $estado . '</span>';
     }
 
