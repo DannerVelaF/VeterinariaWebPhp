@@ -1,21 +1,23 @@
 <?php
 
 return [
+    'paths' => ['api/*', 'sanctum/csrf-cookie', 'login', 'logout'],
 
-  'paths' => ['api/*', 'sanctum/csrf-cookie'],
+    'allowed_methods' => ['*'],
 
-  'allowed_methods' => ['*'],
+    'allowed_origins' => [
+        'http://localhost:5174',
+        'https://veterinaria-adela-front-irew.vercel.app',
+        'https://*.vercel.app'
+    ],
 
-  'allowed_origins' => ['http://localhost:5174'], // o tu dominio del front
+    'allowed_origins_patterns' => [],
 
-  'allowed_origins_patterns' => [],
+    'allowed_headers' => ['*'],
 
-  'allowed_headers' => ['*'],
+    'exposed_headers' => [],
 
-  'exposed_headers' => [],
+    'max_age' => 0,
 
-  'max_age' => 0,
-
-  'supports_credentials' => false,
-
+    'supports_credentials' => true, // Cambia a true si usas cookies/sessions
 ];
