@@ -13,7 +13,7 @@ use App\Livewire\Inicio;
 
 // 🔹 Módulos de ventas
 //use App\Livewire\Ventas\RegistroVenta;
-use App\Livewire\Ventas\RegistroVenta as RegistroVenta;
+//use App\Livewire\Ventas\RegistroVenta as RegistroVenta;
 use App\Livewire\Ventas\RegistrarVenta as RegistrarVenta;
 
 
@@ -111,7 +111,8 @@ Route::middleware('auth')->group(function () {
         |--------------------------------------------------------------------------
         */
         //Route::get('/ventas', RegistroVenta::class)->name('ventas');
-        Route::get('/ventas/registrar', RegistrarVenta::class)->name('ventas.registrar');
+        //Route::get('/ventas/registrar', RegistrarVenta::class)->name('ventas.registrar');
+         Route::get('/ventas', RegistrarVenta::class)->name('ventas.registrar');
 
         /*
         |--------------------------------------------------------------------------

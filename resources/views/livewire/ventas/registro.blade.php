@@ -126,14 +126,26 @@
                                     class="border rounded px-2 py-1 focus:outline-none focus:ring focus:ring-blue-300 border-gray-200 bg-gray-50">
                             </div>
                             <div class="flex gap-2 flex-col">
-                                <label>Cliente</label>
+                                <label>Seleccione un cliente / Registre un cliente</label>
+                                <button type="button" 
+                                        wire:click="redirigirAClientes"
+                                        class="inline-flex items-center gap-2 px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded transition">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-users">
+                                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                                        <circle cx="9" cy="7" r="4"/>
+                                        <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+                                        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                                    </svg>
+                                    Registro Completo de Clientes
+                                </button>
                                 <select wire:model.live="clienteSeleccionado" id="cliente"
                                     class="border rounded px-2 py-1 focus:outline-none focus:ring focus:ring-blue-300 border-gray-200">
                                     <option value="">Seleccione un cliente</option>
                                     @foreach ($clientes as $cliente)
                                         <option value="{{ $cliente->id_cliente }}">
                                             @if($cliente->persona)
-                                                {{ $cliente->persona->nombres }} {{ $cliente->persona->apellido_paterno ?? '' }}
+                                                {{ $cliente->persona->nombre }} {{ $cliente->persona->apellido_paterno }} (DNI: {{ $cliente->persona->numero_documento }})
+                                                <!-- {{ $cliente->persona->nombres }} {{ $cliente->persona->nombre ?? '' }} -->
                                             @else
                                                 Cliente #{{ $cliente->id_cliente }}
                                             @endif

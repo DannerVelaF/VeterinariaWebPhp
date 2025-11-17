@@ -11,10 +11,14 @@ use App\Models\Clientes;
 use App\Models\CategoriaProducto as Categoriaproducto;
 use App\Models\CategoriaServicio as CategoriaServicio;
 use App\Models\Proveedor;
+use App\Models\Persona;
+use App\Models\Tipo_documento;
+use App\Models\Direccion;
 
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Http;
 use Livewire\Component;
 
 use App\Exports\VentaConDetalleExport;
@@ -29,6 +33,7 @@ class RegistrarVenta extends Component
     public $servicios = [];
     public $clientes = [];
     public $clienteSeleccionado = '';
+    public $filtroCliente = '';
 
     // Filtros
     public $categoriasProductos = [];
@@ -58,16 +63,60 @@ class RegistrarVenta extends Component
 
     public bool $showModal = false;
     public bool $showModalDetalle = false;
+    public bool $showModalCliente = false;
     public ?Ventas $ventaSeleccionada = null;
+
+    // Para el registro de nuevo cliente
+    public $tiposDocumentos = [];
+    public $nuevoCliente = [
+        'id_tipo_documento' => '',
+        'numero_documento' => '',
+        'nombres' => '',
+        'apellido_paterno' => '',
+        'apellido_materno' => '',
+        'fecha_nacimiento' => '',
+        'sexo' => '',
+        'nacionalidad' => 'Peruana',
+        'correo_electronico_personal' => '',
+        'numero_telefono_personal' => '',
+    ];
 
     public function mount()
     {
         $this->generarCodigoVenta();
-        $this->clientes = Clientes::all();
+        $this->cargarClientes(); 
+        //$this->clientes = Clientes::all();
         $this->cargarFiltros();
         $this->cargarProductosYServicios();
         $this->inicializarDetalleVenta();
         $this->calcularEstadisticas();
+        $this->cargarTiposDocumento();
+    }
+
+    public function cargarTiposDocumento()
+    {
+        $this->tiposDocumentos = Tipo_documento::all();
+    }
+
+    public function cargarClientes()
+    {
+        $query = Clientes::with('persona');
+        
+        if ($this->filtroCliente) {
+            $query->whereHas('persona', function($q) {
+                $q->where('numero_documento', 'like', '%' . $this->filtroCliente . '%')
+                  ->orWhere('nombre', 'like', '%' . $this->filtroCliente . '%')
+                  ->orWhere('apellido_paterno', 'like', '%' . $this->filtroCliente . '%')
+                  ->orWhere('apellido_materno', 'like', '%' . $this->filtroCliente . '%');
+            });
+        }
+        
+        $this->clientes = $query->get();
+    }
+
+    public function updatedFiltroCliente()
+    {
+        $this->cargarClientes();
     }
 
     public function cargarFiltros()
@@ -75,8 +124,6 @@ class RegistrarVenta extends Component
         $this->categoriasProductos = Categoriaproducto::where('estado', 'activo')->get();
         $this->categoriasServicios = CategoriaServicio::where('estado', 'activo')->get();
         $this->proveedores = Proveedor::where('estado', 'activo')->get();
-
-
     }
 
     public function cargarProductosYServicios()
@@ -160,18 +207,6 @@ class RegistrarVenta extends Component
         $this->calcularTotales();
     }
 
-    /* public function inicializarDetalleVenta()
-    {
-        $this->detalleVenta = [
-            ['tipo_item' => 'producto', 'id_item' => '', 'cantidad' => 1, 'precio_unitario' => 0]
-        ];
-
-        $this->venta = [
-            'fecha_venta' => now()->format('Y-m-d'),
-            'observacion' => '',
-            'descuento' => 0
-        ];
-    } */
    public function inicializarDetalleVenta()
     {
         $this->detalleVenta = [
@@ -293,7 +328,7 @@ class RegistrarVenta extends Component
         return 0;
     }
 
-// Método auxiliar para limpiar valores
+    // Método auxiliar para limpiar valores
     private function limpiarValorNumerico($valor)
     {
         if (is_string($valor)) {
@@ -308,26 +343,6 @@ class RegistrarVenta extends Component
 
         return floatval($valor);
     }
-
-    /* public function cargarPrecioUnitario($index)
-    {
-        $detalle = $this->detalleVenta[$index];
-
-        if ($detalle['tipo_item'] === 'producto' && $detalle['id_item']) {
-            $producto = Producto::find($detalle['id_item']);
-            if ($producto) {
-                $this->detalleVenta[$index]['precio_unitario'] = $producto->precio_venta;
-            }
-        } elseif ($detalle['tipo_item'] === 'servicio' && $detalle['id_item']) {
-            $servicio = Servicio::find($detalle['id_item']);
-            if ($servicio) {
-                // Para servicios, cargar el precio pero permitir edición
-                $this->detalleVenta[$index]['precio_unitario'] = $servicio->precio;
-            }
-        }
-
-        $this->calcularTotales();
-    } */
 
     public function cargarPrecioUnitario($index)
     {
@@ -355,17 +370,6 @@ class RegistrarVenta extends Component
         $this->calcularTotales();
     }
 
-    /* public function agregarDetalle()
-    {
-        if (count($this->detalleVenta) < 50) {
-            $this->detalleVenta[] = [
-                'tipo_item' => 'producto',
-                'id_item' => '',
-                'cantidad' => 1,
-                'precio_unitario' => 0
-            ];
-        }
-    } */
    public function agregarDetalle()
     {
         if (count($this->detalleVenta) < 50) {
@@ -657,6 +661,26 @@ class RegistrarVenta extends Component
 
             $lote->save();
         }
+    }
+
+    public function abrirModalCliente()
+    {
+        $this->showModalCliente = true;
+        $this->resetErrorBag();
+        $this->reset('nuevoCliente');
+        $this->nuevoCliente['nacionalidad'] = 'Peruana';
+    }
+
+    public function cerrarModalCliente()
+    {
+        $this->showModalCliente = false;
+    }
+
+    
+    public function redirigirAClientes()
+    {
+        $this->cerrarModalCliente();
+        return redirect()->route('mantenimiento.clientes'); // Ajusta la ruta según tu configuración
     }
 
     public function render()
