@@ -18,6 +18,7 @@ final class CategoriaTable extends PowerGridComponent
     protected $listeners = ['categoriaRegistrado' => '$refresh'];
     public string $primaryKey = 'id_categoria_producto';
     public string $sortField = 'id_categoria_producto';
+
     public function setUp(): array
     {
 
@@ -31,7 +32,7 @@ final class CategoriaTable extends PowerGridComponent
 
     public function datasource(): Builder
     {
-        return CategoriaProducto::query();
+        return CategoriaProducto::query()->orderBy("fecha_registro", "desc");
     }
 
     public function relationSearch(): array

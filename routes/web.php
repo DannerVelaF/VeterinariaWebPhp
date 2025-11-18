@@ -56,6 +56,9 @@ use App\Livewire\Mantenimiento\Trabajadores\Turnos;
 use App\Livewire\Mantenimiento\Trabajadores\Ubigeos;
 use App\Models\CategoriaServicio;
 use App\Models\Trabajador;
+use function Pest\Laravel\get;
+use App\Livewire\Auth\RestablecerContrasena;
+use App\Livewire\Mantenimiento\Productos\MetodosPago;
 
 /*
 |--------------------------------------------------------------------------
@@ -69,6 +72,7 @@ Route::middleware('guest')->group(function () {
 
 Route::get('/login/two-factor', TwoFactorAuthentication::class)->name('two.factor');
 Route::get('/login/primerLogin', RegistroContraseña::class)->name('primer.login');
+Route::get("/login/restablecerContrasena", RestablecerContrasena::class)->name('restablecer.contrasena');
 /*
 |--------------------------------------------------------------------------
 | Redirección base
@@ -125,7 +129,7 @@ Route::middleware('auth')->group(function () {
         });
         /*
         |--------------------------------------------------------------------------
-        | Compras 
+        | Compras
         |--------------------------------------------------------------------------
         */
         Route::get('/compras', RegistroCompras::class)->name('compras');
@@ -151,6 +155,7 @@ Route::middleware('auth')->group(function () {
                 Route::get("/categorias", Categoria::class)->name('mantenimiento.productos.categorias');
                 Route::get("/proveedores", Proveedores::class)->name('mantenimiento.productos.proveedores');
                 Route::get("/unidades", Unidades::class)->name('mantenimiento.productos.unidades');
+                Route::get("/metodosPago", MetodosPago::class)->name('mantenimiento.productos.metodosPago');
             });
 
             Route::prefix('trabajadores')->group(function () {

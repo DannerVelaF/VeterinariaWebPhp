@@ -50,7 +50,8 @@ final class ProductoTable extends PowerGridComponent
     public function datasource(): Builder
     {
         return Producto::query()
-            ->with(['categoria_producto', 'proveedores', 'unidad']);
+            ->with(['categoria_producto', 'proveedores', 'unidad'])
+            ->orderBy("fecha_registro", "DESC");
     }
 
     public function relationSearch(): array
@@ -64,8 +65,7 @@ final class ProductoTable extends PowerGridComponent
             ->add('nombre_producto')
             ->add(
                 'nombre_producto_display',
-                fn($producto) =>
-                '<span title="' . e($producto->nombre_producto) . '" class="cursor-help whitespace-nowrap overflow-hidden text-ellipsis max-w-xs block">' .
+                fn($producto) => '<span title="' . e($producto->nombre_producto) . '" class="cursor-help whitespace-nowrap overflow-hidden text-ellipsis max-w-xs block">' .
                     (strlen($producto->nombre_producto) > 15 ? substr($producto->nombre_producto, 0, 15) . '...' : $producto->nombre_producto) .
                     '</span>'
             )
@@ -99,7 +99,7 @@ final class ProductoTable extends PowerGridComponent
     {
         return [
             // 🔹 Filtro por nombre
-            Filter::inputText('nombre_producto', 'Nombre producto'),
+            Filter::inputText('nombre_producto_display', "nombre_producto"),
 
             // 🔹 Filtro por estado
             Filter::select('estado', 'Estado')
@@ -134,7 +134,7 @@ final class ProductoTable extends PowerGridComponent
                 }),
 
             // 🔹 Filtro por código de barras
-            Filter::inputText('codigo_barras', 'Código de barras'),
+            Filter::inputText('codigo_barras', 'codigo_barras'),
         ];
     }
 

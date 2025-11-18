@@ -9,13 +9,13 @@ use Illuminate\Support\Facades\Session;
 use Livewire\Component;
 
 
-
 class Login extends Component
 {
     public $username;
     public $password;
     public $alertMessage = null;
     public $alertType = null;
+    public $viewPassword = false;
 
     protected $rules = [
         'username' => 'required|string',
@@ -27,6 +27,11 @@ class Login extends Component
         'password.required' => 'La contraseña es obligatoria.',
         'password.min' => 'La contraseña debe tener al menos 6 caracteres.',
     ];
+
+    public function verContraseña()
+    {
+        $this->viewPassword = !$this->viewPassword;
+    }
 
     public function mount()
     {

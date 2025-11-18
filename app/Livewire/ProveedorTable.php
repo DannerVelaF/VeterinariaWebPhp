@@ -19,6 +19,7 @@ final class ProveedorTable extends PowerGridComponent
 {
     public string $tableName = 'proveedor-table-dedggx-table';
     use WithExport;
+
     protected $listeners = ['proveedorRegistrado' => '$refresh'];
     public string $primaryKey = 'id_proveedor';
     public string $sortField = 'id_proveedor';
@@ -36,7 +37,7 @@ final class ProveedorTable extends PowerGridComponent
 
     public function datasource(): Builder
     {
-        return Proveedor::query()->orderBy('id_proveedor', 'asc');
+        return Proveedor::query()->orderBy('fecha_registro', 'desc');
     }
 
     public function relationSearch(): array

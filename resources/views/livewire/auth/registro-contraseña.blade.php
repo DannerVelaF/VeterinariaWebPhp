@@ -15,7 +15,7 @@
         {{-- Contenedor del formulario --}}
         <div class="relative z-10 w-full max-w-md px-6">
             <form wire:submit.prevent="guardar"
-                class="bg-white/80 backdrop-blur-lg p-8 rounded-2xl shadow-2xl space-y-6 border border-white/20">
+                  class="bg-white/80 backdrop-blur-lg p-8 rounded-2xl shadow-2xl space-y-6 border border-white/20">
 
                 {{-- Logo y título --}}
                 <div class="text-center space-y-4">
@@ -25,7 +25,7 @@
                                 class="absolute inset-0 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 rounded-full blur-lg opacity-40 group-hover:opacity-60 transition-opacity duration-300">
                             </div>
                             <img src="/images/logo.jpg" alt="Logo ADELA"
-                                class="relative h-24 w-24 rounded-full border-4 border-white shadow-2xl transform group-hover:scale-110 transition-transform duration-300">
+                                 class="relative h-24 w-24 rounded-full border-4 border-white shadow-2xl transform group-hover:scale-110 transition-transform duration-300">
                         </div>
                     </div>
                     <h1
@@ -40,10 +40,10 @@
                 <div>
                     <label for="newPassword" class="block text-sm font-semibold text-gray-700">Nueva contraseña</label>
                     <input type="password" id="newPassword" wire:model.live="newPassword"
-                        placeholder="Mínimo 8 caracteres"
-                        class="w-full pl-3 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 bg-white/50" />
+                           placeholder="Mínimo 8 caracteres"
+                           class="w-full pl-3 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 bg-white/50"/>
                     @error('newPassword')
-                        <span class="text-red-600 text-sm mt-1">{{ $message }}</span>
+                    <span class="text-red-600 text-sm mt-1">{{ $message }}</span>
                     @enderror
                 </div>
 
@@ -53,10 +53,10 @@
                         Confirmar contraseña
                     </label>
                     <input type="password" id="newPassword_confirmation" wire:model.live="newPassword_confirmation"
-                        placeholder="Repite tu contraseña"
-                        class="w-full pl-3 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 bg-white/50" />
+                           placeholder="Repite tu contraseña"
+                           class="w-full pl-3 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 bg-white/50"/>
                     @error('newPassword_confirmation')
-                        <span class="text-red-600 text-sm mt-1">{{ $message }}</span>
+                    <span class="text-red-600 text-sm mt-1">{{ $message }}</span>
                     @enderror
                 </div>
 
@@ -66,7 +66,7 @@
                         <div class="flex justify-between text-xs mb-1">
                             <span>Seguridad:</span>
                             <span
-                                class="font-semibold 
+                                class="font-semibold
                                 @if ($passwordStrength === 'débil') text-red-600
                                 @elseif($passwordStrength === 'media') text-yellow-600
                                 @else text-green-600 @endif">
@@ -86,7 +86,7 @@
 
                 {{-- Botón --}}
                 <button type="submit"
-                    class="w-full bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 text-white font-semibold py-3 rounded-lg hover:from-blue-700 hover:via-purple-700 hover:to-pink-700 transition-all shadow-lg disabled:opacity-50"
+                        class="w-full bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 text-white font-semibold py-3 rounded-lg hover:from-blue-700 hover:via-purple-700 hover:to-pink-700 transition-all shadow-lg disabled:opacity-50"
                     {{ $newPassword && $newPassword_confirmation && $newPassword === $newPassword_confirmation ? '' : 'disabled' }}>
                     Crear contraseña
                 </button>
@@ -144,5 +144,5 @@
             animation-delay: 4s;
         }
     </style>
-    <x-loader />
+    <x-loader target="guardar"/>
 </div>
