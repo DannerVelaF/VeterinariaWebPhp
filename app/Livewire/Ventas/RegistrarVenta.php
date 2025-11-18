@@ -374,7 +374,7 @@ class RegistrarVenta extends Component
 
     public function calcularEstadisticas()
     {
-        $pendiente = EstadoVentas::where('nombre_estado_venta_fisica', 'pendiente')->first();
+        /* $pendiente = EstadoVentas::where('nombre_estado_venta_fisica', 'pendiente')->first();
         $completado = EstadoVentas::where('nombre_estado_venta_fisica', 'completado')->first();
         $cancelado = EstadoVentas::where('nombre_estado_venta_fisica', 'cancelado')->first();
 
@@ -387,7 +387,9 @@ class RegistrarVenta extends Component
         }
         if ($cancelado) {
             $this->cantVentasCanceladas = Ventas::where("id_estado_venta", $cancelado->id_estado_venta_fisica)->count();
-        }
+        } */
+
+        $this->actualizarEstadisticas();
     }
 
     public function updated($property)
@@ -576,6 +578,25 @@ class RegistrarVenta extends Component
         }
     }
 
+    // Método para actualizar estadísticas en tiempo real
+    public function actualizarEstadisticas()
+    {
+        $pendiente = EstadoVentas::where('nombre_estado_venta_fisica', 'pendiente')->first();
+        $completado = EstadoVentas::where('nombre_estado_venta_fisica', 'completado')->first();
+        $cancelado = EstadoVentas::where('nombre_estado_venta_fisica', 'cancelado')->first();
+
+        if ($pendiente) {
+            $this->cantVentasPendientes = Ventas::where("id_estado_venta", $pendiente->id_estado_venta_fisica)->count();
+        }
+        if ($completado) {
+            $this->cantVentasCompletadas = Ventas::where("id_estado_venta", $completado->id_estado_venta_fisica)->count();
+            $this->totalVentasCompletadas = Ventas::where("id_estado_venta", $completado->id_estado_venta_fisica)->sum('total');
+        }
+        if ($cancelado) {
+            $this->cantVentasCanceladas = Ventas::where("id_estado_venta", $cancelado->id_estado_venta_fisica)->count();
+        }
+    }
+
     public function guardar()
     {
         $this->validate([
@@ -667,6 +688,9 @@ class RegistrarVenta extends Component
                 }
             });
 
+            // Actualizar estadísticas después de guardar
+            $this->actualizarEstadisticas();
+
             $this->resetForm();
             $this->closeModal();
             $this->mount();
@@ -732,6 +756,9 @@ class RegistrarVenta extends Component
                 $venta->save();
             });
 
+            // Actualizar estadísticas después de completar
+            $this->actualizarEstadisticas();
+
             $this->dispatch('notify', title: 'Success', description: 'Venta completada correctamente ✅', type: 'success');
             $this->closeModalDetalle();
             $this->dispatch('ventasUpdated');
@@ -761,6 +788,9 @@ class RegistrarVenta extends Component
                     }
                 }
             });
+
+            // Actualizar estadísticas después de completar
+            $this->actualizarEstadisticas();
 
             $this->dispatch('notify', title: 'Success', description: 'Venta cancelada correctamente ❌', type: 'success');
             $this->closeModalDetalle();
@@ -819,7 +849,16 @@ class RegistrarVenta extends Component
 
     public function render()
     {
-        return view('livewire.ventas.registro');
+        // Ordenar por fecha de venta descendente (las más recientes primero)
+        $ventas = Ventas::with(['cliente.persona', 'estadoVenta'])
+                        ->orderBy('fecha_venta', 'desc')
+                        ->orderBy('id_venta', 'desc') // Para desempatar
+                        ->get();
+
+        return view('livewire.ventas.registro', [
+            'ventas' => $ventas
+        ]);
+        //return view('livewire.ventas.registro');
     }
 
     public function openModal(): void
