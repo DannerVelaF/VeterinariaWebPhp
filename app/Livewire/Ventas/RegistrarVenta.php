@@ -62,6 +62,10 @@ class RegistrarVenta extends Component
     public $totalImpuesto = 0;
     public $totalGeneral = 0;
 
+    public $opcionesDescuento = [10, 20, 30, 40, 50];
+    public $descuentoSeleccionado = 0;
+    public $mostrarOpcionesDescuento = false;
+
     public bool $showModal = false;
     public bool $showModalDetalle = false;
     public bool $showModalCliente = false;
@@ -82,6 +86,35 @@ class RegistrarVenta extends Component
         'numero_telefono_personal' => '',
     ];
 
+    // Método para aplicar descuento
+    public function aplicarDescuento($porcentaje)
+    {
+        $this->descuentoSeleccionado = $porcentaje;
+        $this->calcularDescuento();
+        $this->mostrarOpcionesDescuento = false;
+    }
+
+    // Método para quitar descuento
+    public function quitarDescuento()
+    {
+        $this->descuentoSeleccionado = 0;
+        $this->venta['descuento'] = 0;
+        $this->calcularTotales();
+        $this->mostrarOpcionesDescuento = false;
+    }
+
+    // Método para calcular el descuento
+    public function calcularDescuento()
+    {
+        if ($this->descuentoSeleccionado > 0 && $this->subtotal > 0) {
+            $this->venta['descuento'] = $this->subtotal * ($this->descuentoSeleccionado / 100);
+        } else {
+            $this->venta['descuento'] = 0;
+        }
+        $this->calcularTotales();
+    }
+
+
     public function mount()
     {
         $this->generarCodigoVenta();
@@ -92,6 +125,22 @@ class RegistrarVenta extends Component
         $this->inicializarDetalleVenta();
         $this->calcularEstadisticas();
         $this->cargarTiposDocumento();
+
+        // Inicializar descuentos
+        /* $this->descuentoSeleccionado = 0;
+        $this->mostrarOpcionesDescuento = false; */
+
+        $this->subtotal = $this->subtotal ?? 0;
+        $this->totalImpuesto = $this->totalImpuesto ?? 0;
+        $this->totalGeneral = $this->totalGeneral ?? 0;
+
+        $this->mostrarOpcionesDescuento = false;
+
+        if (! isset($this->venta['descuento'])) {
+            $this->venta['descuento'] = 0;
+        }
+
+        $this->opcionesDescuento = [10, 20, 30, 40, 50];
     }
 
     public function cargarTiposDocumento()
@@ -386,6 +435,13 @@ class RegistrarVenta extends Component
             }
         }
 
+        // Calcular descuento si hay uno seleccionado
+        if ($this->descuentoSeleccionado > 0) {
+            $this->venta['descuento'] = $this->subtotal * ($this->descuentoSeleccionado / 100);
+        } else {
+            $this->venta['descuento'] = 0;
+        }
+
         $descuento = $this->asegurarNumero($this->venta['descuento'] ?? 0);
         $subtotalConDescuento = $this->subtotal - $descuento;
         $this->totalImpuesto = $subtotalConDescuento * $this->IGV;
@@ -537,7 +593,7 @@ class RegistrarVenta extends Component
             "venta.fecha_venta.date" => "La fecha de venta no es una fecha válida.",
             "venta.fecha_venta.before_or_equal" => "La fecha de venta no puede ser futura.",
             "venta.observacion.max" => "La observación no debe exceder los 1000 caracteres.",
-            "venta.descuento.numeric" => "El descuento debe ser un número.",
+            "venta.descuento.numeric" => "El descuento seleccionado no es el adecuado",
             "venta.descuento.min" => "El descuento no puede ser negativo.",
             "detalleVenta.*.id_item.required" => "El producto o servicio es obligatorio.",
             "detalleVenta.*.cantidad.required" => "La cantidad es obligatoria.",
@@ -790,10 +846,13 @@ class RegistrarVenta extends Component
         $this->categoriaProductoSeleccionada = '';
         $this->categoriaServicioSeleccionada = '';
         $this->proveedorSeleccionado = '';
+        $this->descuentoSeleccionado = 0;
+        $this->mostrarOpcionesDescuento = false;
         $this->generarCodigoVenta();
         $this->subtotal = 0;
         $this->totalImpuesto = 0;
         $this->totalGeneral = 0;
+        $this->venta['descuento'] = 0;
     }
 
     #[\Livewire\Attributes\On('show-modal-venta')]

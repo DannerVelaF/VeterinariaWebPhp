@@ -331,18 +331,13 @@
                                     </svg>
                                     Registro Completo de Clientes
                                 </button>
-</div>
+                            </div>
                             
                             <div class="flex gap-2 flex-col">
-                                <label for="descuento">Descuento (S/)</label>
-                                <input wire:model.live="venta.descuento" type="number" min="0" step="0.01" id="descuento"
-                                    name="descuento"
-                                    class="border rounded px-2 py-1 focus:outline-none focus:ring focus:ring-blue-300 border-gray-200">
-                                @error('venta.descuento')
-                                    <span class="text-red-500 text-sm">{{ $message }}</span>
-                                @enderror
+                                
                             </div>
                         </div>
+                        
 
                         <!-- Filtros para Productos -->
                         <div class="grid grid-cols-3 gap-4 mb-4" id="filtros-productos">
@@ -395,7 +390,7 @@
                         <!-- Detalles de Productos/Servicios -->
                         <div class="space-y-4">
                             <div class="flex justify-between items-center">
-                                <p class="font-medium text-xl">Productos y Servicios</p>
+                                <p class="font-medium text-xl">Productos / Servicios</p>
                                 <button type="button" wire:click="agregarDetalle"
                                     class="inline-flex items-center gap-1 px-3 py-1 bg-green-500 hover:bg-green-600 text-white rounded text-sm">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
@@ -570,19 +565,164 @@
                             </div>
                         </div>
 
+                        <!-- Sección de Aplicar Descuento -->
+                        <div class="mt-6 p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-200">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center">
+                                    <svg class="w-6 h-6 text-purple-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                            d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"></path>
+                                    </svg>
+                                    <h3 class="font-bold text-gray-800 text-lg">🎁 Aplicar Descuento</h3>
+                                </div>
+                                
+                                @if($descuentoSeleccionado > 0)
+                                    <button type="button" wire:click="quitarDescuento"
+                                            class="text-red-600 hover:text-red-800 font-medium text-sm flex items-center gap-1">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                        </svg>
+                                        Quitar descuento
+                                    </button>
+                                @endif
+                            </div>
+
+                            <!-- Botón para mostrar/ocultar opciones -->
+                            <div class="flex gap-3 items-center">
+                                <button type="button" 
+                                        wire:click="$toggle('mostrarOpcionesDescuento')"
+                                        class="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-all duration-200 font-medium shadow-sm">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    {{ $descuentoSeleccionado > 0 ? "Descuento {$descuentoSeleccionado}% aplicado" : 'Seleccionar Descuento' }}
+                                </button>
+                                
+                                @if($descuentoSeleccionado > 0)
+                                    <div class="flex items-center gap-2 text-green-600 font-semibold">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                        <span>Ahorro: S/ {{ number_format($venta['descuento'], 2) }}</span>
+                                    </div>
+                                @endif
+                            </div>
+
+                            <!-- Opciones de Descuento (se muestra al hacer clic) -->
+                            @if($mostrarOpcionesDescuento)
+                                <div class="mt-4 p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
+                                    <h4 class="font-semibold text-gray-700 mb-3 text-center">Selecciona el porcentaje de descuento</h4>
+                                    
+                                    <div class="grid grid-cols-5 gap-3">
+                                        @foreach($opcionesDescuento as $porcentaje)
+                                            @php
+                                                $montoDescuento = $subtotal * ($porcentaje / 100);
+                                                $subtotalConDescuento = $subtotal - $montoDescuento;
+                                            @endphp
+                                            <button type="button"
+                                                    wire:click="aplicarDescuento({{ $porcentaje }})"
+                                                    class="p-4 border-2 rounded-xl text-center transition-all duration-200 hover:scale-105 hover:shadow-md
+                                                        {{ $descuentoSeleccionado == $porcentaje 
+                                                            ? 'border-green-500 bg-green-50 shadow-sm' 
+                                                            : 'border-gray-200 bg-white hover:border-purple-300' }}">
+                                                <div class="flex flex-col items-center">
+                                                    <!-- Porcentaje grande -->
+                                                    <span class="text-2xl font-bold text-gray-800 mb-1">{{ $porcentaje }}%</span>
+                                                    
+                                                    <!-- Monto de descuento -->
+                                                    <div class="text-sm text-green-600 font-semibold mb-1">
+                                                        - S/ {{ number_format($montoDescuento, 2) }}
+                                                    </div>
+                                                    
+                                                    <!-- Línea divisoria -->
+                                                    <div class="w-full border-t border-gray-200 my-1"></div>
+                                                    
+                                                    <!-- Subtotal después del descuento -->
+                                                    <div class="text-xs text-gray-600">
+                                                        <div>Subtotal:</div>
+                                                        <div class="font-semibold text-gray-800">S/ {{ number_format($subtotalConDescuento, 2) }}</div>
+                                                    </div>
+                                                </div>
+                                            </button>
+                                        @endforeach
+                                    </div>
+
+                                    <!-- Información adicional -->
+                                    <div class="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                                        <div class="flex items-start">
+                                            <svg class="w-5 h-5 text-blue-600 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                            </svg>
+                                            <div class="text-sm text-blue-700">
+                                                <p class="font-semibold">💡 Información sobre descuentos:</p>
+                                                <p class="mt-1">El descuento se aplica sobre el <strong>subtotal actual (S/ {{ number_format($subtotal, 2) }})</strong> antes de impuestos.</p>
+                                                <p>Puedes cambiar productos y el descuento se recalculará automáticamente.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endif
+
+                            <!-- Resumen del Descuento Aplicado -->
+                            @if($descuentoSeleccionado > 0)
+                                <div class="mt-4 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200 shadow-sm">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center">
+                                            <svg class="w-6 h-6 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                            </svg>
+                                            <div>
+                                                <h4 class="font-bold text-green-800 text-lg">¡Descuento Aplicado!</h4>
+                                                <p class="text-green-600 text-sm">Descuento del {{ $descuentoSeleccionado }}% sobre el subtotal</p>
+                                            </div>
+                                        </div>
+                                        <div class="text-right">
+                                            <div class="text-2xl font-bold text-green-800">- S/ {{ number_format($venta['descuento'], 2) }}</div>
+                                            <div class="text-sm text-green-600">Ahorro del {{ $descuentoSeleccionado }}%</div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Desglose del cálculo -->
+                                    <div class="mt-3 grid grid-cols-2 gap-4 text-sm">
+                                        <div class="bg-white p-3 rounded-lg border">
+                                            <p class="text-gray-600">Subtotal original:</p>
+                                            <p class="font-semibold text-lg">S/ {{ number_format($subtotal, 2) }}</p>
+                                        </div>
+                                        <div class="bg-white p-3 rounded-lg border">
+                                            <p class="text-gray-600">Subtotal con descuento:</p>
+                                            <p class="font-semibold text-lg text-green-600">S/ {{ number_format($subtotal - $venta['descuento'], 2) }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endif
+                        </div>
+
                         <!-- Resumen de Totales -->
-                        <div class="grid grid-cols-4 gap-4 p-4 bg-blue-50 rounded-lg" wire:transition>
+                        <div class="grid grid-cols-7 gap-4 p-4 bg-blue-50 rounded-lg" wire:transition>
                             <div class="text-center">
                                 <p class="text-sm font-medium text-gray-600">Subtotal</p>
                                 <p class="text-lg font-bold">S/ {{ number_format($subtotal, 2) }}</p>
+                            </div>
+                            <div class="flex items-center justify-center"> <!-- Added flex for vertical alignment -->
+                                <p class="text-3xl font-bold">+</p> <!-- Changed to text-3xl -->
                             </div>
                             <div class="text-center">
                                 <p class="text-sm font-medium text-gray-600">Descuento</p>
                                 <p class="text-lg font-bold text-red-600">- S/ {{ number_format($venta['descuento'] ?? 0, 2) }}</p>
                             </div>
+                            <div class="flex items-center justify-center"> <!-- Added flex for vertical alignment -->
+                                <p class="text-3xl font-bold">+</p> <!-- Changed to text-3xl -->
+                            </div>
                             <div class="text-center">
                                 <p class="text-sm font-medium text-gray-600">IGV (18%)</p>
                                 <p class="text-lg font-bold">S/ {{ number_format($totalImpuesto, 2) }}</p>
+                            </div>
+                            <div class="flex items-center justify-center"> <!-- Added flex for vertical alignment -->
+                                <p class="text-3xl font-bold">=</p> <!-- Changed to text-3xl -->
                             </div>
                             <div class="text-center">
                                 <p class="text-sm font-medium text-gray-600">Total General</p>
