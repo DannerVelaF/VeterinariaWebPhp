@@ -34,6 +34,7 @@ class RegistrarVenta extends Component
     public $clientes = [];
     public $clienteSeleccionado = '';
     public $filtroCliente = '';
+    public $clienteSeleccionadoFormateado = null;
 
     // Filtros
     public $categoriasProductos = [];
@@ -98,21 +99,6 @@ class RegistrarVenta extends Component
         $this->tiposDocumentos = Tipo_documento::all();
     }
 
-    public function cargarClientes()
-    {
-        $query = Clientes::with('persona');
-        
-        if ($this->filtroCliente) {
-            $query->whereHas('persona', function($q) {
-                $q->where('numero_documento', 'like', '%' . $this->filtroCliente . '%')
-                  ->orWhere('nombre', 'like', '%' . $this->filtroCliente . '%')
-                  ->orWhere('apellido_paterno', 'like', '%' . $this->filtroCliente . '%')
-                  ->orWhere('apellido_materno', 'like', '%' . $this->filtroCliente . '%');
-            });
-        }
-        
-        $this->clientes = $query->get();
-    }
 
     public function updatedFiltroCliente()
     {
@@ -125,6 +111,98 @@ class RegistrarVenta extends Component
         $this->categoriasServicios = CategoriaServicio::where('estado', 'activo')->get();
         $this->proveedores = Proveedor::where('estado', 'activo')->get();
     }
+
+    // Método para seleccionar cliente
+    public function seleccionarCliente($idCliente)
+    {
+        $this->clienteSeleccionado = $idCliente;
+        $this->filtroCliente = ''; // Limpiar la búsqueda después de seleccionar
+        $this->actualizarClienteFormateado();
+    }
+
+    // Método para limpiar cliente seleccionado
+    public function limpiarCliente()
+    {
+        $this->clienteSeleccionado = '';
+        $this->filtroCliente = '';
+        $this->clienteSeleccionadoFormateado = null;
+    }
+
+    // Modifica el método cargarClientes para que retorne los datos formateados
+    public function cargarClientes()
+    {
+        $query = Clientes::with('persona');
+        
+        if ($this->filtroCliente) {
+            $query->whereHas('persona', function($q) {
+                $q->where('numero_documento', 'like', '%' . $this->filtroCliente . '%')
+                ->orWhere('nombre', 'like', '%' . $this->filtroCliente . '%')
+                ->orWhere('apellido_paterno', 'like', '%' . $this->filtroCliente . '%')
+                ->orWhere('apellido_materno', 'like', '%' . $this->filtroCliente . '%');
+            });
+        }
+        
+        $this->clientes = $query->get();
+    }
+
+    public function getClienteSeleccionadoFormateado()
+    {
+        if (!$this->clienteSeleccionado) {
+            return null;
+        }
+        
+        $cliente = Clientes::with('persona')->find($this->clienteSeleccionado);
+        
+        if (!$cliente || !$cliente->persona) {
+            return null;
+        }
+        
+        return [
+            'id_cliente' => $cliente->id_cliente,
+            'nombre' => $cliente->persona->nombre ?? $cliente->persona->nombre ?? '',
+            'apellido_paterno' => $cliente->persona->apellido_paterno ?? '',
+            'apellido_materno' => $cliente->persona->apellido_materno ?? '',
+            'dni' => $cliente->persona->numero_documento ?? '',
+            'telefono' => $cliente->persona->numero_telefono_personal ?? '',
+            'correo' => $cliente->persona->correo_electronico_personal ?? ''
+        ];
+    }
+
+    // Método para actualizar el cliente formateado
+    public function actualizarClienteFormateado()
+    {
+        if (!$this->clienteSeleccionado) {
+            $this->clienteSeleccionadoFormateado = null;
+            return;
+        }
+        
+        $cliente = Clientes::with('persona')->find($this->clienteSeleccionado);
+        
+        if (!$cliente || !$cliente->persona) {
+            $this->clienteSeleccionadoFormateado = null;
+            return;
+        }
+        
+        $this->clienteSeleccionadoFormateado = [
+            'id_cliente' => $cliente->id_cliente,
+            'nombre' => $cliente->persona->nombre ?? $cliente->persona->nombre ?? '',
+            'apellido_paterno' => $cliente->persona->apellido_paterno ?? '',
+            'apellido_materno' => $cliente->persona->apellido_materno ?? '',
+            'dni' => $cliente->persona->numero_documento ?? '',
+            'telefono' => $cliente->persona->numero_telefono_personal ?? '',
+            'correo' => $cliente->persona->correo_electronico_personal ?? ''
+        ];
+    }
+
+    public function updatedClienteSeleccionado($value)
+    {
+        if ($value) {
+            $this->actualizarClienteFormateado();
+        } else {
+            $this->clienteSeleccionadoFormateado = null;
+        }
+    }
+
 
     public function cargarProductosYServicios()
     {
