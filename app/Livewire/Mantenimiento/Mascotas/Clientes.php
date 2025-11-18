@@ -618,6 +618,11 @@ class Clientes extends Component
         }
     }
 
+    public function redirigirAVentas()
+    {
+        return redirect()->route('ventas.registrar'); // Asegúrate de que la ruta 'ventas' exista
+    }
+
     public function cerrarModal()
     {
         $this->resetValidation();

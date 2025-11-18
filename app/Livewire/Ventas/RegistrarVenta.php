@@ -11,10 +11,14 @@ use App\Models\Clientes;
 use App\Models\CategoriaProducto as Categoriaproducto;
 use App\Models\CategoriaServicio as CategoriaServicio;
 use App\Models\Proveedor;
+use App\Models\Persona;
+use App\Models\Tipo_documento;
+use App\Models\Direccion;
 
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Http;
 use Livewire\Component;
 
 use App\Exports\VentaConDetalleExport;
@@ -29,6 +33,8 @@ class RegistrarVenta extends Component
     public $servicios = [];
     public $clientes = [];
     public $clienteSeleccionado = '';
+    public $filtroCliente = '';
+    public $clienteSeleccionadoFormateado = null;
 
     // Filtros
     public $categoriasProductos = [];
@@ -56,18 +62,96 @@ class RegistrarVenta extends Component
     public $totalImpuesto = 0;
     public $totalGeneral = 0;
 
+    public $opcionesDescuento = [10, 20, 30, 40, 50];
+    public $descuentoSeleccionado = 0;
+    public $mostrarOpcionesDescuento = false;
+
     public bool $showModal = false;
     public bool $showModalDetalle = false;
+    public bool $showModalCliente = false;
     public ?Ventas $ventaSeleccionada = null;
+
+    // Para el registro de nuevo cliente
+    public $tiposDocumentos = [];
+    public $nuevoCliente = [
+        'id_tipo_documento' => '',
+        'numero_documento' => '',
+        'nombres' => '',
+        'apellido_paterno' => '',
+        'apellido_materno' => '',
+        'fecha_nacimiento' => '',
+        'sexo' => '',
+        'nacionalidad' => 'Peruana',
+        'correo_electronico_personal' => '',
+        'numero_telefono_personal' => '',
+    ];
+
+    // Método para aplicar descuento
+    public function aplicarDescuento($porcentaje)
+    {
+        $this->descuentoSeleccionado = $porcentaje;
+        $this->calcularDescuento();
+        $this->mostrarOpcionesDescuento = false;
+    }
+
+    // Método para quitar descuento
+    public function quitarDescuento()
+    {
+        $this->descuentoSeleccionado = 0;
+        $this->venta['descuento'] = 0;
+        $this->calcularTotales();
+        $this->mostrarOpcionesDescuento = false;
+    }
+
+    // Método para calcular el descuento
+    public function calcularDescuento()
+    {
+        if ($this->descuentoSeleccionado > 0 && $this->subtotal > 0) {
+            $this->venta['descuento'] = $this->subtotal * ($this->descuentoSeleccionado / 100);
+        } else {
+            $this->venta['descuento'] = 0;
+        }
+        $this->calcularTotales();
+    }
+
 
     public function mount()
     {
         $this->generarCodigoVenta();
-        $this->clientes = Clientes::all();
+        $this->cargarClientes(); 
+        //$this->clientes = Clientes::all();
         $this->cargarFiltros();
         $this->cargarProductosYServicios();
         $this->inicializarDetalleVenta();
         $this->calcularEstadisticas();
+        $this->cargarTiposDocumento();
+
+        // Inicializar descuentos
+        /* $this->descuentoSeleccionado = 0;
+        $this->mostrarOpcionesDescuento = false; */
+
+        $this->subtotal = $this->subtotal ?? 0;
+        $this->totalImpuesto = $this->totalImpuesto ?? 0;
+        $this->totalGeneral = $this->totalGeneral ?? 0;
+
+        $this->mostrarOpcionesDescuento = false;
+
+        if (! isset($this->venta['descuento'])) {
+            $this->venta['descuento'] = 0;
+        }
+
+        $this->opcionesDescuento = [10, 20, 30, 40, 50];
+    }
+
+    public function cargarTiposDocumento()
+    {
+        $this->tiposDocumentos = Tipo_documento::all();
+    }
+
+
+    public function updatedFiltroCliente()
+    {
+        $this->cargarClientes();
     }
 
     public function cargarFiltros()
@@ -75,9 +159,99 @@ class RegistrarVenta extends Component
         $this->categoriasProductos = Categoriaproducto::where('estado', 'activo')->get();
         $this->categoriasServicios = CategoriaServicio::where('estado', 'activo')->get();
         $this->proveedores = Proveedor::where('estado', 'activo')->get();
-
-
     }
+
+    // Método para seleccionar cliente
+    public function seleccionarCliente($idCliente)
+    {
+        $this->clienteSeleccionado = $idCliente;
+        $this->filtroCliente = ''; // Limpiar la búsqueda después de seleccionar
+        $this->actualizarClienteFormateado();
+    }
+
+    // Método para limpiar cliente seleccionado
+    public function limpiarCliente()
+    {
+        $this->clienteSeleccionado = '';
+        $this->filtroCliente = '';
+        $this->clienteSeleccionadoFormateado = null;
+    }
+
+    // Modifica el método cargarClientes para que retorne los datos formateados
+    public function cargarClientes()
+    {
+        $query = Clientes::with('persona');
+        
+        if ($this->filtroCliente) {
+            $query->whereHas('persona', function($q) {
+                $q->where('numero_documento', 'like', '%' . $this->filtroCliente . '%')
+                ->orWhere('nombre', 'like', '%' . $this->filtroCliente . '%')
+                ->orWhere('apellido_paterno', 'like', '%' . $this->filtroCliente . '%')
+                ->orWhere('apellido_materno', 'like', '%' . $this->filtroCliente . '%');
+            });
+        }
+        
+        $this->clientes = $query->get();
+    }
+
+    public function getClienteSeleccionadoFormateado()
+    {
+        if (!$this->clienteSeleccionado) {
+            return null;
+        }
+        
+        $cliente = Clientes::with('persona')->find($this->clienteSeleccionado);
+        
+        if (!$cliente || !$cliente->persona) {
+            return null;
+        }
+        
+        return [
+            'id_cliente' => $cliente->id_cliente,
+            'nombre' => $cliente->persona->nombre ?? $cliente->persona->nombre ?? '',
+            'apellido_paterno' => $cliente->persona->apellido_paterno ?? '',
+            'apellido_materno' => $cliente->persona->apellido_materno ?? '',
+            'dni' => $cliente->persona->numero_documento ?? '',
+            'telefono' => $cliente->persona->numero_telefono_personal ?? '',
+            'correo' => $cliente->persona->correo_electronico_personal ?? ''
+        ];
+    }
+
+    // Método para actualizar el cliente formateado
+    public function actualizarClienteFormateado()
+    {
+        if (!$this->clienteSeleccionado) {
+            $this->clienteSeleccionadoFormateado = null;
+            return;
+        }
+        
+        $cliente = Clientes::with('persona')->find($this->clienteSeleccionado);
+        
+        if (!$cliente || !$cliente->persona) {
+            $this->clienteSeleccionadoFormateado = null;
+            return;
+        }
+        
+        $this->clienteSeleccionadoFormateado = [
+            'id_cliente' => $cliente->id_cliente,
+            'nombre' => $cliente->persona->nombre ?? $cliente->persona->nombre ?? '',
+            'apellido_paterno' => $cliente->persona->apellido_paterno ?? '',
+            'apellido_materno' => $cliente->persona->apellido_materno ?? '',
+            'dni' => $cliente->persona->numero_documento ?? '',
+            'telefono' => $cliente->persona->numero_telefono_personal ?? '',
+            'correo' => $cliente->persona->correo_electronico_personal ?? ''
+        ];
+    }
+
+    public function updatedClienteSeleccionado($value)
+    {
+        if ($value) {
+            $this->actualizarClienteFormateado();
+        } else {
+            $this->clienteSeleccionadoFormateado = null;
+        }
+    }
+
 
     public function cargarProductosYServicios()
     {
@@ -160,18 +334,6 @@ class RegistrarVenta extends Component
         $this->calcularTotales();
     }
 
-    /* public function inicializarDetalleVenta()
-    {
-        $this->detalleVenta = [
-            ['tipo_item' => 'producto', 'id_item' => '', 'cantidad' => 1, 'precio_unitario' => 0]
-        ];
-
-        $this->venta = [
-            'fecha_venta' => now()->format('Y-m-d'),
-            'observacion' => '',
-            'descuento' => 0
-        ];
-    } */
    public function inicializarDetalleVenta()
     {
         $this->detalleVenta = [
@@ -212,7 +374,7 @@ class RegistrarVenta extends Component
 
     public function calcularEstadisticas()
     {
-        $pendiente = EstadoVentas::where('nombre_estado_venta_fisica', 'pendiente')->first();
+        /* $pendiente = EstadoVentas::where('nombre_estado_venta_fisica', 'pendiente')->first();
         $completado = EstadoVentas::where('nombre_estado_venta_fisica', 'completado')->first();
         $cancelado = EstadoVentas::where('nombre_estado_venta_fisica', 'cancelado')->first();
 
@@ -225,7 +387,9 @@ class RegistrarVenta extends Component
         }
         if ($cancelado) {
             $this->cantVentasCanceladas = Ventas::where("id_estado_venta", $cancelado->id_estado_venta_fisica)->count();
-        }
+        } */
+
+        $this->actualizarEstadisticas();
     }
 
     public function updated($property)
@@ -273,6 +437,13 @@ class RegistrarVenta extends Component
             }
         }
 
+        // Calcular descuento si hay uno seleccionado
+        if ($this->descuentoSeleccionado > 0) {
+            $this->venta['descuento'] = $this->subtotal * ($this->descuentoSeleccionado / 100);
+        } else {
+            $this->venta['descuento'] = 0;
+        }
+
         $descuento = $this->asegurarNumero($this->venta['descuento'] ?? 0);
         $subtotalConDescuento = $this->subtotal - $descuento;
         $this->totalImpuesto = $subtotalConDescuento * $this->IGV;
@@ -293,7 +464,7 @@ class RegistrarVenta extends Component
         return 0;
     }
 
-// Método auxiliar para limpiar valores
+    // Método auxiliar para limpiar valores
     private function limpiarValorNumerico($valor)
     {
         if (is_string($valor)) {
@@ -308,26 +479,6 @@ class RegistrarVenta extends Component
 
         return floatval($valor);
     }
-
-    /* public function cargarPrecioUnitario($index)
-    {
-        $detalle = $this->detalleVenta[$index];
-
-        if ($detalle['tipo_item'] === 'producto' && $detalle['id_item']) {
-            $producto = Producto::find($detalle['id_item']);
-            if ($producto) {
-                $this->detalleVenta[$index]['precio_unitario'] = $producto->precio_venta;
-            }
-        } elseif ($detalle['tipo_item'] === 'servicio' && $detalle['id_item']) {
-            $servicio = Servicio::find($detalle['id_item']);
-            if ($servicio) {
-                // Para servicios, cargar el precio pero permitir edición
-                $this->detalleVenta[$index]['precio_unitario'] = $servicio->precio;
-            }
-        }
-
-        $this->calcularTotales();
-    } */
 
     public function cargarPrecioUnitario($index)
     {
@@ -355,17 +506,6 @@ class RegistrarVenta extends Component
         $this->calcularTotales();
     }
 
-    /* public function agregarDetalle()
-    {
-        if (count($this->detalleVenta) < 50) {
-            $this->detalleVenta[] = [
-                'tipo_item' => 'producto',
-                'id_item' => '',
-                'cantidad' => 1,
-                'precio_unitario' => 0
-            ];
-        }
-    } */
    public function agregarDetalle()
     {
         if (count($this->detalleVenta) < 50) {
@@ -438,6 +578,25 @@ class RegistrarVenta extends Component
         }
     }
 
+    // Método para actualizar estadísticas en tiempo real
+    public function actualizarEstadisticas()
+    {
+        $pendiente = EstadoVentas::where('nombre_estado_venta_fisica', 'pendiente')->first();
+        $completado = EstadoVentas::where('nombre_estado_venta_fisica', 'completado')->first();
+        $cancelado = EstadoVentas::where('nombre_estado_venta_fisica', 'cancelado')->first();
+
+        if ($pendiente) {
+            $this->cantVentasPendientes = Ventas::where("id_estado_venta", $pendiente->id_estado_venta_fisica)->count();
+        }
+        if ($completado) {
+            $this->cantVentasCompletadas = Ventas::where("id_estado_venta", $completado->id_estado_venta_fisica)->count();
+            $this->totalVentasCompletadas = Ventas::where("id_estado_venta", $completado->id_estado_venta_fisica)->sum('total');
+        }
+        if ($cancelado) {
+            $this->cantVentasCanceladas = Ventas::where("id_estado_venta", $cancelado->id_estado_venta_fisica)->count();
+        }
+    }
+
     public function guardar()
     {
         $this->validate([
@@ -455,7 +614,7 @@ class RegistrarVenta extends Component
             "venta.fecha_venta.date" => "La fecha de venta no es una fecha válida.",
             "venta.fecha_venta.before_or_equal" => "La fecha de venta no puede ser futura.",
             "venta.observacion.max" => "La observación no debe exceder los 1000 caracteres.",
-            "venta.descuento.numeric" => "El descuento debe ser un número.",
+            "venta.descuento.numeric" => "El descuento seleccionado no es el adecuado",
             "venta.descuento.min" => "El descuento no puede ser negativo.",
             "detalleVenta.*.id_item.required" => "El producto o servicio es obligatorio.",
             "detalleVenta.*.cantidad.required" => "La cantidad es obligatoria.",
@@ -529,6 +688,9 @@ class RegistrarVenta extends Component
                 }
             });
 
+            // Actualizar estadísticas después de guardar
+            $this->actualizarEstadisticas();
+
             $this->resetForm();
             $this->closeModal();
             $this->mount();
@@ -594,6 +756,9 @@ class RegistrarVenta extends Component
                 $venta->save();
             });
 
+            // Actualizar estadísticas después de completar
+            $this->actualizarEstadisticas();
+
             $this->dispatch('notify', title: 'Success', description: 'Venta completada correctamente ✅', type: 'success');
             $this->closeModalDetalle();
             $this->dispatch('ventasUpdated');
@@ -623,6 +788,9 @@ class RegistrarVenta extends Component
                     }
                 }
             });
+
+            // Actualizar estadísticas después de completar
+            $this->actualizarEstadisticas();
 
             $this->dispatch('notify', title: 'Success', description: 'Venta cancelada correctamente ❌', type: 'success');
             $this->closeModalDetalle();
@@ -659,9 +827,38 @@ class RegistrarVenta extends Component
         }
     }
 
+    public function abrirModalCliente()
+    {
+        $this->showModalCliente = true;
+        $this->resetErrorBag();
+        $this->reset('nuevoCliente');
+        $this->nuevoCliente['nacionalidad'] = 'Peruana';
+    }
+
+    public function cerrarModalCliente()
+    {
+        $this->showModalCliente = false;
+    }
+
+    
+    public function redirigirAClientes()
+    {
+        $this->cerrarModalCliente();
+        return redirect()->route('mantenimiento.clientes'); // Ajusta la ruta según tu configuración
+    }
+
     public function render()
     {
-        return view('livewire.ventas.registro');
+        // Ordenar por fecha de venta descendente (las más recientes primero)
+        $ventas = Ventas::with(['cliente.persona', 'estadoVenta'])
+                        ->orderBy('fecha_venta', 'desc')
+                        ->orderBy('id_venta', 'desc') // Para desempatar
+                        ->get();
+
+        return view('livewire.ventas.registro', [
+            'ventas' => $ventas
+        ]);
+        //return view('livewire.ventas.registro');
     }
 
     public function openModal(): void
@@ -688,10 +885,13 @@ class RegistrarVenta extends Component
         $this->categoriaProductoSeleccionada = '';
         $this->categoriaServicioSeleccionada = '';
         $this->proveedorSeleccionado = '';
+        $this->descuentoSeleccionado = 0;
+        $this->mostrarOpcionesDescuento = false;
         $this->generarCodigoVenta();
         $this->subtotal = 0;
         $this->totalImpuesto = 0;
         $this->totalGeneral = 0;
+        $this->venta['descuento'] = 0;
     }
 
     #[\Livewire\Attributes\On('show-modal-venta')]
