@@ -195,7 +195,7 @@ class AuthController extends Controller
                     ]
                 );
 
-                $resetLink = env('APP_FRONTEND_URL') . "/reset-password?token=" . $token . "&email=" . urlencode($correo);
+                $resetLink = "http://localhost:5173/reset-password?token=" . $token . "&email=" . urlencode($correo);
 
                 // 🔹 CORRECCIÓN: Log antes de enviar
                 Log::info('Enviando correo de recuperación', ['correo' => $correo, "resetLink" => $resetLink]);
@@ -336,7 +336,6 @@ class AuthController extends Controller
             DB::commit();
 
 
-
             return response()->json([
                 'message' => 'Contraseña restablecida correctamente'
             ], 200);
@@ -350,7 +349,8 @@ class AuthController extends Controller
         }
     }
 
-    public function verificarDniExistente(Request $request){
+    public function verificarDniExistente(Request $request)
+    {
         try {
             $validate = Validator::make($request->all(), [
                 'dni' => 'required|string',
@@ -408,7 +408,8 @@ class AuthController extends Controller
         }
     }
 
-    public function verificarUsuarioExistente(Request $request){
+    public function verificarUsuarioExistente(Request $request)
+    {
         try {
             $validate = Validator::make($request->all(), [
                 'usuario' => 'required|string'
@@ -436,7 +437,7 @@ class AuthController extends Controller
                 "message" => "Nombre de usuario disponible"
             ], 200);
 
-        } catch (\Exception $e){
+        } catch (\Exception $e) {
             return response()->json([
                 'error' => 'Error al buscar el usuario existente',
                 'detalle' => $e->getMessage()

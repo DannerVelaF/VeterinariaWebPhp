@@ -19,6 +19,7 @@ use Livewire\WithFileUploads;
 class Productos extends Component
 {
     use WithFileUploads;
+
     protected $listeners = [
         'unidadesUpdated' => 'refreshData',
         'categoriaUpdated' => 'refreshData',
@@ -66,6 +67,16 @@ class Productos extends Component
 
     public function updated($propertyName)
     {
+
+        if (str_starts_with($propertyName, 'producto.proveedores_seleccionados')) {
+            // Dar tiempo a Alpine.js para convertir el string a array
+            usleep(100000); // 100ms de delay
+
+            // Convertir a array antes de validar
+            $this->convertirProveedoresAArray();
+        }
+
+
         // Validar solo los campos del producto en tiempo real
         if (str_starts_with($propertyName, 'producto.')) {
             $this->validateOnly($propertyName, $this->getValidationRules(), (new ProductoRequest)->messages());
@@ -318,6 +329,7 @@ class Productos extends Component
         $this->resetValidation();
         $this->mount();
     }
+
     #[\Livewire\Attributes\On('editarProducto')]
     public function abrirModalEditar($productoId)
     {

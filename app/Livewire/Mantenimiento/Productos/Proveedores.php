@@ -160,6 +160,11 @@ class Proveedores extends Component
 
     public function updated($propertyName)
     {
+
+        if ($propertyName === 'productos_seleccionados' || $propertyName === 'productos_seleccionados_editar') {
+            return;
+        }
+
         // Validar campos de proveedor en registro
         if (str_starts_with($propertyName, 'proveedor.')) {
             $this->validateOnly($propertyName, [
@@ -460,7 +465,7 @@ class Proveedores extends Component
         $this->loading = true;
         try {
             $this->proveedorSeleccionado = Proveedor::with(['direccion', 'productos']) // ✅ NUEVO: Cargar productos
-                ->findOrFail($proveedorId);
+            ->findOrFail($proveedorId);
 
             $this->proveedorEditar = [
                 'id_proveedor' => $proveedorId,

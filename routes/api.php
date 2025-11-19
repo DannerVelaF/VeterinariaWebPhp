@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\DocumentoController;
 use App\Http\Controllers\Ventas\ProductosController;
 use App\Http\Controllers\Ventas\VentasController;
 use App\Http\Middleware\VerifyToken;
@@ -21,6 +22,8 @@ Route::prefix('/v1')->group(function () {
         return response()->json($tipo_documento);
     });
 
+    Route::get('/consultar-dni', [DocumentoController::class, 'consultarDNI']);
+    Route::get('/consultar-ruc', [DocumentoController::class, 'consultarRUC']);
 
     Route::post('/verificarCorreo', function (Request $request) {
         $correo = $request->input('correo'); // o $request->correo
@@ -57,7 +60,7 @@ Route::prefix('/v1')->group(function () {
             Route::get('/{codigo_ubigeo}', [UbigeoController::class, 'getUbigeo']);
         });
 
-        Route::prefix("ventas")->group(function (){
+        Route::prefix("ventas")->group(function () {
             Route::post("/registrar", [VentasController::class, "registrarVenta"]);
         });
 
@@ -66,5 +69,7 @@ Route::prefix('/v1')->group(function () {
         Route::get("/categorias-productos", [ProductosController::class, "categorias"]);
         Route::get('/productos-categorias', [ProductosController::class, 'countProductosCategorias']);
         Route::get('/productos-destacados', [ProductosController::class, 'getProductosDestacados']);
+
+
     });
 });
