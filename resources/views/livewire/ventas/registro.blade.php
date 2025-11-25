@@ -1304,7 +1304,8 @@
                         </div>
 
                         <!-- Productos de la Venta -->
-                        <div class="bg-white border border-gray-200 rounded-lg">
+                        <div
+                            class="bg-white border border-gray-200 rounded-lg max-h-[150px] overflow-x-auto overflow-y-auto">
                             <h3 class="font-semibold text-gray-700 p-4 border-b border-gray-200 flex items-center gap-2">
                                 <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor"
                                      viewBox="0 0 24 24">
