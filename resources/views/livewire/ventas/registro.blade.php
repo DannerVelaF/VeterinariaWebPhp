@@ -1037,15 +1037,14 @@
     </div>
 
     <!-- Modal de Detalle de Venta -->
-    <!-- Modal de Detalle de Venta -->
     <div x-data x-init="$watch('$wire.showModalDetalle', value => {
     if (value) { document.body.classList.add('overflow-hidden') } else { document.body.classList.remove('overflow-hidden') }
 })">
         @if ($showModalDetalle && $ventaSeleccionada)
             <div class="fixed inset-0 flex items-center justify-center bg-black/50 z-50 p-4">
-                <div class="bg-white rounded-lg shadow-xl w-full max-w-4xl h-[600px] overflow-y-auto">
+                <div class="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
                     <!-- Header -->
-                    <div class="bg-white border-b border-gray-200 p-6 rounded-t-lg">
+                    <div class="bg-white border-b border-gray-200 p-6 rounded-t-lg sticky top-0 z-10">
                         <div class="flex justify-between items-start">
                             <div>
                                 <h2 class="text-2xl font-bold text-gray-800 mb-2">📋 Detalles de Venta</h2>
@@ -1115,11 +1114,11 @@
                                         <div class="flex justify-between items-center">
                                             <span class="text-gray-600 font-medium">Estado:</span>
                                             <span class="px-3 py-1 rounded-full text-xs font-medium
-                                            {{ $ventaSeleccionada->estadoVenta->nombre_estado_venta_fisica === 'pendiente' ? 'bg-yellow-100 text-yellow-800 border border-yellow-200' :
-                                               ($ventaSeleccionada->estadoVenta->nombre_estado_venta_fisica === 'completado' ? 'bg-green-100 text-green-800 border border-green-200' :
-                                               'bg-red-100 text-red-800 border border-red-200') }}">
-                                            {{ ucfirst($ventaSeleccionada->estadoVenta->nombre_estado_venta_fisica) }}
-                                        </span>
+                                        {{ $ventaSeleccionada->estadoVenta->nombre_estado_venta_fisica === 'pendiente' ? 'bg-yellow-100 text-yellow-800 border border-yellow-200' :
+                                           ($ventaSeleccionada->estadoVenta->nombre_estado_venta_fisica === 'completado' ? 'bg-green-100 text-green-800 border border-green-200' :
+                                           'bg-red-100 text-red-800 border border-red-200') }}">
+                                        {{ ucfirst($ventaSeleccionada->estadoVenta->nombre_estado_venta_fisica) }}
+                                    </span>
                                         </div>
                                     </div>
                                 </div>
@@ -1139,10 +1138,10 @@
                                             <div class="flex justify-between items-center">
                                                 <span class="text-gray-600 font-medium">Nombre:</span>
                                                 <span class="font-semibold text-gray-800">
-                                                {{ $ventaSeleccionada->cliente->persona->nombre }}
+                                            {{ $ventaSeleccionada->cliente->persona->nombre }}
                                                     {{ $ventaSeleccionada->cliente->persona->apellido_paterno }}
                                                     {{ $ventaSeleccionada->cliente->persona->apellido_materno }}
-                                            </span>
+                                        </span>
                                             </div>
                                             <div class="flex justify-between items-center">
                                                 <span class="text-gray-600 font-medium">DNI:</span>
@@ -1188,9 +1187,9 @@
                                             <div class="flex justify-between items-center">
                                                 <span class="text-gray-600 font-medium">Nombre:</span>
                                                 <span class="font-semibold text-gray-800">
-                                                {{ $ventaSeleccionada->trabajador->persona->nombre }}
+                                            {{ $ventaSeleccionada->trabajador->persona->nombre }}
                                                     {{ $ventaSeleccionada->trabajador->persona->apellido_paterno }}
-                                            </span>
+                                        </span>
                                             </div>
                                             <div class="flex justify-between items-center">
                                                 <span class="text-gray-600 font-medium">DNI:</span>
@@ -1292,10 +1291,10 @@
                                             <div class="flex justify-between items-center">
                                                 <span class="text-gray-600 font-medium">Estado Pago:</span>
                                                 <span class="px-2 py-1 rounded text-xs font-medium
-                                                {{ $ventaSeleccionada->transaccionPago->estado === 'completado' ? 'bg-green-100 text-green-800' :
-                                                   ($ventaSeleccionada->transaccionPago->estado === 'pendiente' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800') }}">
-                                                {{ ucfirst($ventaSeleccionada->transaccionPago->estado) }}
-                                            </span>
+                                            {{ $ventaSeleccionada->transaccionPago->estado === 'completado' ? 'bg-green-100 text-green-800' :
+                                               ($ventaSeleccionada->transaccionPago->estado === 'pendiente' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800') }}">
+                                            {{ ucfirst($ventaSeleccionada->transaccionPago->estado) }}
+                                        </span>
                                             </div>
                                         </div>
                                     </div>
@@ -1303,10 +1302,9 @@
                             </div>
                         </div>
 
-                        <!-- Productos de la Venta -->
-                        <div
-                            class="bg-white border border-gray-200 rounded-lg max-h-[150px] overflow-x-auto overflow-y-auto">
-                            <h3 class="font-semibold text-gray-700 p-4 border-b border-gray-200 flex items-center gap-2">
+                        <!-- Productos de la Venta - MODIFICADO CON SCROLL -->
+                        <div class="bg-white border border-gray-200 rounded-lg">
+                            <h3 class="font-semibold text-gray-700 p-4 border-b border-gray-200 flex items-center gap-2 bg-white sticky top-0 z-10">
                                 <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor"
                                      viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -1314,9 +1312,11 @@
                                 </svg>
                                 Productos y Servicios de la Venta
                             </h3>
-                            <div class="overflow-x-auto max-h-40 overflow-y-auto">
+
+                            <!-- Contenedor con scroll - altura máxima ajustada -->
+                            <div class="overflow-x-auto max-h-64 overflow-y-auto">
                                 <table class="w-full text-sm">
-                                    <thead class="bg-gray-50 sticky top-0">
+                                    <thead class="bg-gray-50 sticky top-0 z-10">
                                     <tr>
                                         <th class="text-left p-3 font-medium text-gray-700 border-b border-gray-200">
                                             Item
@@ -1338,39 +1338,40 @@
                                     <tbody class="divide-y divide-gray-200">
                                     @foreach($ventaSeleccionada->detalleVentas as $detalle)
                                         <tr class="hover:bg-gray-50 transition-colors">
-                                            <td class="p-3 border-b border-gray-100">
+                                            <td class="p-3">
                                                 @if($detalle->tipo_item === 'producto')
                                                     {{ $detalle->producto->nombre_producto ?? 'N/A' }}
                                                 @else
                                                     {{ $detalle->servicio->nombre_servicio ?? 'N/A' }}
                                                 @endif
                                             </td>
-                                            <td class="p-3 border-b border-gray-100 capitalize">
-                        <span class="px-2 py-1 rounded text-xs font-medium
-                            {{ $detalle->tipo_item === 'producto' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800' }}">
-                            {{ $detalle->tipo_item }}
-                        </span>
+                                            <td class="p-3 capitalize">
+                                            <span class="px-2 py-1 rounded text-xs font-medium
+                                                {{ $detalle->tipo_item === 'producto' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800' }}">
+                                                {{ $detalle->tipo_item }}
+                                            </span>
                                             </td>
-                                            <td class="p-3 text-center border-b border-gray-100">{{ $detalle->cantidad }}</td>
-                                            <td class="p-3 text-right border-b border-gray-100">
+                                            <td class="p-3 text-center">{{ $detalle->cantidad }}</td>
+                                            <td class="p-3 text-right">
                                                 S/ {{ number_format($detalle->precio_unitario, 2) }}</td>
-                                            <td class="p-3 text-right border-b border-gray-100 font-medium">
+                                            <td class="p-3 text-right font-medium">
                                                 S/ {{ number_format($detalle->subtotal, 2) }}</td>
                                         </tr>
                                     @endforeach
                                     </tbody>
-                                    <tfoot class="bg-gray-50 sticky bottom-0">
-                                    <tr>
-                                        <td colspan="4"
-                                            class="p-3 text-right font-semibold text-gray-700 border-t border-gray-200">
-                                            Total:
-                                        </td>
-                                        <td class="p-3 text-right font-bold text-green-600 border-t border-gray-200">
-                                            S/ {{ number_format($ventaSeleccionada->total, 2) }}
-                                        </td>
-                                    </tr>
-                                    </tfoot>
                                 </table>
+                            </div>
+
+                            <!-- Footer con total - FUERA del scroll, siempre visible -->
+                            <div class="bg-gray-50 border-t border-gray-200">
+                                <div class="flex justify-end p-3">
+                                    <div class="flex items-center gap-4">
+                                        <span class="font-semibold text-gray-700">Total:</span>
+                                        <span class="font-bold text-green-600 text-lg">
+                                        S/ {{ number_format($ventaSeleccionada->total, 2) }}
+                                    </span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -1390,7 +1391,7 @@
                         @endif
 
                         <!-- Botones de Acción -->
-                        <div class="flex justify-end gap-3 pt-4 border-t border-gray-200">
+                        <div class="flex justify-end gap-3 pt-4 border-t border-gray-200 sticky bottom-0 bg-white">
                             @if($ventaSeleccionada->estadoVenta->nombre_estado_venta_fisica == 'pendiente')
                                 <button wire:click="completarVenta"
                                         class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2">
