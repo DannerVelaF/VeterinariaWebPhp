@@ -1304,6 +1304,7 @@
                         </div>
 
                         <!-- Productos de la Venta -->
+                        <!-- Productos de la Venta -->
                         <div class="bg-white border border-gray-200 rounded-lg">
                             <h3 class="font-semibold text-gray-700 p-4 border-b border-gray-200 flex items-center gap-2">
                                 <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor"
@@ -1313,9 +1314,9 @@
                                 </svg>
                                 Productos y Servicios de la Venta
                             </h3>
-                            <div class="overflow-x-auto">
+                            <div class="overflow-x-auto max-h-64 overflow-y-auto">
                                 <table class="w-full text-sm">
-                                    <thead class="bg-gray-50">
+                                    <thead class="bg-gray-50 sticky top-0">
                                     <tr>
                                         <th class="text-left p-3 font-medium text-gray-700 border-b border-gray-200">
                                             Item
@@ -1345,10 +1346,10 @@
                                                 @endif
                                             </td>
                                             <td class="p-3 border-b border-gray-100 capitalize">
-                                            <span class="px-2 py-1 rounded text-xs font-medium
-                                                {{ $detalle->tipo_item === 'producto' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800' }}">
-                                                {{ $detalle->tipo_item }}
-                                            </span>
+                        <span class="px-2 py-1 rounded text-xs font-medium
+                            {{ $detalle->tipo_item === 'producto' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800' }}">
+                            {{ $detalle->tipo_item }}
+                        </span>
                                             </td>
                                             <td class="p-3 text-center border-b border-gray-100">{{ $detalle->cantidad }}</td>
                                             <td class="p-3 text-right border-b border-gray-100">
@@ -1358,7 +1359,7 @@
                                         </tr>
                                     @endforeach
                                     </tbody>
-                                    <tfoot class="bg-gray-50">
+                                    <tfoot class="bg-gray-50 sticky bottom-0">
                                     <tr>
                                         <td colspan="4"
                                             class="p-3 text-right font-semibold text-gray-700 border-t border-gray-200">
