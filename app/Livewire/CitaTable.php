@@ -1,0 +1,294 @@
+<?php
+
+namespace App\Livewire;
+
+use App\Models\Cita;
+use App\Models\Clientes;
+use App\Models\EstadoCita;
+use App\Models\Trabajador;
+use App\Models\Mascota;
+use Illuminate\Support\Carbon;
+use Illuminate\Database\Eloquent\Builder;
+use PowerComponents\LivewirePowerGrid\Button;
+use PowerComponents\LivewirePowerGrid\Column;
+use PowerComponents\LivewirePowerGrid\Facades\Filter;
+use PowerComponents\LivewirePowerGrid\Facades\PowerGrid;
+use PowerComponents\LivewirePowerGrid\PowerGridFields;
+use PowerComponents\LivewirePowerGrid\PowerGridComponent;
+use PowerComponents\LivewirePowerGrid\Facades\Rule;
+
+final class CitaTable extends PowerGridComponent
+{
+    public string $tableName = 'cita-table';
+    public string $primaryKey = 'id_cita';
+    public string $sortField = 'id_cita';
+    public $listeners = ['citasUpdated' => '$refresh'];
+
+    public function boot(): void
+    {
+        config(['livewire-powergrid.filter' => 'outside']);
+    }
+
+    public function setUp(): array
+    {
+        return [
+            PowerGrid::header(),
+            PowerGrid::footer()
+                ->showPerPage()
+                ->showRecordCount()
+        ];
+    }
+
+    public function datasource(): Builder
+    {
+        return Cita::query()->with([
+            'cliente.persona', 
+            'trabajadorAsignado.persona', 
+            'mascota', 
+            'estadoCita'
+        ]);
+    }
+
+    public function relationSearch(): array
+    {
+        return [];
+    }
+
+    public function fields(): PowerGridFields
+    {
+        return PowerGrid::fields()
+            ->add('id_cita')
+            ->add('fecha_programada_formatted', fn($cita) =>
+                Carbon::parse($cita->fecha_programada)->format('d/m/Y H:i')
+            )
+            ->add('fecha_registro_formatted', fn($cita) =>
+                Carbon::parse($cita->fecha_registro)->format('d/m/Y H:i')
+            )
+            ->add('estado_badge', fn($cita) =>
+                $this->getEstadoBadge($cita->estadoCita->nombre_estado_cita)
+            )
+            ->add('cliente_nombre', fn($cita) =>
+                $cita->cliente && $cita->cliente->persona 
+                    ? $cita->cliente->persona->nombre . ' ' . 
+                      $cita->cliente->persona->apellido_paterno . ' ' . 
+                      $cita->cliente->persona->apellido_materno 
+                    : 'N/A'
+            )
+            ->add('trabajador_nombre', fn($cita) =>
+                $cita->trabajadorAsignado && $cita->trabajadorAsignado->persona 
+                    ? $cita->trabajadorAsignado->persona->nombre . ' ' . 
+                      $cita->trabajadorAsignado->persona->apellido_paterno 
+                    : '-'
+            )
+            ->add('mascota_nombre', fn($cita) =>
+                $cita->mascota ? $cita->mascota->nombre_mascota : '-'
+            )
+            ->add('motivo_short', fn($cita) =>
+                strlen($cita->motivo) > 50 
+                    ? substr($cita->motivo, 0, 50) . '...' 
+                    : $cita->motivo
+            );
+    }
+
+    private function getEstadoBadge($estado): string
+    {
+        $badgeClasses = [
+            'Pendiente' => 'bg-yellow-100 text-yellow-800',
+            'En progreso' => 'bg-blue-100 text-blue-800',
+            'Completada' => 'bg-green-100 text-green-800',
+            'Cancelada' => 'bg-red-100 text-red-800',
+            'No asistio' => 'bg-gray-100 text-gray-800',
+        ];
+
+        $class = $badgeClasses[$estado] ?? 'bg-gray-100 text-gray-800';
+
+        return '<span class="px-2 py-1 rounded-full text-xs font-medium capitalize ' . $class . '">' . $estado . '</span>';
+    }
+
+    public function columns(): array
+    {
+        return [
+            Column::make('ID', 'id_cita')
+                ->sortable()
+                ->searchable(),
+
+            Column::make('Fecha Programada', 'fecha_programada_formatted')
+                ->sortable(),
+
+            Column::make('Fecha Registro', 'fecha_registro_formatted')
+                ->sortable(),
+
+            Column::make('Estado', 'estado_badge')
+                ->sortable(),
+
+            Column::make('Cliente', 'cliente_nombre')
+                ->sortable()
+                ->searchable(),
+
+            Column::make('Trabajador', 'trabajador_nombre')
+                ->sortable()
+                ->searchable(),
+
+            Column::make('Mascota', 'mascota_nombre')
+                ->sortable()
+                ->searchable(),
+
+            Column::make('Motivo', 'motivo_short')
+                ->sortable()
+                ->searchable(),
+
+            Column::action('Acciones')
+        ];
+    }
+
+    public function filters(): array
+    {
+        return [
+            Filter::select('estado', 'id_estado_cita')
+                ->dataSource(EstadoCita::all()->toArray())
+                ->optionValue('id_estado_cita')
+                ->optionLabel('nombre_estado_cita')
+                ->builder(function (Builder $query, $value) {
+                    $v = is_array($value)
+                        ? ($value['value'] ?? $value['search'] ?? array_values($value)[0] ?? '')
+                        : (string) $value;
+
+                    $v = trim($v);
+                    if ($v === '') {
+                        return $query;
+                    }
+
+                    return $query->where('id_estado_cita', $v);
+                }),
+
+            Filter::datePicker('fecha_programada', 'fecha_programada')
+                ->params([
+                    'dateFormat' => 'Y-m-d H:i:s',
+                    'locale' => 'es',
+                    'enableTime' => true,
+                ]),
+
+            Filter::select('cliente', 'id_cliente')
+                ->dataSource(Clientes::all()->values()->toArray())
+                ->optionValue('id_cliente')
+                ->optionLabel('id_cliente')
+                ->builder(function (Builder $query, $value) {
+                    $v = is_array($value)
+                        ? ($value['value'] ?? $value['search'] ?? array_values($value)[0] ?? '')
+                        : (string) $value;
+
+                    $v = trim($v);
+                    if ($v === '') {
+                        return $query;
+                    }
+
+                    return $query->where('id_cliente', $v);
+                }),
+
+            Filter::select('trabajador', 'id_trabajador_asignado')
+                ->dataSource(Trabajador::all()->values()->toArray())
+                ->optionValue('id_trabajador')
+                ->optionLabel('id_trabajador')
+                ->builder(function (Builder $query, $value) {
+                    $v = is_array($value)
+                        ? ($value['value'] ?? $value['search'] ?? array_values($value)[0] ?? '')
+                        : (string) $value;
+
+                    $v = trim($v);
+                    if ($v === '') {
+                        return $query;
+                    }
+
+                    return $query->where('id_trabajador_asignado', $v);
+                }),
+
+            Filter::select('mascota', 'id_mascota')
+                ->dataSource(Mascota::all()->values()->toArray())
+                ->optionValue('id_mascota')
+                ->optionLabel('nombre_mascota')
+                ->builder(function (Builder $query, $value) {
+                    $v = is_array($value)
+                        ? ($value['value'] ?? $value['search'] ?? array_values($value)[0] ?? '')
+                        : (string) $value;
+
+                    $v = trim($v);
+                    if ($v === '') {
+                        return $query;
+                    }
+
+                    return $query->where('id_mascota', $v);
+                }),
+        ];
+    }
+
+    #[\Livewire\Attributes\On('edit')]
+    public function edit($rowId): void
+    {
+        $this->js('alert(' . $rowId . ')');
+    }
+
+    public function actions(Cita $row): array
+    {
+        return [
+            Button::add('ver')
+                ->slot('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-eye-icon lucide-eye"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>')
+                ->id()
+                ->class('pg-btn-white dark:bg-pg-primary-700')
+                ->dispatch('show-modal-cita', ['rowId' => $row->id_cita]),
+
+            Button::add('en-progreso')
+                ->slot('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="blue" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-play-icon lucide-play"><polygon points="6 3 20 12 6 21 6 3"/></svg>')
+                ->id()
+                ->class('pg-btn-white dark:bg-pg-primary-700')
+                ->dispatch('en-progreso-cita', ['rowId' => $row->id_cita]),
+
+            Button::add('completar')
+                ->slot('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="green" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check-circle-icon lucide-check-circle"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>')
+                ->id()
+                ->class('pg-btn-white dark:bg-pg-primary-700')
+                ->dispatch('completar-cita', ['rowId' => $row->id_cita]),
+
+            Button::add('cancelar')
+                ->slot('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="red" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-x-icon lucide-circle-x"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>')
+                ->id()
+                ->class('pg-btn-white dark:bg-pg-primary-700')
+                ->dispatch('cancelar-cita', ['rowId' => $row->id_cita]),
+
+            Button::add('no-asistio')
+                ->slot('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="gray" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-user-x-icon lucide-user-x"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="m17 8 5 5"/><path d="m22 8-5 5"/></svg>')
+                ->id()
+                ->class('pg-btn-white dark:bg-pg-primary-700')
+                ->dispatch('no-asistio-cita', ['rowId' => $row->id_cita]),
+        ];
+    }
+
+    public function actionRules($row): array
+    {
+        return [
+            // Ocultar botón "en progreso" si la cita no está Pendiente
+            Rule::button('en-progreso')
+                ->when(fn($row) => $row->estadoCita->nombre_estado_cita !== 'Pendiente')
+                ->hide(),
+
+            // Ocultar botón completar si la cita no está En progreso
+            Rule::button('completar')
+                ->when(fn($row) => $row->estadoCita->nombre_estado_cita !== 'En progreso')
+                ->hide(),
+
+            // Ocultar botón cancelar si la cita ya está Cancelada, Completada o No asistio
+            Rule::button('cancelar')
+                ->when(fn($row) => in_array($row->estadoCita->nombre_estado_cita, ['Completada', 'Cancelada', 'No asistio']))
+                ->hide(),
+
+            // Ocultar botón "no asistio" si la cita ya está Cancelada, Completada o No asistio
+            Rule::button('no-asistio')
+                ->when(fn($row) => in_array($row->estadoCita->nombre_estado_cita, ['Completada', 'Cancelada', 'No asistio']))
+                ->hide(),
+
+            // Mostrar solo el botón ver para citas Completada, Cancelada, No asistio
+            Rule::button('ver')
+                ->when(fn($row) => in_array($row->estadoCita->nombre_estado_cita, ['Completada', 'Cancelada', 'No asistio']))
+                ->setAttribute('class', 'pg-btn-white dark:bg-pg-primary-700'),
+        ];
+    }
+}

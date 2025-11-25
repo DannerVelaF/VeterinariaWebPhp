@@ -17,7 +17,7 @@ class Cita extends Model
         'id_cita',
         'fecha_programada',
         'motivo',
-        'estado',
+        'id_estado_cita',
         'id_cliente',
         'id_trabajador_asignado',
         'id_mascota',
@@ -38,5 +38,10 @@ class Cita extends Model
     public function mascota()
     {
         return $this->belongsTo(Mascota::class, "id_mascota");
+    }
+
+    public function estadoCita()
+    {
+        return $this->belongsTo(EstadoCita::class, "id_estado_cita");
     }
 }
