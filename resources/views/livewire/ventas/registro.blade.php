@@ -1043,7 +1043,7 @@
 })">
         @if ($showModalDetalle && $ventaSeleccionada)
             <div class="fixed inset-0 flex items-center justify-center bg-black/50 z-50 p-4">
-                <div class="bg-white rounded-lg shadow-xl w-full max-w-6xl max-h-[95vh] overflow-y-auto">
+                <div class="bg-white rounded-lg shadow-xl w-full max-w-6xl max-h-[85vh] overflow-y-auto">
                     <!-- Header -->
                     <div class="bg-white border-b border-gray-200 p-6 rounded-t-lg">
                         <div class="flex justify-between items-start">
