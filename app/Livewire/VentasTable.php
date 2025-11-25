@@ -219,8 +219,6 @@ final class VentasTable extends PowerGridComponent
                 ->dataSource(EstadoVentas::all()->toArray())
                 ->optionValue('id_estado_venta_fisica')
                 ->optionLabel('nombre_estado_venta_fisica')
-                ->initialValue(1)
-
             ,
         ];
     }
