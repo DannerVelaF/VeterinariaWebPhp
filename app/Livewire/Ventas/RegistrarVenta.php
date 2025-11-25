@@ -2,6 +2,8 @@
 
 namespace App\Livewire\Ventas;
 
+use App\Models\TransaccionPago;
+use App\Models\User;
 use App\Models\Ventas;
 use App\Models\DetalleVentas;
 use App\Models\EstadoVentas;
@@ -16,17 +18,23 @@ use App\Models\Tipo_documento;
 use App\Models\Direccion;
 
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Component;
 
 use App\Exports\VentaConDetalleExport;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Livewire\WithFileUploads;
 use Maatwebsite\Excel\Facades\Excel;
 
 class RegistrarVenta extends Component
 {
+
+    use WithFileUploads;
+
     public $IGV = 0.18;
     public $codigoVenta = '';
     public $productos = [];
@@ -71,6 +79,23 @@ class RegistrarVenta extends Component
     public bool $showModalCliente = false;
     public ?Ventas $ventaSeleccionada = null;
 
+    public $busquedaItems = [];
+    public $itemsFiltrados = [];
+    public $mostrarListaItems = [];
+    public $indiceActivo = null;
+
+    public $metodosPago = [];
+    public $transaccionPago = [
+        'id_metodo_pago' => '',
+        'monto' => 0,
+        'referencia' => '',
+        'estado' => 'completado',
+        'fecha_pago' => null,
+        'comprobante_url' => '',
+        'datos_adicionales' => []
+    ];
+
+    public $comprobanteTemporal = null;
     // Para el registro de nuevo cliente
     public $tiposDocumentos = [];
     public $nuevoCliente = [
@@ -85,6 +110,10 @@ class RegistrarVenta extends Component
         'correo_electronico_personal' => '',
         'numero_telefono_personal' => '',
     ];
+
+    // Manejo de compras web
+    public bool $showModalTransaccion = false;
+    public ?Ventas $ventaWebSeleccionada = null;
 
     // Método para aplicar descuento
     public function aplicarDescuento($porcentaje)
@@ -118,7 +147,7 @@ class RegistrarVenta extends Component
     public function mount()
     {
         $this->generarCodigoVenta();
-        $this->cargarClientes(); 
+        $this->cargarClientes();
         //$this->clientes = Clientes::all();
         $this->cargarFiltros();
         $this->cargarProductosYServicios();
@@ -136,12 +165,193 @@ class RegistrarVenta extends Component
 
         $this->mostrarOpcionesDescuento = false;
 
-        if (! isset($this->venta['descuento'])) {
+        if (!isset($this->venta['descuento'])) {
             $this->venta['descuento'] = 0;
         }
 
         $this->opcionesDescuento = [10, 20, 30, 40, 50];
+        $this->inicializarBusquedas();
+        $this->cargarMetodosPago();
+        $this->inicializarTransaccionPago();
     }
+
+    public function cargarMetodosPago()
+    {
+        $this->metodosPago = \App\Models\MetodoPago::where('estado', 'activo')->get();
+    }
+
+    public function inicializarTransaccionPago()
+    {
+        $this->transaccionPago = [
+            'id_metodo_pago' => '',
+            'monto' => $this->totalGeneral,
+            'referencia' => '',
+            'estado' => 'completado', // Siempre completado
+            'fecha_pago' => now()->format('Y-m-d\TH:i'),
+            'comprobante_url' => '',
+            'datos_adicionales' => []
+        ];
+        $this->comprobanteTemporal = null;
+    }
+
+
+    public function eliminarComprobante()
+    {
+        $this->comprobanteTemporal = null;
+    }
+
+    public function updatedComprobanteTemporal()
+    {
+        $this->validate([
+            'comprobanteTemporal' => [
+                'nullable',
+                'file',
+                'mimes:jpg,jpeg,png,pdf',
+                'max:5120' // 5MB
+            ]
+        ], [
+            'comprobanteTemporal.file' => 'El comprobante debe ser un archivo válido.',
+            'comprobanteTemporal.mimes' => 'El comprobante debe ser una imagen (JPG, JPEG, PNG) o PDF.',
+            'comprobanteTemporal.max' => 'El comprobante no debe pesar más de 5MB.'
+        ]);
+    }
+
+    public function validarMontoPago()
+    {
+        $this->transaccionPago['monto'] = $this->asegurarNumero($this->transaccionPago['monto']);
+
+        // Si el monto está vacío, establecerlo como el total general
+        if (empty($this->transaccionPago['monto']) || $this->transaccionPago['monto'] == 0) {
+            $this->transaccionPago['monto'] = $this->totalGeneral;
+        }
+    }
+
+    public function mostrarLista($index)
+    {
+        // Ocultar todas las otras listas
+        foreach ($this->mostrarListaItems as $i => $value) {
+            if ($i != $index) {
+                $this->mostrarListaItems[$i] = false;
+            }
+        }
+
+        // Mostrar la lista actual y buscar items
+        $this->mostrarListaItems[$index] = true;
+        $this->buscarItems($index);
+    }
+
+    public function inicializarBusquedas()
+    {
+        foreach ($this->detalleVenta as $index => $detalle) {
+            $this->busquedaItems[$index] = '';
+            $this->mostrarListaItems[$index] = false; // Cambiar a false por defecto
+            $this->itemsFiltrados[$index] = [];
+        }
+    }
+
+    public function buscarItems($index)
+    {
+        $busqueda = $this->busquedaItems[$index] ?? '';
+        $tipoItem = $this->detalleVenta[$index]['tipo_item'] ?? 'producto';
+
+        if ($tipoItem === 'producto') {
+            $query = Producto::where('estado', 'activo')
+                ->with(['lotes' => function ($query) {
+                    $query->where('estado', 'activo');
+                }]);
+
+            if (!empty($busqueda)) {
+                $query->where(function ($q) use ($busqueda) {
+                    $q->where('nombre_producto', 'like', '%' . $busqueda . '%')
+                        ->orWhere('codigo_barras', 'like', '%' . $busqueda . '%')
+                        ->orWhere('descripcion', 'like', '%' . $busqueda . '%');
+                });
+            }
+
+            $productos = $query->limit(15)->get();
+
+            $this->itemsFiltrados[$index] = $productos->filter(function ($producto) {
+                return $producto->stock_actual > 0;
+            })->map(function ($producto) {
+                return [
+                    'id' => $producto->id_producto,
+                    'nombre' => $producto->nombre_producto,
+                    'tipo' => 'producto',
+                    'precio' => $producto->precio_unitario,
+                    'stock' => $producto->stock_actual,
+                    'descripcion' => $producto->descripcion,
+                    'codigo_barras' => $producto->codigo_barras
+                ];
+            })->values()->toArray();
+
+        } else {
+            $query = Servicio::where('estado', 'activo');
+
+            if (!empty($busqueda)) {
+                $query->where(function ($q) use ($busqueda) {
+                    $q->where('nombre_servicio', 'like', '%' . $busqueda . '%')
+                        ->orWhere('descripcion', 'like', '%' . $busqueda . '%');
+                });
+            }
+
+            $this->itemsFiltrados[$index] = $query->limit(15)->get()
+                ->map(function ($servicio) {
+                    return [
+                        'id' => $servicio->id_servicio,
+                        'nombre' => $servicio->nombre_servicio,
+                        'tipo' => 'servicio',
+                        'precio' => $servicio->precio_unitario,
+                        'descripcion' => $servicio->descripcion,
+                        'duracion' => $servicio->duracion_estimada
+                    ];
+                })
+                ->toArray();
+        }
+
+        // NO mostrar la lista automáticamente aquí - solo actualizar los resultados
+        // La lista se mostrará cuando el usuario haga clic/focus
+    }
+
+
+// Método para seleccionar item
+    public function seleccionarItem($index, $idItem, $tipoItem)
+    {
+        if ($tipoItem === 'producto') {
+            $producto = Producto::with(['lotes' => function ($query) {
+                $query->where('estado', 'activo');
+            }])->find($idItem);
+
+            if ($producto) {
+                $this->detalleVenta[$index]['id_item'] = $producto->id_producto;
+                $this->detalleVenta[$index]['precio_unitario'] = $producto->precio_unitario;
+                $this->busquedaItems[$index] = $producto->nombre_producto . " (Stock: {$producto->stock_actual})";
+
+                // Validar stock inicial
+                $this->validarStockProducto($index);
+            }
+        } else {
+            $servicio = Servicio::find($idItem);
+            if ($servicio) {
+                $this->detalleVenta[$index]['id_item'] = $servicio->id_servicio;
+                $this->detalleVenta[$index]['precio_unitario'] = $servicio->precio_unitario;
+                $this->busquedaItems[$index] = $servicio->nombre_servicio;
+            }
+        }
+
+        $this->mostrarListaItems[$index] = false;
+        $this->calcularTotales();
+    }
+
+// Método para limpiar búsqueda
+    public function limpiarBusqueda($index)
+    {
+        $this->busquedaItems[$index] = '';
+        $this->itemsFiltrados[$index] = [];
+        $this->mostrarListaItems[$index] = false;
+        $this->detalleVenta[$index]['id_item'] = '';
+        $this->detalleVenta[$index]['precio_unitario'] = 0;
+    }
+
 
     public function cargarTiposDocumento()
     {
@@ -181,16 +391,16 @@ class RegistrarVenta extends Component
     public function cargarClientes()
     {
         $query = Clientes::with('persona');
-        
+
         if ($this->filtroCliente) {
-            $query->whereHas('persona', function($q) {
+            $query->whereHas('persona', function ($q) {
                 $q->where('numero_documento', 'like', '%' . $this->filtroCliente . '%')
-                ->orWhere('nombre', 'like', '%' . $this->filtroCliente . '%')
-                ->orWhere('apellido_paterno', 'like', '%' . $this->filtroCliente . '%')
-                ->orWhere('apellido_materno', 'like', '%' . $this->filtroCliente . '%');
+                    ->orWhere('nombre', 'like', '%' . $this->filtroCliente . '%')
+                    ->orWhere('apellido_paterno', 'like', '%' . $this->filtroCliente . '%')
+                    ->orWhere('apellido_materno', 'like', '%' . $this->filtroCliente . '%');
             });
         }
-        
+
         $this->clientes = $query->get();
     }
 
@@ -199,13 +409,13 @@ class RegistrarVenta extends Component
         if (!$this->clienteSeleccionado) {
             return null;
         }
-        
+
         $cliente = Clientes::with('persona')->find($this->clienteSeleccionado);
-        
+
         if (!$cliente || !$cliente->persona) {
             return null;
         }
-        
+
         return [
             'id_cliente' => $cliente->id_cliente,
             'nombre' => $cliente->persona->nombre ?? $cliente->persona->nombre ?? '',
@@ -224,14 +434,14 @@ class RegistrarVenta extends Component
             $this->clienteSeleccionadoFormateado = null;
             return;
         }
-        
+
         $cliente = Clientes::with('persona')->find($this->clienteSeleccionado);
-        
+
         if (!$cliente || !$cliente->persona) {
             $this->clienteSeleccionadoFormateado = null;
             return;
         }
-        
+
         $this->clienteSeleccionadoFormateado = [
             'id_cliente' => $cliente->id_cliente,
             'nombre' => $cliente->persona->nombre ?? $cliente->persona->nombre ?? '',
@@ -255,33 +465,19 @@ class RegistrarVenta extends Component
 
     public function cargarProductosYServicios()
     {
-        // Cargar productos activos con stock
-        $queryProductos = Producto::where('estado', 'activo');
-
-        // Aplicar filtros a productos
-        if ($this->categoriaProductoSeleccionada) {
-            $queryProductos->where('id_categoria_producto', $this->categoriaProductoSeleccionada);
-        }
-
-        if ($this->proveedorSeleccionado) {
-            $queryProductos->where('id_proveedor', $this->proveedorSeleccionado);
-        }
-
-        $this->productos = $queryProductos->get()
-            ->filter(function($producto) {
+        // Cargar productos activos con stock usando el accessor
+        $this->productos = Producto::where('estado', 'activo')
+            ->with(['lotes' => function ($query) {
+                $query->where('estado', 'activo');
+            }])
+            ->get()
+            ->filter(function ($producto) {
                 return $producto->stock_actual > 0;
             })
             ->values();
 
         // Cargar servicios activos
-        $queryServicios = Servicio::where('estado', 'activo');
-
-        // Aplicar filtros a servicios si es necesario
-        if ($this->categoriaServicioSeleccionada) {
-            $queryServicios->where('id_categoria_servicio', $this->categoriaServicioSeleccionada);
-        }
-
-        $this->servicios = $queryServicios->get();
+        $this->servicios = Servicio::where('estado', 'activo')->get();
     }
 
     public function updatedCategoriaProductoSeleccionada()
@@ -307,11 +503,15 @@ class RegistrarVenta extends Component
         // Si un producto seleccionado ya no está disponible, limpiar el detalle
         foreach ($this->detalleVenta as $index => $detalle) {
             if ($detalle['tipo_item'] === 'producto' && $detalle['id_item']) {
-                $producto = Producto::find($detalle['id_item']);
+                $producto = Producto::with(['lotes' => function ($query) {
+                    $query->where('estado', 'activo');
+                }])->find($detalle['id_item']);
+
                 if (!$producto || $producto->stock_actual <= 0) {
                     $this->detalleVenta[$index]['id_item'] = '';
                     $this->detalleVenta[$index]['precio_unitario'] = 0;
                     $this->detalleVenta[$index]['cantidad'] = 1;
+                    $this->limpiarBusqueda($index);
                 }
             }
         }
@@ -334,7 +534,7 @@ class RegistrarVenta extends Component
         $this->calcularTotales();
     }
 
-   public function inicializarDetalleVenta()
+    public function inicializarDetalleVenta()
     {
         $this->detalleVenta = [
             [
@@ -353,7 +553,7 @@ class RegistrarVenta extends Component
         ];
     }
 
-        public function generarCodigoVenta()
+    public function generarCodigoVenta()
     {
         $año = Carbon::now()->format('Y');
         $mes = Carbon::now()->format('m');
@@ -392,6 +592,78 @@ class RegistrarVenta extends Component
         $this->actualizarEstadisticas();
     }
 
+    public function updatedDetalleVenta($value, $key)
+    {
+        $parts = explode('.', $key);
+
+        // Si se cambia el tipo de item
+        if (count($parts) === 3 && $parts[2] === 'tipo_item') {
+            $index = $parts[1];
+            $this->limpiarBusqueda($index);
+
+            // Si cambia a servicio, establecer cantidad a 1
+            if ($this->detalleVenta[$index]['tipo_item'] === 'servicio') {
+                $this->detalleVenta[$index]['cantidad'] = 1;
+            }
+        }
+
+        // Si se cambia el id_item manualmente (aunque no debería pasar con el nuevo sistema)
+        if (count($parts) === 3 && $parts[2] === 'id_item') {
+            $index = $parts[1];
+            $this->cargarPrecioUnitario($index);
+            $this->validarStockProducto($index); // Validar stock cuando se selecciona producto
+        }
+
+        // Si se cambia la cantidad, validar stock
+        if (count($parts) === 3 && $parts[2] === 'cantidad') {
+            $index = $parts[1];
+            $this->validarStockProducto($index);
+        }
+
+        // Recalcular totales cuando cambie cualquier campo del detalle
+        $this->calcularTotales();
+    }
+
+    public function validarStockProducto($index)
+    {
+        $detalle = $this->detalleVenta[$index];
+
+        if ($detalle['tipo_item'] === 'producto' && $detalle['id_item']) {
+            $producto = Producto::with(['lotes' => function ($query) {
+                $query->where('estado', 'activo');
+            }])->find($detalle['id_item']);
+
+            $cantidadSolicitada = floatval($detalle['cantidad'] ?? 0);
+
+            if ($producto && $cantidadSolicitada > 0) {
+                if ($producto->stock_actual < $cantidadSolicitada) {
+                    // Agregar error visual
+                    $this->addError("detalleVenta.{$index}.cantidad",
+                        "Stock insuficiente. Disponible: {$producto->stock_actual}");
+                } else {
+                    // Limpiar error si ya es válido
+                    $this->resetErrorBag("detalleVenta.{$index}.cantidad");
+                }
+            }
+        }
+    }
+
+    public function getInfoStockProducto($productoId)
+    {
+        $producto = Producto::with(['lotes' => function ($query) {
+            $query->where('estado', 'activo');
+        }])->find($productoId);
+
+        if ($producto) {
+            return [
+                'stock_actual' => $producto->stock_actual,
+                'nombre' => $producto->nombre_producto
+            ];
+        }
+
+        return null;
+    }
+
     public function updated($property)
     {
         // Validar automáticamente cuando cambien campos numéricos
@@ -405,14 +677,22 @@ class RegistrarVenta extends Component
                     $this->validarYCast($field, $index);
                 }
 
-                if ($field === 'tipo_item') {
-                    $this->detalleVenta[$index]['id_item'] = '';
-                    $this->detalleVenta[$index]['precio_unitario'] = 0;
-                    if ($this->detalleVenta[$index]['tipo_item'] === 'servicio') {
-                        $this->detalleVenta[$index]['cantidad'] = 1;
-                    }
-                } elseif ($field === 'id_item') {
-                    $this->cargarPrecioUnitario($index);
+                // La lógica de tipo_item e id_item ahora está en updatedDetalleVenta
+            }
+        }
+
+        // Buscar items automáticamente cuando cambie la búsqueda o el tipo
+        if (str_starts_with($property, 'busquedaItems') || str_starts_with($property, 'detalleVenta')) {
+            $parts = explode('.', $property);
+            if (count($parts) >= 2) {
+                $index = $parts[1];
+                // Si es cambio de tipo, buscar inmediatamente
+                if (isset($parts[2]) && $parts[2] === 'tipo_item') {
+                    $this->buscarItems($index);
+                }
+                // Si es cambio en búsqueda, buscar inmediatamente
+                if (str_starts_with($property, 'busquedaItems')) {
+                    $this->buscarItems($index);
                 }
             }
         }
@@ -506,16 +786,22 @@ class RegistrarVenta extends Component
         $this->calcularTotales();
     }
 
-   public function agregarDetalle()
+    public function agregarDetalle()
     {
         if (count($this->detalleVenta) < 50) {
+            $nuevoIndex = count($this->detalleVenta);
             $this->detalleVenta[] = [
                 'tipo_item' => 'producto',
                 'id_item' => '',
                 'cantidad' => 1,
                 'precio_unitario' => 0,
-                'precio_referencial' => 0 // Para comparación de servicios
+                'precio_referencial' => 0
             ];
+
+            // Inicializar arrays de búsqueda para el nuevo índice
+            $this->busquedaItems[$nuevoIndex] = '';
+            $this->mostrarListaItems[$nuevoIndex] = false;
+            $this->itemsFiltrados[$nuevoIndex] = [];
         }
     }
 
@@ -567,8 +853,14 @@ class RegistrarVenta extends Component
         // Actualizar el valor en el array
         $this->detalleVenta[$index][$campo] = $valorNumerico;
 
+        // Validar stock si es cantidad
+        if ($campo === 'cantidad') {
+            $this->validarStockProducto($index);
+        }
+
         $this->calcularTotales();
     }
+
     public function eliminarDetalle($index)
     {
         if (count($this->detalleVenta) > 1) {
@@ -607,6 +899,16 @@ class RegistrarVenta extends Component
             "detalleVenta.*.id_item" => "required",
             "detalleVenta.*.cantidad" => "required|numeric|min:1",
             "detalleVenta.*.precio_unitario" => "required|numeric|min:0.01",
+            "transaccionPago.id_metodo_pago" => "required|exists:metodo_pagos,id_metodo_pago",
+            "transaccionPago.monto" => "required|numeric|min:0.01",
+            "transaccionPago.referencia" => "nullable|string|max:100",
+            "comprobanteTemporal" => [
+                'nullable',
+                'file',
+                'mimes:jpg,jpeg,png,pdf',
+                'max:5120'
+            ],
+
         ], [
             "clienteSeleccionado.required" => "El cliente es obligatorio.",
             "clienteSeleccionado.exists" => "El cliente seleccionado no es válido.",
@@ -623,12 +925,31 @@ class RegistrarVenta extends Component
             "detalleVenta.*.precio_unitario.required" => "El precio unitario es obligatorio.",
             "detalleVenta.*.precio_unitario.numeric" => "El precio unitario debe ser un número.",
             "detalleVenta.*.precio_unitario.min" => "El precio unitario debe ser al menos 0.01.",
+            "transaccionPago.id_metodo_pago.required" => "El método de pago es obligatorio.",
+            "transaccionPago.id_metodo_pago.exists" => "El método de pago seleccionado no es válido.",
+            "transaccionPago.monto.required" => "El monto del pago es obligatorio.",
+            "transaccionPago.monto.numeric" => "El monto debe ser un número válido.",
+            "transaccionPago.monto.min" => "El monto debe ser al menos 0.01.",
+            "transaccionPago.estado.required" => "El estado del pago es obligatorio.",
+            "transaccionPago.estado.in" => "El estado del pago no es válido.",
+            "transaccionPago.fecha_pago.date" => "La fecha de pago no es válida.",
+            "transaccionPago.comprobante_url.url" => "La URL del comprobante debe ser una URL válida.",
+            "comprobanteTemporal.file" => "El comprobante debe ser un archivo válido.",
+            "comprobanteTemporal.mimes" => "El comprobante debe ser una imagen (JPG, JPEG, PNG) o PDF.",
+            "comprobanteTemporal.max" => "El comprobante no debe pesar más de 5MB.",
         ]);
-
+        if ($this->transaccionPago['monto'] < $this->totalGeneral) {
+            $this->addError('transaccionPago.monto',
+                "El monto pagado no puede ser menor al total de la venta.");
+            return;
+        }
         // Validación adicional para stock de productos
         foreach ($this->detalleVenta as $index => $detalle) {
             if ($detalle['tipo_item'] === 'producto') {
-                $producto = Producto::find($detalle['id_item']);
+                $producto = Producto::with(['lotes' => function ($query) {
+                    $query->where('estado', 'activo');
+                }])->find($detalle['id_item']);
+
                 $cantidadSolicitada = floatval($detalle['cantidad']);
 
                 if ($producto && $producto->stock_actual < $cantidadSolicitada) {
@@ -658,6 +979,50 @@ class RegistrarVenta extends Component
                     "fecha_registro" => now(),
                     "fecha_actualizacion" => now(),
                 ]);
+                $comprobanteUrl = '';
+                $datosAdicionales = [];
+                if ($this->comprobanteTemporal) {
+                    $file = $this->comprobanteTemporal;
+                    $fileName = 'comprobante_' . time() . '_' . $venta->id_venta . '.' . $file->getClientOriginalExtension();
+
+                    $filePath = $file->storeAs('comprobantes_pago', $fileName, 'public');
+
+                    $comprobanteUrl = '/storage/' . $filePath;
+
+                    $datosAdicionales = [
+                        'archivo' => [
+                            'nombre_original' => $file->getClientOriginalName(),
+                            'tipo' => $file->getClientOriginalExtension(),
+                            'tamaño' => $file->getSize(),
+                            'ruta_almacenamiento' => $filePath,
+                            'fecha_subida' => now()->toISOString(),
+                        ]
+                    ];
+                }
+
+                // Crear transacción de pago
+                TransaccionPago::create([
+                    "id_venta" => $venta->id_venta,
+                    "id_metodo_pago" => $this->transaccionPago['id_metodo_pago'],
+                    "monto" => floatval($this->transaccionPago['monto']),
+                    "referencia" => $this->transaccionPago['referencia'],
+                    "estado" => 'completado', // Siempre completado
+                    "fecha_pago" => now(),
+                    "comprobante_url" => $comprobanteUrl,
+                    "datos_adicionales" => $datosAdicionales,
+                    "fecha_registro" => now(),
+                    "fecha_actualizacion" => now(),
+                ]);
+
+                if ($this->transaccionPago['estado'] == 'completado' &&
+                    $this->transaccionPago['monto'] >= $this->totalGeneral) {
+                    $estadoVentaCompletado = EstadoVentas::where('nombre_estado_venta_fisica', 'completado')->first();
+                    if ($estadoVentaCompletado) {
+                        $venta->update([
+                            'id_estado_venta' => $estadoVentaCompletado->id_estado_venta_fisica
+                        ]);
+                    }
+                }
 
                 // Crear detalles de venta
                 foreach ($this->detalleVenta as $detalle) {
@@ -704,9 +1069,17 @@ class RegistrarVenta extends Component
         }
     }
 
+    public function updatedTotalGeneral($value)
+    {
+        // Actualizar el monto del pago cuando cambie el total general
+        if (empty($this->transaccionPago['monto']) || $this->transaccionPago['monto'] == 0) {
+            $this->transaccionPago['monto'] = $this->totalGeneral;
+        }
+    }
+
     private function actualizarStockProducto($productoId, $cantidadVendida)
     {
-        $producto = Producto::with(['lotes' => function($query) {
+        $producto = Producto::with(['lotes' => function ($query) {
             $query->where('estado', 'activo')
                 ->orderBy('fecha_vencimiento', 'asc'); // Primero los que vencen antes
         }])->find($productoId);
@@ -750,9 +1123,10 @@ class RegistrarVenta extends Component
         try {
             DB::transaction(function () {
                 $estadoVentaCompletado = EstadoVentas::where('nombre_estado_venta_fisica', 'completado')->first();
-
                 $venta = $this->ventaSeleccionada;
                 $venta->id_estado_venta = $estadoVentaCompletado->id_estado_venta_fisica;
+                $usuarioAutenticado = User::findOrFail(Auth::id());
+                $venta->id_trabajador = $usuarioAutenticado->persona->trabajador->id_trabajador;
                 $venta->save();
             });
 
@@ -803,9 +1177,10 @@ class RegistrarVenta extends Component
 
     private function revertirStockProducto($productoId, $cantidadARevertir)
     {
-        $producto = Producto::with(['lotes' => function($query) {
+        $producto = Producto::with(['lotes' => function ($query) {
             $query->where('estado', 'activo')
-                ->orderBy('fecha_vencimiento', 'desc'); // Revertir en los lotes más recientes
+                ->orderBy('fecha_vencimiento', 'desc')
+                ->orderBy('created_at', 'desc');
         }])->find($productoId);
 
         if (!$producto) return;
@@ -815,16 +1190,30 @@ class RegistrarVenta extends Component
         foreach ($producto->lotes as $lote) {
             if ($cantidadRestante <= 0) break;
 
-            // Revertir primero a cantidad_almacenada
-            if ($lote->cantidad_vendida > 0) {
-                $cantidadARevertirLote = min($lote->cantidad_vendida, $cantidadRestante);
+            // Calcular cuánto podemos revertir en este lote
+            $cantidadMaximaRevertir = $lote->cantidad_vendida;
+            $cantidadARevertirLote = min($cantidadMaximaRevertir, $cantidadRestante);
+
+            if ($cantidadARevertirLote > 0) {
+                // Revertir primero a cantidad_almacenada
                 $lote->cantidad_vendida -= $cantidadARevertirLote;
                 $lote->cantidad_almacenada += $cantidadARevertirLote;
                 $cantidadRestante -= $cantidadARevertirLote;
-            }
 
-            $lote->save();
+                $lote->save();
+            }
         }
+
+        // Si después de revertir en todos los lotes aún queda cantidad, es un error
+        if ($cantidadRestante > 0) {
+            Log::error("No se pudo revertir completamente el stock para producto {$productoId}. Faltan: {$cantidadRestante}");
+        }
+    }
+
+    #[\Livewire\Attributes\On('revisar-venta-web')]
+    public function revisarVentaWeb(int $rowId): void
+    {
+        $this->abrirModalTransaccion($rowId);
     }
 
     public function abrirModalCliente()
@@ -840,7 +1229,7 @@ class RegistrarVenta extends Component
         $this->showModalCliente = false;
     }
 
-    
+
     public function redirigirAClientes()
     {
         $this->cerrarModalCliente();
@@ -851,9 +1240,9 @@ class RegistrarVenta extends Component
     {
         // Ordenar por fecha de venta descendente (las más recientes primero)
         $ventas = Ventas::with(['cliente.persona', 'estadoVenta'])
-                        ->orderBy('fecha_venta', 'desc')
-                        ->orderBy('id_venta', 'desc') // Para desempatar
-                        ->get();
+            ->orderBy('fecha_venta', 'desc')
+            ->orderBy('id_venta', 'desc') // Para desempatar
+            ->get();
 
         return view('livewire.ventas.registro', [
             'ventas' => $ventas
@@ -892,6 +1281,8 @@ class RegistrarVenta extends Component
         $this->totalImpuesto = 0;
         $this->totalGeneral = 0;
         $this->venta['descuento'] = 0;
+        $this->inicializarTransaccionPago();
+        $this->comprobanteTemporal = null;
     }
 
     #[\Livewire\Attributes\On('show-modal-venta')]
@@ -933,26 +1324,272 @@ class RegistrarVenta extends Component
 
     public function exportarPdf()
     {
-        $ventas = Ventas::with(['cliente.persona', 'detalleVentas.producto', 'detalleVentas.servicio', 'estadoVenta'])->get();
+        try {
+            $ventas = Ventas::with([
+                'cliente.persona',
+                'detalleVentas.producto',
+                'detalleVentas.servicio',
+                'estadoVenta',
+                'transaccionPago.metodoPago',
+                'trabajador.persona'
+            ])->orderBy('fecha_venta', 'desc')->get();
 
-        $pdf = Pdf::loadView('exports.ventas_pdf', compact('ventas'))
-            ->setPaper('a4', 'landscape');
+            // Verificar si hay ventas
+            if ($ventas->isEmpty()) {
+                $this->dispatch('notify',
+                    title: 'Información',
+                    description: 'No hay ventas para exportar',
+                    type: 'info'
+                );
+                return;
+            }
 
-        return response()->streamDownload(function () use ($pdf) {
-            echo $pdf->output();
-        }, 'reporte_ventas.pdf');
+            $data = [
+                'ventas' => $ventas,
+                'IGV' => $this->IGV,
+                'fecha_reporte' => now()->format('d/m/Y H:i:s')
+            ];
+
+            $pdf = Pdf::loadView('exports.ventas_pdf', $data)
+                ->setPaper('a4', 'landscape')
+                ->setOptions([
+                    'defaultFont' => 'sans-serif',
+                    'isHtml5ParserEnabled' => true,
+                    'isRemoteEnabled' => true
+                ]);
+
+            return response()->streamDownload(
+                fn() => print($pdf->output()),
+                'reporte_general_ventas_' . now()->format('Y_m_d_His') . '.pdf'
+            );
+
+        } catch (\Exception $e) {
+            Log::error('Error al exportar PDF: ' . $e->getMessage());
+            $this->dispatch('notify',
+                title: 'Error',
+                description: 'Error al generar el PDF: ' . $e->getMessage(),
+                type: 'error'
+            );
+        }
     }
 
     public function exportarPdfVenta()
     {
-        $venta = Ventas::with(['cliente.persona', 'detalleVentas.producto', 'detalleVentas.servicio', 'estadoVenta'])->find($this->ventaSeleccionada->id_venta);
-        $IGV = $this->IGV;
+        if (!$this->ventaSeleccionada) {
+            $this->dispatch('notify',
+                title: 'Error',
+                description: 'No se ha seleccionado ninguna venta',
+                type: 'error'
+            );
+            return;
+        }
 
-        $pdf = Pdf::loadView('exports.venta_pdf', compact('venta', 'IGV'))
-            ->setPaper('a4', 'portrait');
+        try {
+            $venta = Ventas::with([
+                'cliente.persona',
+                'detalleVentas.producto',
+                'detalleVentas.servicio',
+                'estadoVenta',
+                'transaccionPago.metodoPago',
+                'trabajador.persona'
+            ])->find($this->ventaSeleccionada->id_venta);
 
-        return response()->streamDownload(function () use ($pdf) {
-            echo $pdf->output();
-        },  'venta_' . $venta->id_venta . '.pdf');
+            if (!$venta) {
+                $this->dispatch('notify',
+                    title: 'Error',
+                    description: 'Venta no encontrada',
+                    type: 'error'
+                );
+                return;
+            }
+
+            $data = [
+                'venta' => $venta, // ✅ Variable SINGULAR para venta individual
+                'IGV' => $this->IGV,
+                'fecha_emision' => now()->format('d/m/Y H:i:s')
+            ];
+
+            $pdf = Pdf::loadView('exports.venta_individual_pdf', $data) // ✅ Nueva vista
+            ->setPaper('a4', 'portrait')
+                ->setOptions([
+                    'defaultFont' => 'sans-serif',
+                    'isHtml5ParserEnabled' => true,
+                    'isRemoteEnabled' => true
+                ]);
+
+            return response()->streamDownload(
+                fn() => print($pdf->output()),
+                'comprobante_venta_' . ($venta->codigo ?? $venta->id_venta) . '_' . now()->format('Y_m_d') . '.pdf'
+            );
+
+        } catch (\Exception $e) {
+            Log::error('Error al exportar PDF de venta: ' . $e->getMessage());
+            $this->dispatch('notify',
+                title: 'Error',
+                description: 'Error al generar el PDF: ' . $e->getMessage(),
+                type: 'error'
+            );
+        }
+    }
+
+    public function descargarComprobanteVenta($idVenta)
+    {
+        $venta = Ventas::with('transaccionPago')->find($idVenta);
+
+        if ($venta && $venta->transaccionPago && $venta->transaccionPago->comprobante_url) {
+            // Extraer el path del storage
+            $path = str_replace('/storage/', '', $venta->transaccionPago->comprobante_url);
+
+            if (Storage::disk('public')->exists($path)) {
+                return Storage::disk('public')->download($path);
+            }
+        }
+
+        $this->dispatch('notify', title: 'Error', description: 'Comprobante no disponible', type: 'error');
+    }
+
+    // Método para abrir el modal de transacción web
+    public function abrirModalTransaccion($idVenta)
+    {
+        $this->ventaWebSeleccionada = Ventas::with([
+            'cliente.persona',
+            'transaccionPago.metodoPago',
+            'detalleVentas.producto',
+            'detalleVentas.servicio',
+            'estadoVenta'
+        ])->find($idVenta);
+
+        if ($this->ventaWebSeleccionada && $this->ventaWebSeleccionada->tipo_venta === 'web') {
+            $this->transaccionPago = $this->ventaWebSeleccionada->transaccionPago;
+            $this->showModalTransaccion = true;
+        }
+    }
+
+// Método para aprobar venta web
+    public function aprobarVentaWeb()
+    {
+        try {
+            DB::transaction(function () {
+                $venta = $this->ventaWebSeleccionada;
+                $transaccion = $this->transaccionPago;
+
+                // Cambiar estado de la transacción a confirmado
+                $transaccion->update([
+                    'estado' => 'completado',
+                    'fecha_pago' => now(),
+                ]);
+
+                // Cambiar estado de la venta a completado
+                $estadoCompletado = EstadoVentas::where('nombre_estado_venta_fisica', 'completado')->first();
+                $usuarioAutenticado = User::findOrFail(Auth::id());
+
+                if ($estadoCompletado) {
+                    $venta->update([
+                        'id_estado_venta' => $estadoCompletado->id_estado_venta_fisica,
+                        "id_trabajador" => $usuarioAutenticado->persona->trabajador->id_trabajador
+                    ]);
+                }
+
+                // El stock ya fue reducido al crear la venta, no es necesario hacer nada más
+            });
+
+            $this->actualizarEstadisticas();
+            $this->dispatch('notify', title: 'Success', description: 'Venta web aprobada correctamente ✅', type: 'success');
+            $this->cerrarModalTransaccion();
+            $this->dispatch('ventasUpdated');
+
+        } catch (\Exception $e) {
+            $this->dispatch('notify', title: 'Error', description: 'Error al aprobar la venta: ' . $e->getMessage(), type: 'error');
+        }
+    }
+
+// Método para rechazar venta web (anular)
+    public function rechazarVentaWeb()
+    {
+        try {
+            DB::transaction(function () {
+                $venta = $this->ventaWebSeleccionada;
+                $transaccion = $this->transaccionPago;
+
+                // Cambiar estado de la transacción a rechazado
+                $transaccion->update([
+                    'estado' => 'refundido',
+                ]);
+
+                // Cambiar estado de la venta a cancelado
+                $estadoCancelado = EstadoVentas::where('nombre_estado_venta_fisica', 'cancelado')->first();
+                if ($estadoCancelado) {
+                    $venta->update([
+                        'id_estado_venta' => $estadoCancelado->id_estado_venta_fisica
+                    ]);
+                }
+
+                // REVERTIR STOCK - importante!
+                foreach ($venta->detalleVentas as $detalle) {
+                    if ($detalle->tipo_item === 'producto' && $detalle->producto) {
+                        $this->revertirStockProducto($detalle->producto->id_producto, $detalle->cantidad);
+                    }
+                }
+            });
+
+            $this->actualizarEstadisticas();
+            $this->dispatch('notify', title: 'Success', description: 'Venta web rechazada y stock revertido ✅', type: 'success');
+            $this->cerrarModalTransaccion();
+            $this->dispatch('ventasUpdated');
+
+        } catch (\Exception $e) {
+            $this->dispatch('notify', title: 'Error', description: 'Error al rechazar la venta: ' . $e->getMessage(), type: 'error');
+        }
+    }
+
+// Método para cerrar el modal
+    public function cerrarModalTransaccion()
+    {
+        $this->showModalTransaccion = false;
+        $this->ventaWebSeleccionada = null;
+        $this->transaccionPago = null;
+    }
+
+// Método para descargar comprobante
+    public function descargarComprobante($idTransaccion)
+    {
+        $transaccion = TransaccionPago::find($idTransaccion);
+
+        if ($transaccion && $transaccion->comprobante_url) {
+            // Extraer el path del storage
+            $path = str_replace('/storage/', '', $transaccion->comprobante_url);
+
+            if (Storage::disk('public')->exists($path)) {
+                return Storage::disk('public')->download($path);
+            }
+        }
+
+        $this->dispatch('notify', title: 'Error', description: 'Comprobante no disponible', type: 'error');
+    }
+
+    public function getProductosProperty()
+    {
+        return \App\Models\Producto::where('estado', 'activo')
+            ->select('id_producto', 'nombre_producto', 'stock_actual', 'precio_unitario')
+            ->get();
+    }
+
+    public function getServiciosProperty()
+    {
+        return \App\Models\Servicio::where('estado', 'activo')
+            ->select('id_servicio', 'nombre_servicio', 'precio_unitario')
+            ->get();
+    }
+
+    public function getNombreProducto($idProducto)
+    {
+        $producto = Producto::find($idProducto);
+        return $producto ? $producto->nombre_producto : 'Producto no encontrado';
+    }
+
+    public function getNombreServicio($idServicio)
+    {
+        $servicio = Servicio::find($idServicio);
+        return $servicio ? $servicio->nombre_servicio : 'Servicio no encontrado';
     }
 }

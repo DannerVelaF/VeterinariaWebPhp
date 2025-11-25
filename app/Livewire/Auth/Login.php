@@ -69,6 +69,20 @@ class Login extends Component
             return;
         }
 
+        // 🔍 VERIFICAR SI EL USUARIO ES UN TRABAJADOR
+        if (!$user->persona) {
+            $this->alertMessage = 'El usuario no tiene una persona asociada.';
+            $this->alertType = 'error';
+            return;
+        }
+
+        $esTrabajador = \App\Models\Trabajador::where('id_persona', $user->persona->id_persona)->exists();
+
+        if (!$esTrabajador) {
+            $this->alertMessage = 'Acceso denegado. Solo el personal autorizado puede ingresar al sistema.';
+            $this->alertType = 'error';
+            return;
+        }
 
         // Validar contraseña sin autenticar aún
         if (!Hash::check($this->password, $user->contrasena)) {
@@ -76,6 +90,7 @@ class Login extends Component
             $this->alertType = 'error';
             return;
         }
+
         // Guardamos temporalmente el ID del usuario en sesión para 2FA
         Session::put('two_factor_user_id', $user->id_usuario);
 

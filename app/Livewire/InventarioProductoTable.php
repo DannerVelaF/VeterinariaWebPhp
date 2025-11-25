@@ -12,7 +12,7 @@ use PowerComponents\LivewirePowerGrid\Facades\PowerGrid;
 use PowerComponents\LivewirePowerGrid\PowerGridFields;
 use PowerComponents\LivewirePowerGrid\PowerGridComponent;
 
-final class InventarioProductoTable extends PowerGridComponent
+final class     InventarioProductoTable extends PowerGridComponent
 {
     public string $tableName = 'inventario-producto-table-dpdvfe-table';
     public string $primaryKey = 'id_producto';
@@ -72,6 +72,7 @@ final class InventarioProductoTable extends PowerGridComponent
                 ->dataSource(\App\Models\CategoriaProducto::all()->toArray())
                 ->optionValue('id_categoria_producto')
                 ->optionLabel('nombre_categoria_producto'),
+            Filter::inputText("nombre_producto")
         ];
     }
 }

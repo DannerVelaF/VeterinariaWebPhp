@@ -1,19 +1,19 @@
 <?php
 
-use App\Http\Controllers\AuthController;
+use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\DocumentoController;
+use App\Http\Controllers\Ventas\TransaccionPagoController;
+use App\Http\Controllers\User\UbigeoController;
+use App\Http\Controllers\User\UserController;
 use App\Http\Controllers\Ventas\ProductosController;
 use App\Http\Controllers\Ventas\VentasController;
 use App\Http\Middleware\VerifyToken;
 use App\Mail\ConfirmarCorreoMail;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
 use App\Models\Tipo_documento as TipoDocumento;
-use App\Models\Ubigeo;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
-use App\Http\Controllers\User\UserController;
-use App\Http\Controllers\User\UbigeoController;
+use Illuminate\Support\Facades\Route;
 
 Route::prefix('/v1')->group(function () {
 
@@ -70,6 +70,12 @@ Route::prefix('/v1')->group(function () {
         Route::get('/productos-categorias', [ProductosController::class, 'countProductosCategorias']);
         Route::get('/productos-destacados', [ProductosController::class, 'getProductosDestacados']);
 
-
+        Route::prefix('transacciones-pago')->group(function () {
+            Route::post('/subir-comprobante', [TransaccionPagoController::class, 'subirComprobante']);
+            Route::get('/venta/{idVenta}', [TransaccionPagoController::class, 'obtenerPorVenta']);
+            Route::get('/{idTransaccion}/comprobante', [TransaccionPagoController::class, 'obtenerComprobante']);
+            Route::put('/{idTransaccion}/estado', [TransaccionPagoController::class, 'actualizarEstado']);
+            Route::delete('/{idTransaccion}/comprobante', [TransaccionPagoController::class, 'eliminarComprobante']);
+        });
     });
 });

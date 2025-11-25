@@ -99,7 +99,7 @@
                             </div>
                         @endif
                         <div class="flex flex-col">
-                            <label for="precio_unitario" class="font-bold mb-1">Precio unitario <span
+                            <label for="precio_unitario" class="font-bold mb-1">Precio de venta <span
                                     class="text-red-500">*</span></label>
                             <input type="number" id="precio_unitario" name="precio_unitario" min="1"
                                    step="1" maxlength="255"

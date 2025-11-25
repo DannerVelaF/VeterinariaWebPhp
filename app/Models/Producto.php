@@ -43,6 +43,7 @@ class Producto extends Model
     {
         return $this->belongsTo(Unidades::class, "id_unidad");
     }
+
     public function lotes()
     {
         return $this->hasMany(Lotes::class, 'id_producto', 'id_producto');
@@ -60,4 +61,25 @@ class Producto extends Model
             return (float)$lote->cantidad_almacenada + (float)$lote->cantidad_mostrada;
         });
     }
+
+
+    /**
+     * Lotes disponibles para venta (activos, no vencidos y con stock)
+     */
+    public function lotesDisponibles()
+    {
+        return $this->lotes()
+            ->where('estado', 'activo')
+            ->where(function ($query) {
+                $query->where('fecha_vencimiento', '>', now())
+                    ->orWhereNull('fecha_vencimiento');
+            })
+            ->where(function ($query) {
+                $query->where('cantidad_almacenada', '>', 0)
+                    ->orWhere('cantidad_mostrada', '>', 0);
+            })
+            ->orderByRaw('fecha_vencimiento IS NULL DESC') // Lotes sin fecha primero
+            ->orderBy('fecha_vencimiento'); // Luego por fecha
+    }
+
 }

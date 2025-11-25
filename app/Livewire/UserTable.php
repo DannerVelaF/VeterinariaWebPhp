@@ -18,9 +18,18 @@ final class UserTable extends PowerGridComponent
     protected $listeners = ['userUpdated' => '$refresh'];
     public string $primaryKey = 'id_usuario';
     public string $sortField = 'id_usuario';
+
+    public string $tipoUsuario = 'sistema'; // 'sistema' o 'clientes'
+
+    // Usar boot en lugar de mount para parámetros
+    public function boot(string $tipoUsuario = 'sistema'): void
+    {
+        $this->tipoUsuario = $tipoUsuario;
+        $this->tableName = "user-table-{$tipoUsuario}-" . uniqid();
+    }
+
     public function setUp(): array
     {
-
         return [
             PowerGrid::header(),
             PowerGrid::footer()
@@ -31,7 +40,17 @@ final class UserTable extends PowerGridComponent
 
     public function datasource(): Builder
     {
-        return User::query()->with(['persona.trabajador.puestoTrabajo']);
+        $query = User::query()->with(['persona.trabajador.puestoTrabajo', 'persona.cliente']);
+
+        // 🔍 FILTRAR POR TIPO DE USUARIO
+        if ($this->tipoUsuario === 'sistema') {
+            $query->whereHas('persona.trabajador');
+        } elseif ($this->tipoUsuario === 'clientes') {
+            $query->whereHas('persona.cliente')
+                ->whereDoesntHave('persona.trabajador'); // Excluir trabajadores
+        }
+
+        return $query;
     }
 
     public function relationSearch(): array
@@ -42,10 +61,13 @@ final class UserTable extends PowerGridComponent
     public function fields(): PowerGridFields
     {
         return PowerGrid::fields()
-            ->add('id')
+            ->add('id_usuario')
             ->add('usuario')
-            ->add('trabajador', fn($user) => $user->persona?->nombre)
-            ->add('puesto', fn($user) => $user->persona?->trabajador?->puestoTrabajo?->nombre_puesto)
+            ->add('trabajador', fn($user) => $user->persona?->nombre_completo ??
+                $user->persona?->nombre . ' ' . $user->persona?->apellido_paterno . ' ' . ($user->persona?->apellido_materno ?? '')
+            )
+            ->add('puesto', fn($user) => $user->persona?->trabajador?->puestoTrabajo?->nombre_puesto ?? 'Cliente')
+            ->add('tipo_usuario', fn($user) => $user->persona?->trabajador ? 'Trabajador' : 'Cliente')
             ->add('ultimo_login', fn($user) => $user->ultimo_login ? Carbon::parse($user->ultimo_login)->format('d/m/Y H:i') : '-')
             ->add('estado')
             ->add('fecha_registro')
@@ -55,10 +77,9 @@ final class UserTable extends PowerGridComponent
             });
     }
 
-
     public function columns(): array
     {
-        return [
+        $baseColumns = [
             Column::make('Id', 'id_usuario'),
             Column::make('Usuario', 'usuario')
                 ->sortable()
@@ -68,17 +89,28 @@ final class UserTable extends PowerGridComponent
                 ->sortable()
                 ->searchable(),
 
-            Column::make('Trabajador', 'trabajador'),
-            COlumn::make('Puesto', 'puesto'),
+            Column::make('Persona', 'trabajador')
+                ->sortable()
+                ->searchable(),
+
+            Column::make('Tipo', 'tipo_usuario'),
 
             Column::make('Ultimo login', 'ultimo_login'),
 
             Column::make('Fecha de registro', 'fecha_registro')
                 ->sortable()
                 ->searchable(),
-            Column::make('Roles', 'roles'),
-            Column::action('Acciones')
         ];
+
+        // 🔄 COLUMNAS CONDICIONALES
+        if ($this->tipoUsuario === 'sistema') {
+            $baseColumns[] = Column::make('Puesto', 'puesto');
+            $baseColumns[] = Column::make('Roles', 'roles');
+        }
+
+        $baseColumns[] = Column::action('Acciones');
+
+        return $baseColumns;
     }
 
     public function onUpdatedEditable(string|int $id, string $field, string $value): void
@@ -90,18 +122,10 @@ final class UserTable extends PowerGridComponent
 
     public function onUpdatedToggleable(string|int $id, string $field, string $value): void
     {
-        // Solo procesar si el campo es estado_boolean
         if ($field === 'estado_boolean') {
-            // Convertir el valor boolean a string
             $nuevoEstado = $value ? 'activo' : 'inactivo';
-
-            // Actualizar el campo real 'estado' en la base de datos
-            User::find($id)->update([
-                'estado' => $nuevoEstado
-            ]);
+            User::find($id)->update(['estado' => $nuevoEstado]);
         }
-
-        // Evitar que Livewire vuelva a renderizar el componente
         $this->skipRender();
     }
 
@@ -110,32 +134,27 @@ final class UserTable extends PowerGridComponent
         return [];
     }
 
-    #[\Livewire\Attributes\On('edit')]
-    public function edit($rowId): void
-    {
-        $this->js('alert(' . $rowId . ')');
-    }
-
     public function actions(User $row): array
     {
-        return [
-            Button::add('cambiar-rol')
-                ->slot('Editar') // <-- aquí defines el texto
+        $actions = [];
+
+        // 🔄 ACCIONES CONDICIONALES
+        if ($this->tipoUsuario === 'sistema') {
+            $actions[] = Button::add('cambiar-rol')
+                ->slot('Editar Rol')
                 ->class('px-2 py-1 bg-yellow-500 hover:bg-yellow-600 text-white text-xs rounded')
-                ->dispatch('abrirModalRol', ['userId' => $row->id_usuario])
-        ];
-    }
+                ->dispatch('abrirModalRol', ['userId' => $row->id_usuario]);
+        }
 
+        // Acción común para ambos tipos
+        $actions[] = Button::add('editar')
+            ->slot('Editar')
+            ->class('px-2 py-1 bg-blue-500 hover:bg-blue-600 text-white text-xs rounded')
+            ->dispatch('abrirModalUsuario', [
+                'userId' => $row->id_usuario,
+                'tipoUsuario' => $this->tipoUsuario
+            ]);
 
-    /*
-    public function actionRules($row): array
-    {
-       return [
-            // Hide button edit for ID 1
-            Rule::button('edit')
-                ->when(fn($row) => $row->id === 1)
-                ->hide(),
-        ];
+        return $actions;
     }
-    */
 }

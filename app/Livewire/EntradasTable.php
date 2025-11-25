@@ -80,8 +80,7 @@ final class EntradasTable extends PowerGridComponent
         return PowerGrid::fields()
             ->add('producto')
             ->add('proveedor')
-            ->add('cantidad_movimiento', fn($inventario) =>
-            '<span class="bg-[#374151] text-white px-3 rounded-md text-sm">
+            ->add('cantidad_movimiento', fn($inventario) => '<span class="bg-[#374151] text-white px-3 rounded-md text-sm">
                     +' . $inventario->cantidad_movimiento . '
                   </span>')
             ->add('fecha_movimiento')
@@ -117,12 +116,12 @@ final class EntradasTable extends PowerGridComponent
                     '<span>' . $entrada->tipoUbicacion->nombre_tipo_ubicacion . '</span>
                     </p>';
             })
-            ->add('usuario', fn($inventario) => $inventario->trabajador->persona->user->usuario)
+            ->add('usuario', fn($inventario) => $inventario->trabajador?->persona?->user?->usuario ?? 'Automático'
+            )
             ->add('lote')
             ->add(
                 'fecha_recepcion',
-                fn($lote) =>
-                Carbon::parse($lote->fecha_recepcion)->format('Y-m-d H:m:s')
+                fn($lote) => Carbon::parse($lote->fecha_recepcion)->format('Y-m-d H:m:s')
             );
     }
 
@@ -166,7 +165,7 @@ final class EntradasTable extends PowerGridComponent
             Filter::datePicker('fecha_movimiento', 'fecha_movimiento')
                 ->params([
                     'dateFormat' => 'Y-m-d',
-                    'locale'     => 'es',
+                    'locale' => 'es',
                     'enableTime' => false,
                 ]),
             Filter::inputText('usuario')
@@ -175,7 +174,7 @@ final class EntradasTable extends PowerGridComponent
                     if (is_array($value)) {
                         $v = $value['value'] ?? $value['search'] ?? array_values($value)[0] ?? '';
                     } else {
-                        $v = (string) $value;
+                        $v = (string)$value;
                     }
 
                     $v = trim($v);
@@ -191,7 +190,7 @@ final class EntradasTable extends PowerGridComponent
             Filter::datePicker('fecha_recepcion', 'lotes.fecha_recepcion')
                 ->params([
                     'dateFormat' => 'Y-m-d',
-                    'locale'     => 'es',
+                    'locale' => 'es',
                     'enableTime' => false,
                 ]),
         ];

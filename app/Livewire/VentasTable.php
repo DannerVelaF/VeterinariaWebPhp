@@ -4,9 +4,11 @@ namespace App\Livewire;
 
 use App\Models\Ventas;
 use App\Models\Clientes;
-use App\Models\EstadoVentas;
-Use Illuminate\Support\Carbon;
+use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use PowerComponents\LivewirePowerGrid\Button;
 use PowerComponents\LivewirePowerGrid\Column;
 use PowerComponents\LivewirePowerGrid\Facades\Filter;
@@ -15,23 +17,36 @@ use PowerComponents\LivewirePowerGrid\PowerGridFields;
 use PowerComponents\LivewirePowerGrid\PowerGridComponent;
 use PowerComponents\LivewirePowerGrid\Facades\Rule;
 use PowerComponents\LivewirePowerGrid\Traits\WithExport;
+use App\Models\EstadoVentas;
 
 final class VentasTable extends PowerGridComponent
 {
     public string $tableName = 'ventas-table';
     use WithExport;
+
     public bool $showFiltersButton = false;
     public string $primaryKey = 'id_venta';
     public string $sortField = 'id_venta';
     public $listeners = ['ventasUpdated' => '$refresh'];
 
+    // Array para filtro de estados
+    public array $estadosVenta = [];
+
     public function boot(): void
     {
-        config(['livewire-powergrid.filter' => 'outside']);
+        config(['livewire-power-grid.filter' => 'outside']);
     }
 
     public function setUp(): array
     {
+        // Cargar estados de venta para el filtro
+        $this->estadosVenta = EstadoVentas::select('id_estado_venta_fisica as id', 'nombre_estado_venta_fisica as name')
+            ->get()
+            ->toArray();
+
+        // CORRECCIÓN: Agregar $ a la variable
+        Log::info('Estados de venta cargados:', $this->estadosVenta);
+
         return [
             PowerGrid::header(),
             PowerGrid::footer()
@@ -42,7 +57,9 @@ final class VentasTable extends PowerGridComponent
 
     public function datasource(): Builder
     {
-        return Ventas::query()->with(['cliente', 'trabajador.persona.user', 'estadoVenta']);
+        return Ventas::query()
+            ->with(['cliente', 'trabajador.persona.user', 'estadoVenta'])
+            ->orderBy("ventas.fecha_registro", "desc");
     }
 
     public function relationSearch(): array
@@ -54,32 +71,26 @@ final class VentasTable extends PowerGridComponent
     {
         return PowerGrid::fields()
             ->add('id_venta')
-            ->add('fecha_venta_formatted', fn($venta) =>
-                Carbon::parse($venta->fecha_venta)->format('d/m/Y')
+            ->add('fecha_venta_formatted', fn($venta) => Carbon::parse($venta->fecha_venta)->format('d/m/Y')
             )
-            ->add('fecha_registro_formatted', fn($venta) =>
-                Carbon::parse($venta->fecha_registro)->format('d/m/Y H:i')
+            ->add('fecha_registro_formatted', fn($venta) => Carbon::parse($venta->fecha_registro)->format('d/m/Y H:i')
             )
-            ->add('estado_badge', fn($venta) =>
-                $this->getEstadoBadge($venta->estadoVenta->nombre_estado_venta_fisica)
+            ->add('estado_badge', fn($venta) => $this->getEstadoBadge($venta->estadoVenta->nombre_estado_venta_fisica)
             )
-            ->add('subtotal_formatted', fn($venta) =>
-                'S/ ' . number_format($venta->subtotal, 2)
+            ->add('subtotal_formatted', fn($venta) => 'S/ ' . number_format($venta->subtotal, 2)
             )
-            ->add('descuento_formatted', fn($venta) =>
-                'S/ ' . number_format($venta->descuento, 2)
+            ->add('descuento_formatted', fn($venta) => 'S/ ' . number_format($venta->descuento, 2)
             )
-            ->add('total_formatted', fn($venta) =>
-                'S/ ' . number_format($venta->total, 2)
+            ->add('total_formatted', fn($venta) => 'S/ ' . number_format($venta->total, 2)
             )
-            ->add('cliente_nombre', fn($venta) =>
-                $venta->cliente ? $venta->cliente->persona->nombre : 'N/A'
+            ->add('cliente_nombre', fn($venta) => $venta->cliente ? $venta->cliente->persona->nombre : 'N/A'
             )
-            ->add('vendedor', fn($venta) =>
-                $venta->trabajador && $venta->trabajador->persona && $venta->trabajador->persona->user
-                    ? $venta->trabajador->persona->user->usuario
-                    : '-'
-            );
+            ->add('vendedor', fn($venta) => $venta->trabajador && $venta->trabajador->persona && $venta->trabajador->persona->user
+                ? $venta->trabajador->persona->user->usuario
+                : 'Automático'
+            )
+            ->add("codigo")
+            ->add("tipo_venta", fn($venta) => Str::ucfirst(Str::lower($venta->tipo_venta)));
     }
 
     private function getEstadoBadge($estado): string
@@ -98,7 +109,7 @@ final class VentasTable extends PowerGridComponent
     public function columns(): array
     {
         return [
-            Column::make('ID', 'id_venta')
+            Column::make('Codigo venta', 'codigo')
                 ->sortable()
                 ->searchable(),
 
@@ -127,6 +138,8 @@ final class VentasTable extends PowerGridComponent
             Column::make('Vendedor', 'vendedor')
                 ->sortable(),
 
+            Column::make("Tipo", "tipo_venta"),
+
             Column::action('Acciones')
         ];
     }
@@ -134,21 +147,45 @@ final class VentasTable extends PowerGridComponent
     public function filters(): array
     {
         return [
-            Filter::select('estado', 'id_estado_venta')
-                ->dataSource(EstadoVentas::all()->toArray())
-                ->optionValue('id_estado_venta')
-                ->optionLabel('nombre_estado_venta')
+            // 🔹 FILTRO DE ESTADO - CORREGIDO
+            Filter::select('estado', 'Estado')
+                ->dataSource($this->estadosVenta)
+                ->optionValue('id')
+                ->optionLabel('name')
                 ->builder(function (Builder $query, $value) {
-                    $v = is_array($value)
-                        ? ($value['value'] ?? $value['search'] ?? array_values($value)[0] ?? '')
-                        : (string) $value;
+                    if (!empty($value)) {
+                        $query->where('id_estado_venta', $value);
+                    }
+                    return $query;
+                }),
 
-                    $v = trim($v);
-                    if ($v === '') {
+            // 🔹 FILTRO DE CLIENTE - CORREGIDO
+            Filter::inputText('cliente_nombre', 'Nombre')
+                ->builder(function (Builder $query, array $value) {
+                    $search = trim($value['value']);
+
+                    if ($search === '') {
                         return $query;
                     }
 
-                    return $query->where('id_estado_venta', $v);
+                    return $query->whereHas('cliente.persona', function ($q) use ($search) {
+                        $q->where(DB::raw("CONCAT(nombre, ' ', apellido_paterno, ' ', apellido_materno)"), 'like', "%{$search}%")
+                            ->orWhere('nombre', 'like', "%{$search}%")
+                            ->orWhere('apellido_paterno', 'like', "%{$search}%")
+                            ->orWhere('apellido_materno', 'like', "%{$search}%");
+                    });
+                }),
+
+            // 🔹 FILTRO DE VENDEDOR/TRABAJADOR - NUEVO
+            Filter::inputText('vendedor', 'Vendedor')
+                ->builder(function (Builder $query, $value) {
+                    $search = $value['value'] ?? '';
+                    if (!empty($search)) {
+                        $query->whereHas('trabajador.persona.user', function ($q) use ($search) {
+                            $q->where('usuario', 'like', "%{$search}%");
+                        });
+                    }
+                    return $query;
                 }),
 
             Filter::datePicker('fecha_venta', 'fecha_venta')
@@ -158,22 +195,33 @@ final class VentasTable extends PowerGridComponent
                     'enableTime' => false,
                 ]),
 
-            Filter::select('cliente', 'id_cliente')
-                ->dataSource(Clientes::all()->sortBy('nombre_cliente')->values()->toArray())
-                ->optionValue('id_cliente')
-                ->optionLabel('nombre_cliente')
+            Filter::select('tipo_venta', 'Tipo de venta')
+                ->dataSource([
+                    ['id' => 'presencial', 'name' => 'Presencial'],
+                    ['id' => 'web', 'name' => 'Web'],
+                ])
+                ->optionValue('id')
+                ->optionLabel('name')
                 ->builder(function (Builder $query, $value) {
-                    $v = is_array($value)
-                        ? ($value['value'] ?? $value['search'] ?? array_values($value)[0] ?? '')
-                        : (string) $value;
-
-                    $v = trim($v);
-                    if ($v === '') {
-                        return $query;
+                    if (!empty($value)) {
+                        $query->where('tipo_venta', $value);
                     }
-
-                    return $query->where('id_cliente', $v);
+                    return $query;
                 }),
+            Filter::datePicker('fecha_venta', 'fecha_venta_formatted')
+                ->params([
+                    'dateFormat' => 'Y-m-d',
+                    'locale' => 'es',
+                    'enableTime' => false,
+                ]),
+            Filter::inputText("codigo", "Código de venta"),
+            Filter::select('estado_badge', 'ventas.id_estado_venta')
+                ->dataSource(EstadoVentas::all()->toArray())
+                ->optionValue('id_estado_venta_fisica')
+                ->optionLabel('nombre_estado_venta_fisica')
+                ->initialValue(1)
+
+            ,
         ];
     }
 
@@ -185,38 +233,57 @@ final class VentasTable extends PowerGridComponent
 
     public function actions(Ventas $row): array
     {
-        return [
+        $actions = [
             Button::add('ver')
                 ->slot('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-eye-icon lucide-eye"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>')
                 ->id()
                 ->class('pg-btn-white dark:bg-pg-primary-700')
                 ->dispatch('show-modal-venta', ['rowId' => $row->id_venta]),
+        ];
 
-            Button::add('completar')
+        // Solo agregar botones de completar/cancelar para ventas presenciales pendientes
+        if ($row->tipo_venta === 'presencial' && $row->estadoVenta->nombre_estado_venta_fisica === 'pendiente') {
+            $actions[] = Button::add('completar')
                 ->slot('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="green" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check-icon lucide-check"><path d="M20 6 9 17l-5-5"/></svg>')
                 ->id()
                 ->class('pg-btn-white dark:bg-pg-primary-700')
-                ->dispatch('completar-venta', ['rowId' => $row->id_venta]),
+                ->dispatch('completar-venta', ['rowId' => $row->id_venta]);
 
-            Button::add('cancelar')
+            $actions[] = Button::add('cancelar')
                 ->slot('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="red" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-x-icon lucide-circle-x"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>')
                 ->id()
                 ->class('pg-btn-white dark:bg-pg-primary-700')
-                ->dispatch('cancelar-venta', ['rowId' => $row->id_venta]),
-        ];
+                ->dispatch('cancelar-venta', ['rowId' => $row->id_venta]);
+        }
+
+        // Botón especial para revisar ventas web pendientes
+        if ($row->tipo_venta === 'web' && $row->estadoVenta->nombre_estado_venta_fisica === 'pendiente') {
+            $actions[] = Button::add('revisar-web')
+                ->slot('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="blue" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-credit-card"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>')
+                ->id()
+                ->class('pg-btn-white dark:bg-pg-primary-700 bg-blue-50 hover:bg-blue-100')
+                ->dispatch('revisar-venta-web', ['rowId' => $row->id_venta]);
+        }
+
+        return $actions;
     }
 
     public function actionRules($row): array
     {
         return [
-            // Ocultar botón completar si la venta ya está completada o cancelada
+            // Ocultar botón completar si la venta ya está completada, cancelada o es web
             Rule::button('completar')
-                ->when(fn($row) => in_array($row->estadoVenta->nombre_estado_venta_fisica, ['completado', 'cancelado']))
+                ->when(fn($row) => in_array($row->estadoVenta->nombre_estado_venta_fisica, ['completado', 'cancelado']) || $row->tipo_venta === 'web')
                 ->hide(),
 
-            // Ocultar botón cancelar si la venta ya está cancelada o completada
+            // Ocultar botón cancelar si la venta ya está cancelada, completada o es web
             Rule::button('cancelar')
-                ->when(fn($row) => in_array($row->estadoVenta->nombre_estado_venta_fisica, ['completado', 'cancelado']))
+                ->when(fn($row) => in_array($row->estadoVenta->nombre_estado_venta_fisica, ['completado', 'cancelado']) || $row->tipo_venta === 'web')
+                ->hide(),
+
+            // Ocultar botón revisar-web si no es web o ya no está pendiente
+            Rule::button('revisar-web')
+                ->when(fn($row) => $row->tipo_venta !== 'web' || $row->estadoVenta->nombre_estado_venta_fisica !== 'pendiente')
                 ->hide(),
 
             // Mostrar solo el botón ver para ventas completadas o canceladas
