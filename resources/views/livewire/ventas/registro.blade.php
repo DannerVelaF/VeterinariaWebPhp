@@ -1304,7 +1304,6 @@
                         </div>
 
                         <!-- Productos de la Venta -->
-                        <!-- Productos de la Venta -->
                         <div class="bg-white border border-gray-200 rounded-lg">
                             <h3 class="font-semibold text-gray-700 p-4 border-b border-gray-200 flex items-center gap-2">
                                 <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor"
@@ -1314,7 +1313,7 @@
                                 </svg>
                                 Productos y Servicios de la Venta
                             </h3>
-                            <div class="overflow-x-auto max-h-64 overflow-y-auto">
+                            <div class="overflow-x-auto max-h-40 overflow-y-auto">
                                 <table class="w-full text-sm">
                                     <thead class="bg-gray-50 sticky top-0">
                                     <tr>
