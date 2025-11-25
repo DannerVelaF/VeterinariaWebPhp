@@ -155,6 +155,7 @@ class Mascotas extends Component
             ]);
         }
     }
+
     protected $casts = [
         'clienteSeleccionado' => 'array',
         'resultadosClientes' => 'array',
@@ -162,12 +163,27 @@ class Mascotas extends Component
         'especies' => 'collection',
     ];
 
+    public function hydrate()
+    {
+        // Limpiar datos antes de la hidratación
+        if (is_object($this->clienteSeleccionado)) {
+            $this->clienteSeleccionado = null;
+        }
+
+        if (is_object($this->resultadosClientes)) {
+            $this->resultadosClientes = [];
+        }
+    }
+
     public function mount()
     {
         $this->especies = Especie::where('estado', 'activo')->get();
         $this->razas = collect();
-        $this->colores = Colores::orderBy('nombre_color', 'asc')->get(); // Cargar colores ordenados
+        $this->colores = Colores::orderBy('nombre_color', 'asc')->get();
+
+        // Asegurar que sean del tipo correcto
         $this->clienteSeleccionado = null;
+        $this->resultadosClientes = [];
     }
 
     public function refreshData()
@@ -238,20 +254,21 @@ class Mascotas extends Component
                 )
                 ->firstOrFail();
 
-            // Asignar como array simple
+            // Convertir a array explícitamente
             $this->clienteSeleccionado = [
-                'id_cliente' => $cliente->id_cliente,
-                'nombre' => $cliente->nombre,
-                'apellido_paterno' => $cliente->apellido_paterno,
-                'apellido_materno' => $cliente->apellido_materno,
-                'dni' => $cliente->dni,
-                'telefono' => $cliente->telefono,
-                'correo' => $cliente->correo,
+                'id_cliente' => (int)$cliente->id_cliente,
+                'nombre' => (string)$cliente->nombre,
+                'apellido_paterno' => (string)$cliente->apellido_paterno,
+                'apellido_materno' => (string)$cliente->apellido_materno,
+                'dni' => (string)$cliente->dni,
+                'telefono' => (string)$cliente->telefono,
+                'correo' => (string)$cliente->correo,
             ];
 
-            $this->mascota['id_cliente'] = $cliente->id_cliente;
+            $this->mascota['id_cliente'] = (int)$cliente->id_cliente;
             $this->buscarCliente = '';
             $this->resultadosClientes = [];
+
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             $this->clienteSeleccionado = null;
             $this->mascota['id_cliente'] = '';
@@ -418,8 +435,8 @@ class Mascotas extends Component
         $cliente = $this->clienteSeleccionado;
         $this->resetForm(false);
         if ($cliente) {
-            $this->clienteSeleccionado = $cliente;
-            $this->mascota['id_cliente'] = $cliente->id_cliente;
+            $this->clienteSeleccionado = $cliente; // ✅ Ya es array, está bien
+            $this->mascota['id_cliente'] = $cliente['id_cliente']; // ✅ Acceder como array
         }
         $this->dispatch('notify', title: 'Success', description: 'Formulario listo para registrar otra mascota 🐾', type: 'success');
         $this->dispatch('scrollToTop');
