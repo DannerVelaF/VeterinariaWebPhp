@@ -18,6 +18,20 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        //
 
-    })->create();
+    })->withCommands([
+        \App\Console\Commands\RevertirVentasPendientes::class
+    ])->withSchedule(function (\Illuminate\Console\Scheduling\Schedule $schedule) {
+        $schedule->command('ventas:revertir-pendientes')->hourly();
+
+        // Otras opciones disponibles:
+        // ->everyMinute();           // Cada minuto
+        // ->everyTwoMinutes();       // Cada 2 minutos
+        // ->everyTenMinutes();       // Cada 10 minutos
+        // ->everyFifteenMinutes();   // Cada 15 minutos
+        // ->everyThirtyMinutes();    // Cada 30 minutos
+        // ->hourly();                // Cada hora
+        // ->daily();                 // Cada día a medianoche
+        // ->dailyAt('13:00');        // Cada día a las 13:00
+    })
+    ->create();

@@ -23,6 +23,7 @@ class Ventas extends Model
         "id_estado_venta",
         "id_cliente",
         "id_trabajador",
+        "tipo_venta",
         "fecha_registro",
         "fecha_actualizacion",
     ];
@@ -31,6 +32,7 @@ class Ventas extends Model
     {
         return $this->belongsTo(Clientes::class, "id_cliente");
     }
+
     public function trabajador()
     {
         return $this->belongsTo(Trabajador::class, "id_trabajador");
@@ -44,5 +46,15 @@ class Ventas extends Model
     public function estadoVenta()
     {
         return $this->belongsTo(EstadoVentas::class, "id_estado_venta", "id_estado_venta_fisica");
+    }
+
+    public function transaccionPago()
+    {
+        return $this->hasOne(TransaccionPago::class, "id_venta");
+    }
+
+    public function metodoPago()
+    {
+        return $this->through('transaccionPago')->has('metodoPago');
     }
 }

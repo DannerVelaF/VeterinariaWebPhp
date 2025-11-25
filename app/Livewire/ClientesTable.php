@@ -18,6 +18,7 @@ final class ClientesTable extends PowerGridComponent
     public string $tableName = 'clientes-table-aepcjk-table';
     public string $primaryKey = 'id_cliente';
     public string $sortField = 'id_cliente';
+
     public function setUp(): array
     {
 
@@ -31,7 +32,7 @@ final class ClientesTable extends PowerGridComponent
 
     public function datasource(): Builder
     {
-        return Clientes::query();
+        return Clientes::query()->orderBy("fecha_registro", "DESC");
     }
 
     public function relationSearch(): array

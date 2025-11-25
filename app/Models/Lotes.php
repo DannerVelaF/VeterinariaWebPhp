@@ -42,4 +42,6 @@ class Lotes extends Model
     {
         return $this->cantidad_almacenada + $this->cantidad_mostrada + $this->cantidad_vendida;
     }
+
+
 }

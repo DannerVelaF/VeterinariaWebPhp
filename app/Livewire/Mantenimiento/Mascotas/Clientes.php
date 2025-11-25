@@ -305,40 +305,87 @@ class Clientes extends Component
                 ]
             )->validate();
 
-            // 🧩 Crear dirección
-            $direccion = Direccion::create($this->direccion);
+            $personaExistente = Persona::where('numero_documento', $this->persona['numero_documento'])
+                ->where('id_tipo_documento', $this->persona['id_tipo_documento'])
+                ->first();
 
-            // 🧍 Crear persona
-            $persona = Persona::create(array_merge($this->persona, [
-                'id_direccion' => $direccion->id_direccion
-            ]));
+            if ($personaExistente) {
+                // ✅ Persona existe, verificar si ya es cliente
+                $clienteExistente = ModelsClientes::where('id_persona', $personaExistente->id_persona)->first();
 
-            // 🧾 Crear cliente
-            $cliente = ModelsClientes::create([
-                'id_persona' => $persona->id_persona,
-                'fecha_creacion' => now(),
-            ]);
+                if ($clienteExistente) {
+                    DB::rollBack();
+                    $this->dispatch('notify',
+                        title: 'Error',
+                        description: 'Esta persona ya está registrada como cliente.',
+                        type: 'error'
+                    );
+                    $this->loading = false;
+                    return;
+                }
 
-            DB::commit();
+                // 🔄 Persona existe pero NO es cliente, crear solo el registro en clientes
+                $cliente = ModelsClientes::create([
+                    'id_persona' => $personaExistente->id_persona,
+                    'fecha_creacion' => now(),
+                ]);
 
-            // ✅ Notificación y reset
-            $this->dispatch('notify', title: 'Success', description: 'Cliente registrado con éxito', type: 'success');
+                DB::commit();
+                $this->dispatch('notify',
+                    title: 'Success',
+                    description: 'Cliente registrado correctamente (persona existente).',
+                    type: 'success'
+                );
+
+            } else {
+                // 🆕 Persona NO existe, crear todo desde cero
+                // 🧩 Crear dirección
+                $direccion = Direccion::create($this->direccion);
+
+                // 🧍 Crear persona
+                $persona = Persona::create(array_merge($this->persona, [
+                    'id_direccion' => $direccion->id_direccion
+                ]));
+
+                // 🧾 Crear cliente
+                $cliente = ModelsClientes::create([
+                    'id_persona' => $persona->id_persona,
+                    'fecha_creacion' => now(),
+                ]);
+
+                DB::commit();
+                $this->dispatch('notify',
+                    title: 'Success',
+                    description: 'Cliente registrado con éxito',
+                    type: 'success'
+                );
+            }
+
             $this->resetForm();
             $this->dispatch('clientesUpdated');
+
         } catch (\Illuminate\Validation\ValidationException $e) {
             DB::rollBack();
-            $this->dispatch('notify', title: 'Error', description: 'Error de validación. Verifique los campos.', type: 'error');
-            throw $e; // Permite que Livewire muestre los errores debajo de los inputs
-
+            $this->dispatch('notify',
+                title: 'Error',
+                description: 'Error de validación. Verifique los campos.',
+                type: 'error'
+            );
+            throw $e;
         } catch (\Exception $e) {
             DB::rollBack();
-            $this->dispatch('notify', title: 'Error', description: 'Error al registrar el cliente: ' . $e->getMessage(), type: 'error');
-
+            $this->dispatch('notify',
+                title: 'Error',
+                description: 'Error al registrar el cliente: ' . $e->getMessage(),
+                type: 'error'
+            );
             Log::error('Error al registrar cliente', [
                 'error' => $e->getMessage(),
                 'persona' => $this->persona,
                 'direccion' => $this->direccion,
             ]);
+        } finally {
+            $this->loading = false;
         }
     }
 
@@ -496,18 +543,30 @@ class Clientes extends Component
                 $data = $response->json();
 
                 if (!empty($data['first_name'])) {
-                    $this->persona['nombre'] = $data['first_name'];
-                    $this->persona['apellido_paterno'] = $data['first_last_name'];
-                    $this->persona['apellido_materno'] = $data['second_last_name'];
-                    $this->persona['nacionalidad'] = "Peruana";
-                    $this->resetErrorBag([
-                        'persona.nombre',
-                        'persona.apellido_paterno',
-                        'persona.apellido_materno',
-                        'persona.nacionalidad'
-                    ]);
 
-                    $this->dispatch('notify', title: 'Success', description: 'Datos cargados desde RENIEC.', type: 'success');
+                    $personaExisteDB = Persona::where("numero_documento", $dni)->with("direccion")->first();
+
+                    if ($personaExisteDB) {
+                        $this->cargarDatosPersonaExistente($personaExisteDB);
+                        $this->dispatch('notify',
+                            title: 'Persona encontrada',
+                            description: 'Datos cargados desde registros del sistema.',
+                            type: 'info'
+                        );
+                    } else {
+                        $this->persona['nombre'] = $data['first_name'];
+                        $this->persona['apellido_paterno'] = $data['first_last_name'];
+                        $this->persona['apellido_materno'] = $data['second_last_name'];
+                        $this->persona['nacionalidad'] = "Peruana";
+                        $this->resetErrorBag([
+                            'persona.nombre',
+                            'persona.apellido_paterno',
+                            'persona.apellido_materno',
+                            'persona.nacionalidad'
+                        ]);
+                        $this->dspatch('notify', title: 'Success', description: 'Datos cargados desde RENIEC.', type: 'success');
+
+                    }
                 } else {
                     $this->dispatch('notify', title: 'Error', description: 'No se encontró información para este DNI.', type: 'error');
                 }
@@ -516,6 +575,54 @@ class Clientes extends Component
             }
         } catch (\Exception $e) {
             $this->dispatch('notify', title: 'Error', description: 'Error al conectar con la API: ' . $e->getMessage(), type: 'error');
+        }
+    }
+
+    private function cargarDatosPersonaExistente(Persona $persona)
+    {
+        // 📋 Datos personales
+        $this->persona['nombre'] = $persona->nombre;
+        $this->persona['apellido_paterno'] = $persona->apellido_paterno;
+        $this->persona['apellido_materno'] = $persona->apellido_materno;
+        $this->persona['nacionalidad'] = $persona->nacionalidad;
+        $this->persona['fecha_nacimiento'] = $persona->fecha_nacimiento;
+        $this->persona['sexo'] = $persona->sexo;
+        $this->persona['correo_electronico_personal'] = $persona->correo_electronico_personal;
+        $this->persona['correo_electronico_secundario'] = $persona->correo_electronico_secundario;
+        $this->persona['numero_telefono_personal'] = $persona->numero_telefono_personal;
+        $this->persona['numero_telefono_secundario'] = $persona->numero_telefono_secundario;
+
+        // 🏠 Datos de dirección si existen
+        if ($persona->direccion) {
+            $this->direccion['zona'] = $persona->direccion->zona;
+            $this->direccion['tipo_calle'] = $persona->direccion->tipo_calle;
+            $this->direccion['nombre_calle'] = $persona->direccion->nombre_calle;
+            $this->direccion['numero'] = $persona->direccion->numero;
+            $this->direccion['codigo_postal'] = $persona->direccion->codigo_postal;
+            $this->direccion['referencia'] = $persona->direccion->referencia;
+            $this->direccion['codigo_ubigeo'] = $persona->direccion->codigo_ubigeo;
+
+            // Cargar ubigeo para los selects
+            $this->cargarUbigeoExistente($persona->direccion->codigo_ubigeo);
+        }
+
+    }
+
+    private function cargarUbigeoExistente($codigoUbigeo)
+    {
+        $ubigeo = Ubigeo::where('codigo_ubigeo', $codigoUbigeo)->first();
+        if ($ubigeo) {
+            $this->departamentoSeleccionado = $ubigeo->departamento;
+            $this->provincias = Ubigeo::where('departamento', $ubigeo->departamento)
+                ->select('provincia')
+                ->distinct()
+                ->pluck('provincia')
+                ->toArray();
+
+            $this->provinciaSeleccionada = $ubigeo->provincia;
+            $this->distritos = Ubigeo::where('departamento', $ubigeo->departamento)
+                ->where('provincia', $ubigeo->provincia)
+                ->get();
         }
     }
 

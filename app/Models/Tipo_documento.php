@@ -17,6 +17,7 @@ class Tipo_documento extends Model
     protected $fillable = [
         'id_tipo_documento',
         'nombre_tipo_documento',
+        "longitud",
         'fecha_registro',
         'fecha_actualizacion',
     ];
