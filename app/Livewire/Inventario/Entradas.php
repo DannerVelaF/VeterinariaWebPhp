@@ -66,6 +66,15 @@ class Entradas extends Component
         $tipoEntrad = TipoMovimiento::where("nombre_tipo_movimiento", "entrada")->first();
     }
 
+    public function getProductosPendientesCountProperty()
+    {
+        if (!$this->productosOC instanceof \Illuminate\Support\Collection) {
+            $this->productosOC = collect($this->productosOC);
+        }
+
+        return $this->productosOC->where('cantidad', '>', 0)->count();
+    }
+
     public function buscarOrdenCompra()
     {
         $this->productosOC = [];
@@ -86,11 +95,21 @@ class Entradas extends Component
             'detalleCompra.producto.proveedores', // ← AGREGAR ESTA RELACIÓN
             'detalleCompra.producto.unidad',
             'detalleCompra.estadoDetalleCompra',
-            'proveedor'
+            'proveedor',
+            'estadoCompra' // ← AGREGAR RELACIÓN DEL ESTADO
         ])->where('codigo', trim($this->ordenCompra))->first();
 
         if (!$compra) {
             $this->dispatch('notify', title: 'Error', description: 'No se encontró la orden de compra: ' . $this->ordenCompra, type: 'error');
+            return;
+        }
+
+        // ✅ NUEVO: Mostrar alerta con el estado de la compra y validar si puede continuar
+        $puedeContinuar = $this->mostrarAlertaEstadoCompra($compra);
+
+        if (!$puedeContinuar) {
+            // Si no puede continuar, limpiar todo y salir
+            $this->resetForm();
             return;
         }
 
@@ -148,59 +167,62 @@ class Entradas extends Component
         $this->showFormularioRapido = count($this->productosOC) > 1;
     }
 
-    // ✅ CORRECCIÓN: Método para contar productos pendientes
-    public function getProductosPendientesCountProperty()
+    // ✅ NUEVO: Método para mostrar alerta del estado de la compra y determinar si puede continuar
+    private function mostrarAlertaEstadoCompra(Compra $compra): bool
     {
-        if (!$this->productosOC instanceof \Illuminate\Support\Collection) {
-            $this->productosOC = collect($this->productosOC);
-        }
+        $estado = $compra->estadoCompra->nombre_estado_compra ?? 'desconocido';
+        $codigoOC = $compra->codigo;
 
-        return $this->productosOC->where('cantidad', '>', 0)->count();
+        switch ($estado) {
+            case 'aprobado':
+                $this->dispatch('notify',
+                    title: 'OC Aprobada',
+                    description: "La orden de compra {$codigoOC} está APROBADA y lista para recibir productos.",
+                    type: 'success'
+                );
+                return true; // Puede continuar
+
+            case 'pendiente':
+                $this->dispatch('notify',
+                    title: 'OC Pendiente',
+                    description: "La orden de compra {$codigoOC} está PENDIENTE de aprobación. No se pueden registrar entradas hasta que sea aprobada.",
+                    type: 'warning'
+                );
+                return false; // No puede continuar
+
+            case 'recibido':
+                $this->dispatch('notify',
+                    title: 'OC Completada',
+                    description: "La orden de compra {$codigoOC} ya está marcada como RECIBIDA. Verifique si necesita registrar entradas adicionales.",
+                    type: 'info'
+                );
+                return true; // Puede continuar (por si hay ajustes)
+
+            case 'cancelado':
+                $this->dispatch('notify',
+                    title: 'OC Cancelada',
+                    description: "La orden de compra {$codigoOC} está CANCELADA. No se pueden registrar entradas.",
+                    type: 'error'
+                );
+                return false; // No puede continuar
+
+            default:
+                $this->dispatch('notify',
+                    title: 'Estado Desconocido',
+                    description: "La orden de compra {$codigoOC} tiene un estado desconocido: {$estado}. Contacte al administrador.",
+                    type: 'warning'
+                );
+                return false; // No puede continuar
+        }
     }
 
-    public function updatedIdProducto($value)
-    {
-        $this->productoSeleccionado = collect($this->productosOC)
-            ->firstWhere('id_detalle_compra', $value);
-
-        if ($this->productoSeleccionado) {
-            $this->lote['precio_compra'] = $this->productoSeleccionado['precio_compra'];
-            $this->lote['cantidad_total'] = $this->productoSeleccionado['cantidad'];
-            $this->lote['id_detalle_compra'] = $this->productoSeleccionado['id_detalle_compra'];
-
-            // ✅ MOSTRAR ADVERTENCIA SI EL PRODUCTO NO PERTENECE AL PROVEEDOR
-            if (isset($this->productoSeleccionado['pertenece_proveedor']) && !$this->productoSeleccionado['pertenece_proveedor']) {
-                $this->dispatch('notify', title: 'Advertencia', description: 'Este producto no está asociado al proveedor de la orden de compra.', type: 'warning');
-            }
-        } else {
-            $this->lote['precio_compra'] = '';
-            $this->lote['cantidad_total'] = '';
-            $this->lote['id_detalle_compra'] = '';
-        }
-    }
-
-    public function generarCodigoLote($codigoBarras = null)
-    {
-        if (!$codigoBarras) {
-            // ✅ FALLBACK: Generar código alternativo si no hay código de barras
-            do {
-                $codigo = "LT-" . Str::random(8) . "-" . random_int(100, 999);
-            } while (Lotes::where('codigo_lote', $codigo)->exists());
-        } else {
-            do {
-                $codigo = "LT." . $codigoBarras . "-" . random_int(100, 999);
-            } while (Lotes::where('codigo_lote', $codigo)->exists());
-        }
-
-        return $codigo;
-    }
 
     public function registrar()
     {
         // ✅ AGREGAR VALIDACIÓN PARA VERIFICAR RELACIÓN PRODUCTO-PROVEEDOR
         $this->validate([
-            "id_producto"             => "required|exists:detalle_compras,id_detalle_compra",
-            'lote.cantidad_total'     => [
+            "id_producto" => "required|exists:detalle_compras,id_detalle_compra",
+            'lote.cantidad_total' => [
                 'required',
                 'numeric',
                 'min:1',
@@ -216,7 +238,7 @@ class Entradas extends Component
                     }
                 },
             ],
-            'lote.fecha_recepcion'    => 'required|date|before_or_equal:today',
+            'lote.fecha_recepcion' => 'required|date|before_or_equal:today',
             'lote.fecha_vencimiento' => [
                 'nullable',
                 'date',
@@ -226,8 +248,8 @@ class Entradas extends Component
                     }
                 },
             ],
-            "lote.observacion"        => "max:1000",
-            'lote.precio_compra'      => 'required|numeric|min:1',
+            "lote.observacion" => "max:1000",
+            'lote.precio_compra' => 'required|numeric|min:1',
         ], [
             'lote.cantidad_total.required' => 'Debe ingresar la cantidad.',
             'lote.cantidad_total.numeric' => 'La cantidad debe ser un número.',
@@ -312,6 +334,22 @@ class Entradas extends Component
             $this->dispatch('notify', title: 'Error', description: 'Error al registrar la entrada: ' . $e->getMessage(), type: 'error');
             Log::error('Error al registrar entrada', ['error' => $e->getMessage()]);
         }
+    }
+
+    public function generarCodigoLote($codigoBarras = null)
+    {
+        if (!$codigoBarras) {
+            // ✅ FALLBACK: Generar código alternativo si no hay código de barras
+            do {
+                $codigo = "LT-" . Str::random(8) . "-" . random_int(100, 999);
+            } while (Lotes::where('codigo_lote', $codigo)->exists());
+        } else {
+            do {
+                $codigo = "LT." . $codigoBarras . "-" . random_int(100, 999);
+            } while (Lotes::where('codigo_lote', $codigo)->exists());
+        }
+
+        return $codigo;
     }
 
     public function registrarEntradasRapidas()
@@ -469,7 +507,6 @@ class Entradas extends Component
             'mostrador' => $lotes->sum('cantidad_mostrada'),
         ];
     }
-
 
 
     #[\Livewire\Attributes\On('show-modal')]
