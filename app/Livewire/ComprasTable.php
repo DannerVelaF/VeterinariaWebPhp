@@ -20,14 +20,17 @@ final class ComprasTable extends PowerGridComponent
 {
     public string $tableName = 'compras-table-aeu87r-table';
     use WithExport;
+
     public bool $showFiltersButton = false; // 👈 oculta el botón
     public string $primaryKey = 'id_compra';
     public string $sortField = 'id_compra';
     public $listeners = ['comprasUpdated' => '$refresh'];
+
     public function boot(): void
     {
         config(['livewire-powergrid.filter' => 'outside']);
     }
+
     public function setUp(): array
     {
 
@@ -42,7 +45,7 @@ final class ComprasTable extends PowerGridComponent
 
     public function datasource(): Builder
     {
-        return Compra::query(["trabajador", "proveedor"]);
+        return Compra::query(["trabajador", "proveedor"])->orderBy("compras.fecha_registro", "desc");
     }
 
     public function relationSearch(): array
@@ -57,14 +60,12 @@ final class ComprasTable extends PowerGridComponent
             ->add('codigo')
             ->add('fecha_compra')
             ->add('fecha_registro')
-            ->add('estado', fn($compra) =>
-            '<span class="capitalize">' . $compra->estadoCompra->nombre_estado_compra . '</span>')
+            ->add('estado', fn($compra) => '<span class="capitalize">' . $compra->estadoCompra->nombre_estado_compra . '</span>')
             ->add('cantidad_total')
             ->add('total')
             ->add(
                 "usuario",
-                fn($compra) =>
-                $compra->trabajador && $compra->trabajador->persona && $compra->trabajador->persona->user
+                fn($compra) => $compra->trabajador && $compra->trabajador->persona && $compra->trabajador->persona->user
                     ? $compra->trabajador->persona->user->usuario
                     : '-'
             )
@@ -128,7 +129,7 @@ final class ComprasTable extends PowerGridComponent
                 ->builder(function (Builder $query, $value) {
                     $v = is_array($value)
                         ? ($value['value'] ?? $value['search'] ?? array_values($value)[0] ?? '')
-                        : (string) $value;
+                        : (string)$value;
 
                     $v = trim($v);
                     if ($v === '') {
