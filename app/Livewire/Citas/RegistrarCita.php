@@ -78,7 +78,7 @@ class RegistrarCita extends Component
         $this->cargarServicios();
 
         // Fecha por defecto (mañana)
-        $this->fechaSeleccionada = now()->addDay()->format('Y-m-d');
+        $this->fechaSeleccionada = now()->format('Y-m-d');
 
     }
 
@@ -97,12 +97,20 @@ class RegistrarCita extends Component
 
     public function updatedTrabajadorSeleccionado($value)
     {
-        $this->actualizarHorariosDisponibles();
+        if ($value && $this->fechaSeleccionada) {
+            $this->actualizarHorariosDisponibles();
+        } else {
+            $this->horariosDisponibles = [];
+        }
     }
 
     public function updatedFechaSeleccionada($value)
     {
-        $this->actualizarHorariosDisponibles();
+        if ($value && $this->trabajadorSeleccionado) {
+            $this->actualizarHorariosDisponibles();
+        } else {
+            $this->horariosDisponibles = [];
+        }
     }
 
     private function calcularDuracionTotal()
@@ -219,7 +227,7 @@ class RegistrarCita extends Component
             'observaciones' => ''
         ];
 
-        // Estado por defecto (pendiente)
+        // ✅ Estado por defecto SIEMPRE será "pendiente"
         $estadoPendiente = EstadoCita::where('nombre_estado_cita', 'pendiente')->first();
         if ($estadoPendiente) {
             $this->estadoCitaSeleccionado = $estadoPendiente->id_estado_cita;
@@ -370,7 +378,7 @@ class RegistrarCita extends Component
     }
 
     // Nuevo método para obtener información de turnos del trabajador
-    public function getInfoTurnosTrabajadorProperty()
+    /* public function getInfoTurnosTrabajadorProperty()
     {
         if (!$this->trabajadorSeleccionado) {
             return null;
@@ -394,7 +402,75 @@ class RegistrarCita extends Component
         }
 
         return $info;
+    } */
+
+        // En tu componente Livewire
+public function getInfoTurnosTrabajadorProperty()
+{
+    if (!$this->trabajadorSeleccionado) {
+        return null;
     }
+
+    $trabajador = Trabajador::with(['turnos.horarios'])->find($this->trabajadorSeleccionado);
+    
+    if (!$trabajador) {
+        return null;
+    }
+
+    $info = [];
+    
+    // Obtener todos los días de la semana en español
+    $diasSemana = [
+        'lunes' => ['nombre' => 'Lunes', 'trabaja' => false, 'horarios' => [], 'descanso' => true],
+        'martes' => ['nombre' => 'Martes', 'trabaja' => false, 'horarios' => [], 'descanso' => true],
+        'miércoles' => ['nombre' => 'Miércoles', 'trabaja' => false, 'horarios' => [], 'descanso' => true],
+        'jueves' => ['nombre' => 'Jueves', 'trabaja' => false, 'horarios' => [], 'descanso' => true],
+        'viernes' => ['nombre' => 'Viernes', 'trabaja' => false, 'horarios' => [], 'descanso' => true],
+        'sábado' => ['nombre' => 'Sábado', 'trabaja' => false, 'horarios' => [], 'descanso' => true],
+        'domingo' => ['nombre' => 'Domingo', 'trabaja' => false, 'horarios' => [], 'descanso' => true],
+    ];
+
+    // Procesar todos los turnos del trabajador
+    foreach ($trabajador->turnos as $turno) {
+        foreach ($turno->horarios as $horario) {
+            $dia = strtolower($horario->dia_semana);
+            
+            if (isset($diasSemana[$dia])) {
+                if ($horario->es_descanso) {
+                    $diasSemana[$dia]['descanso'] = true;
+                    $diasSemana[$dia]['trabaja'] = false;
+                } else {
+                    $diasSemana[$dia]['trabaja'] = true;
+                    $diasSemana[$dia]['descanso'] = false;
+                    $diasSemana[$dia]['horarios'][] = [
+                        'inicio' => \Carbon\Carbon::parse($horario->hora_inicio)->format('H:i'),
+                        'fin' => \Carbon\Carbon::parse($horario->hora_fin)->format('H:i'),
+                        'turno' => $turno->nombre_turno
+                    ];
+                }
+            }
+        }
+    }
+
+    // Convertir a formato de días ordenados
+    $diasOrdenados = [
+        'lunes' => $diasSemana['lunes'],
+        'martes' => $diasSemana['martes'],
+        'miércoles' => $diasSemana['miércoles'],
+        'jueves' => $diasSemana['jueves'],
+        'viernes' => $diasSemana['viernes'],
+        'sábado' => $diasSemana['sábado'],
+        'domingo' => $diasSemana['domingo'],
+    ];
+
+    return [
+        'nombre_trabajador' => $trabajador->persona ? 
+            $trabajador->persona->nombre . ' ' . $trabajador->persona->apellido_paterno : 
+            'Trabajador #' . $trabajador->id_trabajador,
+        'puesto' => $trabajador->puestoTrabajo?->nombre_puesto ?? 'Sin puesto asignado',
+        'dias_semana' => $diasOrdenados
+    ];
+}
 
 
      public function getDuracionTotalFormateadaProperty()

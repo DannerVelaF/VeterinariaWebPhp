@@ -344,18 +344,6 @@
                             </svg>
                             Registro de Clientes
                         </button>
-
-                        @if ($clienteSeleccionado)
-                        <button type="button" 
-                                wire:click="redirigirAMascotas"
-                                class="inline-flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded transition">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plus">
-                                <path d="M12 5v14"/>
-                                <path d="M5 12h14"/>
-                            </svg>
-                            Registrar Mascota
-                        </button>
-                        @endif
                     </div>
                 </div>
 
@@ -391,8 +379,14 @@
                                     <div class="bg-red-50 border border-red-200 rounded-lg p-3 mt-2">
                                         <p class="text-red-600 text-sm">
                                             ❌ Este cliente no tiene mascotas registradas. 
-                                            <button type="button" wire:click="redirigirAMascotas" class="text-red-700 font-semibold underline hover:no-underline">
-                                                Click aquí para registrar una mascota
+                                            <button type="button" 
+                                                    wire:click="redirigirAMascotas"
+                                                    class="inline-flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded transition">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plus">
+                                                    <path d="M12 5v14"/>
+                                                    <path d="M5 12h14"/>
+                                                </svg>
+                                                Registrar Mascota
                                             </button>
                                         </p>
                                     </div>
@@ -469,66 +463,97 @@
                 </div>
 
                 <!-- SECCIÓN 3: TRABAJADOR -->
-                <div class="border-t pt-6">
-                    <h3 class="font-bold text-gray-700 text-lg mb-4">👨‍⚕️ Seleccionar Trabajador</h3>
-                    
-                    <div class="grid grid-cols-2 gap-6">
-                        <!-- Selector de Trabajador -->
-                        <div class="space-y-3">
-                            <label class="font-semibold text-gray-700">Trabajador Asignado:</label>
-                            <select wire:model.live="trabajadorSeleccionado"
-                                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                <option value="">Seleccione un trabajador</option>
-                                @foreach ($trabajadores as $trabajador)
-                                    <option value="{{ $trabajador->id_trabajador }}">
-                                        @if($trabajador->persona)
-                                            {{ $trabajador->persona->nombre }} {{ $trabajador->persona->apellido_paterno }}
-                                            ({{ $trabajador->puestoTrabajo?->nombre_puesto ?? 'Sin puesto' }})
-                                        @endif
-                                    </option>
-                                @endforeach
-                            </select>
-                            @error('trabajadorSeleccionado')
-                                <span class="text-red-500 text-sm">{{ $message }}</span>
-                            @enderror
-                        </div>
-
-                        <!-- Horarios del Trabajador -->
-                        @if($trabajadorSeleccionado && $this->infoTurnosTrabajador)
-                            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                                <h4 class="font-semibold text-blue-800 mb-3 flex items-center">
-                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                    </svg>
-                                    Horarios del Trabajador
-                                </h4>
-                                <div class="grid grid-cols-7 gap-1 text-xs">
-                                    @foreach (['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'] as $index => $diaCorto)
-                                        @php
-                                            $diasCompletos = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
-                                            $diaCompleto = $diasCompletos[$index];
-                                            $horarioDia = collect($this->infoTurnosTrabajador)
-                                                ->pluck('horarios')
-                                                ->flatten(1)
-                                                ->where('dia', $diaCompleto)
-                                                ->first();
-                                        @endphp
-                                        <div class="text-center p-2 rounded {{ $horarioDia && !$horarioDia['descanso'] ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
-                                            <div class="font-semibold">{{ $diaCorto }}</div>
-                                            <div class="text-xs mt-1">
-                                                @if($horarioDia && !$horarioDia['descanso'])
-                                                    {{ \Carbon\Carbon::parse($horarioDia['inicio'])->format('H:i') }}-{{ \Carbon\Carbon::parse($horarioDia['fin'])->format('H:i') }}
-                                                @else
-                                                    <span class="text-red-600">✗</span>
-                                                @endif
-                                            </div>
-                                        </div>
-                                    @endforeach
-                                </div>
-                            </div>
+<div class="border-t pt-6">
+    <h3 class="font-bold text-gray-700 text-lg mb-4">👨‍⚕️ Seleccionar Trabajador</h3>
+    
+    <div class="grid grid-cols-2 gap-6">
+        <!-- Selector de Trabajador -->
+        <div class="space-y-3">
+            <label class="font-semibold text-gray-700">Trabajador Asignado:</label>
+            <select wire:model.live="trabajadorSeleccionado"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                <option value="">Seleccione un trabajador</option>
+                @foreach ($trabajadores as $trabajador)
+                    <option value="{{ $trabajador->id_trabajador }}">
+                        @if($trabajador->persona)
+                            {{ $trabajador->persona->nombre }} {{ $trabajador->persona->apellido_paterno }}
+                            ({{ $trabajador->puestoTrabajo?->nombre_puesto ?? 'Sin puesto' }})
                         @endif
+                    </option>
+                @endforeach
+            </select>
+            @error('trabajadorSeleccionado')
+                <span class="text-red-500 text-sm">{{ $message }}</span>
+            @enderror
+        </div>
+
+        <!-- Horarios del Trabajador - MEJORADO -->
+        @if($trabajadorSeleccionado && $this->infoTurnosTrabajador)
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h4 class="font-semibold text-blue-800 mb-3 flex items-center">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    Horario Semanal del Trabajador
+                </h4>
+                
+                <!-- Información del trabajador -->
+                <div class="mb-3 p-2 bg-white rounded border">
+                    <p class="font-semibold text-gray-800">{{ $this->infoTurnosTrabajador['nombre_trabajador'] }}</p>
+                    <p class="text-sm text-gray-600">{{ $this->infoTurnosTrabajador['puesto'] }}</p>
+                </div>
+
+                <!-- Grid de días de la semana -->
+                <div class="grid grid-cols-7 gap-2 text-xs">
+                    @foreach ($this->infoTurnosTrabajador['dias_semana'] as $diaKey => $diaInfo)
+                        @php
+                            $bgColor = $diaInfo['descanso'] ? 'bg-red-100' : 'bg-green-100';
+                            $textColor = $diaInfo['descanso'] ? 'text-red-800' : 'text-green-800';
+                            $borderColor = $diaInfo['descanso'] ? 'border-red-300' : 'border-green-300';
+                        @endphp
+                        
+                        <div class="text-center p-2 rounded border {{ $bgColor }} {{ $textColor }} {{ $borderColor }}">
+                            <div class="font-semibold">{{ substr($diaInfo['nombre'], 0, 3) }}</div>
+                            
+                            @if($diaInfo['descanso'])
+                                <div class="mt-1 text-red-600 font-bold">✗</div>
+                                <div class="text-[10px] mt-1">Descanso</div>
+                            @elseif(count($diaInfo['horarios']) > 0)
+                                @foreach($diaInfo['horarios'] as $horario)
+                                    <div class="mt-1 text-[10px] font-medium">
+                                        {{ $horario['inicio'] }}-{{ $horario['fin'] }}
+                                    </div>
+                                @endforeach
+                            @else
+                                <div class="mt-1 text-gray-500 text-[10px]">No asignado</div>
+                            @endif
+                        </div>
+                    @endforeach
+                </div>
+
+                <!-- Leyenda -->
+                <div class="flex justify-center gap-4 mt-3 text-xs">
+                    <div class="flex items-center">
+                        <div class="w-3 h-3 bg-green-100 border border-green-300 rounded mr-1"></div>
+                        <span class="text-gray-600">Días laborales</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-3 h-3 bg-red-100 border border-red-300 rounded mr-1"></div>
+                        <span class="text-gray-600">Días de descanso</span>
                     </div>
                 </div>
+            </div>
+        @elseif($trabajadorSeleccionado)
+            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">
+                <svg class="w-8 h-8 text-yellow-500 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                </svg>
+                <p class="text-yellow-700 font-medium">No se encontró información de horarios</p>
+                <p class="text-yellow-600 text-sm mt-1">El trabajador no tiene turnos asignados</p>
+            </div>
+        @endif
+    </div>
+</div>
 
                 <!-- SECCIÓN 4: FECHA Y HORA -->
                 @if($trabajadorSeleccionado && count($serviciosSeleccionados) > 0)
@@ -633,7 +658,7 @@
                         <!-- Motivo -->
                         <div class="space-y-3">
                             <label for="motivo" class="font-semibold text-gray-700">💬 Motivo de la Cita</label>
-                            <textarea wire:model="cita.motivo" id="motivo" rows="4"
+                            <textarea wire:model="cita.motivo" id="motivo" rows="3"
                                 class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
                                 placeholder="Describa el motivo de la cita..."></textarea>
                             @error('cita.motivo')
@@ -642,32 +667,14 @@
                         </div>
 
                         <!-- Observaciones y Estado -->
-                        <div class="space-y-4">
-                            <div class="space-y-3">
-                                <label for="observaciones" class="font-semibold text-gray-700">📋 Observaciones</label>
-                                <textarea wire:model="cita.observaciones" id="observaciones" rows="2"
-                                    class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
-                                    placeholder="Observaciones adicionales (opcional)..."></textarea>
-                                @error('cita.observaciones')
-                                    <span class="text-red-500 text-sm">{{ $message }}</span>
-                                @enderror
-                            </div>
-
-                            <div class="space-y-3">
-                                <label for="estado" class="font-semibold text-gray-700">📊 Estado de la Cita</label>
-                                <select wire:model="estadoCitaSeleccionado" id="estado"
-                                    class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                    <option value="">Seleccione estado</option>
-                                    @foreach ($estadosCita as $estado)
-                                        <option value="{{ $estado->id_estado_cita }}">
-                                            {{ $estado->nombre_estado_cita }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                                @error('estadoCitaSeleccionado')
-                                    <span class="text-red-500 text-sm">{{ $message }}</span>
-                                @enderror
-                            </div>
+                        <div class="space-y-3">
+                            <label for="observaciones" class="font-semibold text-gray-700">📋 Observaciones</label>
+                            <textarea wire:model="cita.observaciones" id="observaciones" rows="3"
+                                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                                placeholder="Observaciones adicionales (opcional)..."></textarea>
+                            @error('cita.observaciones')
+                                <span class="text-red-500 text-sm">{{ $message }}</span>
+                            @enderror
                         </div>
                     </div>
                 </div>

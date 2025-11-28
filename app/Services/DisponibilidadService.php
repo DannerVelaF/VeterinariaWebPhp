@@ -197,6 +197,7 @@ class DisponibilidadService
         $fechaConsulta = Carbon::parse($fecha);
         $trabajador = Trabajador::with(['turnos.horarios'])->find($trabajadorId);
         
+        
          if (!$trabajador) {
         logger("Trabajador no encontrado: " . $trabajadorId);
         return [];
@@ -253,7 +254,7 @@ class DisponibilidadService
         return $horariosDisponibles;
     }
 
-    private function generarSlotsDisponibles($horario, $fecha, $trabajadorId, $duracionTotal)
+    /* private function generarSlotsDisponibles($horario, $fecha, $trabajadorId, $duracionTotal)
     {
         $slots = [];
         $horaInicio = Carbon::parse($horario->hora_inicio);
@@ -291,6 +292,79 @@ class DisponibilidadService
             $slotActual->addMinutes(30); // Slots cada 30 minutos
         }
         
+        return $slots;
+    } */
+   private function generarSlotsDisponibles($horario, $fecha, $trabajadorId, $duracionTotal)
+    {
+        logger("--- GENERANDO SLOTS DETALLADO ---");
+        logger("Horario: {$horario->hora_inicio} a {$horario->hora_fin}");
+        logger("Duración por cita: {$duracionTotal} minutos");
+        logger("Fecha base: " . $fecha->format('Y-m-d'));
+
+        $slots = [];
+        $horaInicio = Carbon::parse($horario->hora_inicio);
+        $horaFin = Carbon::parse($horario->hora_fin);
+        
+        $slotActual = $fecha->copy()->setTime($horaInicio->hour, $horaInicio->minute);
+        
+        logger("Slot inicial: " . $slotActual->format('Y-m-d H:i:s'));
+        logger("Hora fin turno: " . $fecha->copy()->setTime($horaFin->hour, $horaFin->minute)->format('Y-m-d H:i:s'));
+        logger("Ahora: " . now()->format('Y-m-d H:i:s'));
+
+        $slotCount = 0;
+        $iteration = 0;
+        
+        while ($slotActual->lt($fecha->copy()->setTime($horaFin->hour, $horaFin->minute))) {
+            $iteration++;
+            $slotFin = $slotActual->copy()->addMinutes($duracionTotal);
+            
+            logger("--- Iteración {$iteration} ---");
+            logger("Slot actual: " . $slotActual->format('Y-m-d H:i:s'));
+            logger("Slot fin: " . $slotFin->format('Y-m-d H:i:s'));
+            
+            if ($slotFin->gt($fecha->copy()->setTime($horaFin->hour, $horaFin->minute))) {
+                logger("❌ Slot excede horario laboral");
+                break;
+            }
+
+            // Verificar disponibilidad
+            $citaExistente = Cita::where('id_trabajador_asignado', $trabajadorId)
+                ->whereBetween('fecha_programada', [$slotActual, $slotFin])
+                ->whereIn('id_estado_cita', function($query) {
+                    $query->select('id_estado_cita')
+                        ->from('estado_citas')
+                        ->whereIn('nombre_estado_cita', ['pendiente', 'confirmada', 'en progreso']);
+                })
+                ->exists();
+            
+            $esFuturo = $slotActual->gt(now());
+            
+            logger("Cita existente: " . ($citaExistente ? 'SÍ' : 'NO'));
+            logger("Es futuro: " . ($esFuturo ? 'SÍ' : 'NO'));
+            logger("Hora actual: " . now()->format('H:i:s'));
+            logger("Slot actual hora: " . $slotActual->format('H:i:s'));
+
+            if (!$citaExistente && $esFuturo) {
+                $slotCount++;
+                $slotData = [
+                    'inicio' => $slotActual->copy(),
+                    'fin' => $slotFin,
+                    'formato' => $slotActual->format('H:i'),
+                    'fecha_completa' => $slotActual->format('Y-m-d H:i:s'),
+                    'duracion_minutos' => $duracionTotal
+                ];
+                $slots[] = $slotData;
+                logger("✅ Slot DISPONIBLE: " . $slotActual->format('H:i') . " -> " . json_encode($slotData));
+            } else {
+                logger("❌ Slot NO disponible: " . $slotActual->format('H:i') . 
+                    " - Razón: " . ($citaExistente ? 'CITA EXISTENTE' : 'NO ES FUTURO'));
+            }
+            
+            $slotActual->addMinutes(30);
+        }
+
+        logger("Total slots DISPONIBLES: {$slotCount}");
+        logger("Slots array: " . json_encode($slots));
         return $slots;
     }
 
