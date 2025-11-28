@@ -2,19 +2,26 @@
 
 namespace App\Livewire\Citas;
 
+use App\Services\DisponibilidadService;
+use App\Models\Servicio;
 use App\Models\Cita;
 use App\Models\EstadoCita;
 use App\Models\Clientes;
 use App\Models\Trabajador;
 use App\Models\Mascota;
+
+use App\Models\CitaServicio; 
+
 use App\Models\Persona;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Livewire\Component;
 
+
 class RegistrarCita extends Component
 {
+
     public $clientes = [];
     public $trabajadores = [];
     public $mascotas = [];
@@ -35,6 +42,21 @@ class RegistrarCita extends Component
     public $cantCitasCanceladas = 0;
     public $cantCitasCompletadas = 0;
 
+    // Nuevas propiedades para disponibilidad
+    public $horariosDisponibles = [];
+    public $fechaSeleccionada = '';
+    public $horaSeleccionada = '';
+    public $serviciosSeleccionados = [];
+    public $serviciosDisponibles = [];
+    public $duracionTotal = 0;
+
+    protected $disponibilidadService;
+
+    public function boot()
+    {
+        $this->disponibilidadService = new DisponibilidadService();
+    }
+
     public $cita = [
         'fecha_programada' => '',
         'motivo' => '',
@@ -52,7 +74,69 @@ class RegistrarCita extends Component
         $this->cargarEstadosCita();
         $this->inicializarFormulario();
         $this->calcularEstadisticas();
+
+        $this->cargarServicios();
+
+        // Fecha por defecto (mañana)
+        $this->fechaSeleccionada = now()->addDay()->format('Y-m-d');
+
     }
+
+    public function cargarServicios()
+    {
+        $this->serviciosDisponibles = Servicio::where('estado', 'activo')
+            ->orderBy('nombre_servicio')
+            ->get();
+    }
+
+    public function updatedServiciosSeleccionados()
+    {
+        $this->calcularDuracionTotal();
+        $this->actualizarHorariosDisponibles();
+    }
+
+    public function updatedTrabajadorSeleccionado($value)
+    {
+        $this->actualizarHorariosDisponibles();
+    }
+
+    public function updatedFechaSeleccionada($value)
+    {
+        $this->actualizarHorariosDisponibles();
+    }
+
+    private function calcularDuracionTotal()
+    {
+        $this->duracionTotal = (int) Servicio::whereIn('id_servicio', $this->serviciosSeleccionados)
+            ->where('estado', 'activo')
+            ->sum('duracion_estimada') ?: 60;
+    }
+
+    private function actualizarHorariosDisponibles()
+    {
+        if ($this->trabajadorSeleccionado && $this->fechaSeleccionada) {
+            $this->horariosDisponibles = $this->disponibilidadService
+                ->obtenerHorariosDisponibles(
+                    $this->trabajadorSeleccionado, 
+                    $this->fechaSeleccionada,
+                    $this->serviciosSeleccionados
+                );
+        } else {
+            $this->horariosDisponibles = [];
+        }
+        
+        $this->horaSeleccionada = '';
+        $this->cita['fecha_programada'] = '';
+    }
+
+    public function seleccionarHora($hora, $fechaCompleta)
+    {
+        $this->horaSeleccionada = $hora;
+        // Asegurarse de que se guarde la fecha y hora completa
+        $this->cita['fecha_programada'] = $fechaCompleta;
+
+    }
+
 
     public function updatedFiltroCliente()
     {
@@ -203,6 +287,9 @@ class RegistrarCita extends Component
             'cita.fecha_programada' => 'required|date|after:now',
             'cita.motivo' => 'required|string|max:500',
             'cita.observaciones' => 'nullable|string|max:1000',
+
+            'serviciosSeleccionados' => 'required|array|min:1',
+            'serviciosSeleccionados.*' => 'exists:servicios,id_servicio',
         ], [
             'clienteSeleccionado.required' => 'El cliente es obligatorio.',
             'clienteSeleccionado.exists' => 'El cliente seleccionado no es válido.',
@@ -218,7 +305,25 @@ class RegistrarCita extends Component
             'cita.motivo.required' => 'El motivo es obligatorio.',
             'cita.motivo.max' => 'El motivo no debe exceder los 500 caracteres.',
             'cita.observaciones.max' => 'Las observaciones no deben exceder los 1000 caracteres.',
+
+            'serviciosSeleccionados.required' => 'Debe seleccionar al menos un servicio.',
+            'serviciosSeleccionados.min' => 'Debe seleccionar al menos un servicio.',
         ]);
+
+        // Validar Diponibilidad antes de guardar
+        $disponibilidad = $this->disponibilidadService->verificarDisponibilidadTrabajador(
+            $this->trabajadorSeleccionado,
+            $this->cita['fecha_programada'],
+            $this->serviciosSeleccionados
+        );
+        if (!$disponibilidad['disponible']) {
+            $this->dispatch('notify', 
+                title: 'No disponible', 
+                description: $disponibilidad['mensaje'], 
+                type: 'error'
+            );
+            return;
+        }
 
         try {
             DB::transaction(function () {
@@ -234,6 +339,19 @@ class RegistrarCita extends Component
                     'fecha_registro' => now(),
                     'fecha_actualizacion' => now(),
                 ]);
+
+                // Crear servicios de la cita
+                foreach ($this->serviciosSeleccionados as $servicioId) {
+                    $servicio = Servicio::find($servicioId);
+                    CitaServicio::create([
+                        'id_cita' => $cita->id_cita,
+                        'id_servicio' => $servicioId,
+                        'precio_aplicado' => $servicio->precio_unitario,
+                        'cantidad' => 1,
+                        'fecha_registro' => now(),
+                        'fecha_actualizacion' => now(),
+                    ]);
+                }
             });
 
             // Actualizar estadísticas después de guardar
@@ -249,6 +367,46 @@ class RegistrarCita extends Component
             Log::error('Error al registrar la cita', ['error' => $e->getMessage()]);
             $this->dispatch('notify', title: 'Error', description: 'Error al registrar la cita: ' . $e->getMessage(), type: 'error');
         }
+    }
+
+    // Nuevo método para obtener información de turnos del trabajador
+    public function getInfoTurnosTrabajadorProperty()
+    {
+        if (!$this->trabajadorSeleccionado) {
+            return null;
+        }
+
+        $trabajador = Trabajador::with(['turnos.horarios'])->find($this->trabajadorSeleccionado);
+        
+        $info = [];
+        foreach ($trabajador->turnos as $turno) {
+            $info[] = [
+                'nombre_turno' => $turno->nombre_turno,
+                'horarios' => $turno->horarios->map(function($horario) {
+                    return [
+                        'dia' => $horario->dia_semana,
+                        'inicio' => $horario->hora_inicio,
+                        'fin' => $horario->hora_fin,
+                        'descanso' => $horario->es_descanso
+                    ];
+                })
+            ];
+        }
+
+        return $info;
+    }
+
+
+     public function getDuracionTotalFormateadaProperty()
+    {
+        $horas = floor($this->duracionTotal / 60);
+        $minutos = $this->duracionTotal % 60;
+        
+        if ($horas > 0) {
+            return "{$horas}h {$minutos}min";
+        }
+        
+        return "{$minutos} min";
     }
 
     // Nuevo método para marcar como "En progreso"
@@ -429,7 +587,7 @@ class RegistrarCita extends Component
         $this->citaSeleccionada = null;
     }
 
-    public function resetForm()
+    /* public function resetForm()
     {
         $this->inicializarFormulario();
         $this->clienteSeleccionado = '';
@@ -437,6 +595,38 @@ class RegistrarCita extends Component
         $this->trabajadorSeleccionado = '';
         $this->filtroCliente = '';
         $this->mascotas = [];
+        
+        // Restablecer estado por defecto
+        $estadoPendiente = EstadoCita::where('nombre_estado_cita', 'pendiente')->first();
+        if ($estadoPendiente) {
+            $this->estadoCitaSeleccionado = $estadoPendiente->id_estado_cita;
+        }
+    } */
+
+    /* public function resetForm()
+    {
+        parent::resetForm();
+        
+        $this->serviciosSeleccionados = [];
+        $this->horariosDisponibles = [];
+        $this->fechaSeleccionada = now()->addDay()->format('Y-m-d');
+        $this->horaSeleccionada = '';
+        $this->duracionTotal = 0;
+    } */
+
+        public function resetForm()
+    {
+        $this->inicializarFormulario();
+        $this->clienteSeleccionado = '';
+        $this->mascotaSeleccionada = '';
+        $this->trabajadorSeleccionado = '';
+        $this->filtroCliente = '';
+        $this->mascotas = [];
+        $this->serviciosSeleccionados = [];
+        $this->horariosDisponibles = [];
+        $this->fechaSeleccionada = now()->addDay()->format('Y-m-d');
+        $this->horaSeleccionada = '';
+        $this->duracionTotal = 0;
         
         // Restablecer estado por defecto
         $estadoPendiente = EstadoCita::where('nombre_estado_cita', 'pendiente')->first();
