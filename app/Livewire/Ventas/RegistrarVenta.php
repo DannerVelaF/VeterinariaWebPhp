@@ -2,6 +2,9 @@
 
 namespace App\Livewire\Ventas;
 
+use App\Models\Caja;
+use App\Models\InventarioMovimiento;
+use App\Models\TipoMovimiento;
 use App\Models\TransaccionPago;
 use App\Models\User;
 use App\Models\Ventas;
@@ -34,6 +37,14 @@ class RegistrarVenta extends Component
 {
 
     use WithFileUploads;
+
+    protected $listeners = [
+        'cajaAbierta' => 'actualizarEstadoCaja',
+        'cajaCerrada' => 'actualizarEstadoCaja',
+        'cajaActualizada' => 'actualizarEstadoCaja'
+    ];
+
+    public $cajaContraida = false;
 
     public $IGV = 0.18;
     public $codigoVenta = '';
@@ -95,6 +106,9 @@ class RegistrarVenta extends Component
         'datos_adicionales' => []
     ];
 
+    public $cajaActual = null;
+    public $bloquearVentas = false;
+
     public $comprobanteTemporal = null;
     // Para el registro de nuevo cliente
     public $tiposDocumentos = [];
@@ -132,6 +146,17 @@ class RegistrarVenta extends Component
         $this->mostrarOpcionesDescuento = false;
     }
 
+    public function actualizarEstadoCaja()
+    {
+        $this->verificarCaja();
+        $this->dispatch('caja-actualizada'); // Opcional: para notificar a otros componentes
+    }
+
+    public function toggleCajaPanel()
+    {
+        $this->cajaContraida = !$this->cajaContraida;
+    }
+
     // Método para calcular el descuento
     public function calcularDescuento()
     {
@@ -146,6 +171,7 @@ class RegistrarVenta extends Component
 
     public function mount()
     {
+        $this->verificarCaja();
         $this->generarCodigoVenta();
         $this->cargarClientes();
         //$this->clientes = Clientes::all();
@@ -194,6 +220,17 @@ class RegistrarVenta extends Component
         $this->comprobanteTemporal = null;
     }
 
+    public function verificarCaja()
+    {
+        $this->cajaActual = Caja::where('id_trabajador', Auth::user()->persona->trabajador->id_trabajador)
+            ->abierta()
+            ->first();
+
+        $this->bloquearVentas = !$this->cajaActual;
+
+        // Forzar actualización de la vista
+        $this->dispatch('$refresh');
+    }
 
     public function eliminarComprobante()
     {
@@ -861,6 +898,11 @@ class RegistrarVenta extends Component
         $this->calcularTotales();
     }
 
+    public function verificarEstadoCaja()
+    {
+        $this->verificarCaja();
+    }
+
     public function eliminarDetalle($index)
     {
         if (count($this->detalleVenta) > 1) {
@@ -891,6 +933,12 @@ class RegistrarVenta extends Component
 
     public function guardar()
     {
+
+        if ($this->bloquearVentas) {
+            $this->dispatch('notify', title: 'Caja Cerrada', description: 'No puedes registrar ventas sin una caja abierta.', type: 'error');
+            return;
+        }
+
         $this->validate([
             "clienteSeleccionado" => "required|exists:clientes,id_cliente",
             "venta.fecha_venta" => "required|date|before_or_equal:today",
@@ -978,6 +1026,7 @@ class RegistrarVenta extends Component
                     "id_estado_venta" => $estadoVentaPendiente->id_estado_venta_fisica,
                     "fecha_registro" => now(),
                     "fecha_actualizacion" => now(),
+                    "id_caja" => $this->cajaActual->id_caja,
                 ]);
                 $comprobanteUrl = '';
                 $datosAdicionales = [];
@@ -1043,8 +1092,8 @@ class RegistrarVenta extends Component
                     if ($detalle['tipo_item'] === 'producto') {
                         $detalleData['id_producto'] = $detalle['id_item'];
 
-                        // ACTUALIZAR STOCK A TRAVÉS DE LOTES
-                        $this->actualizarStockProducto($detalle['id_item'], $cantidad);
+                        $this->actualizarStockProducto($detalle['id_item'], $cantidad, $venta->id_venta);
+
                     } else {
                         $detalleData['id_servicio'] = $detalle['id_item'];
                     }
@@ -1053,6 +1102,7 @@ class RegistrarVenta extends Component
                 }
             });
 
+            $this->cajaActual->calcularTotales();
             // Actualizar estadísticas después de guardar
             $this->actualizarEstadisticas();
 
@@ -1069,6 +1119,35 @@ class RegistrarVenta extends Component
         }
     }
 
+    private function registrarMovimientoInventario($lote, $cantidad, $idVenta)
+    {
+        // Obtener tipo de movimiento "Salida"
+        // Asegúrate que en tu DB el nombre sea exacto, a veces es "Salida", "Venta" o "Egreso"
+        $tipoMovimientoSalida = TipoMovimiento::where('nombre_tipo_movimiento', 'Salida')->first();
+
+        if (!$tipoMovimientoSalida) {
+            Log::error("Tipo de movimiento 'Salida' no encontrado al registrar venta.");
+            return; // O lanzar excepción si es crítico
+        }
+
+        // Calcular stock resultante (lo que queda en el lote)
+        $stockResultante = $lote->cantidad_almacenada + $lote->cantidad_mostrada;
+
+        InventarioMovimiento::create([
+            "id_tipo_movimiento" => $tipoMovimientoSalida->id_tipo_movimiento,
+            "cantidad_movimiento" => -$cantidad, // Negativo porque es salida
+            "stock_resultante" => $stockResultante,
+            "id_tipo_ubicacion" => 1, // Ajustar si manejas múltiples ubicaciones (Tienda/Almacén)
+            "motivo" => "Venta Presencial #" . $this->codigoVenta,
+            "id_lote" => $lote->id_lote,
+            // En Livewire usamos el usuario autenticado
+            "id_trabajador" => Auth::user()->persona->trabajador->id_trabajador,
+            "tipo_movimiento_asociado" => Ventas::class,
+            "id_movimiento_asociado" => $idVenta,
+            "fecha_movimiento" => now(),
+        ]);
+    }
+
     public function updatedTotalGeneral($value)
     {
         // Actualizar el monto del pago cuando cambie el total general
@@ -1077,11 +1156,11 @@ class RegistrarVenta extends Component
         }
     }
 
-    private function actualizarStockProducto($productoId, $cantidadVendida)
+    private function actualizarStockProducto($productoId, $cantidadVendida, $idVenta)
     {
         $producto = Producto::with(['lotes' => function ($query) {
             $query->where('estado', 'activo')
-                ->orderBy('fecha_vencimiento', 'asc'); // Primero los que vencen antes
+                ->orderBy('fecha_vencimiento', 'asc');
         }])->find($productoId);
 
         if (!$producto) {
@@ -1093,26 +1172,33 @@ class RegistrarVenta extends Component
         foreach ($producto->lotes as $lote) {
             if ($cantidadRestante <= 0) break;
 
-            // Primero descontar de cantidad_mostrada
+            $cantidadADescontarTotalLote = 0; // Para saber cuánto descontamos en total de este lote
+
+            // 1. Descontar de cantidad_mostrada
             if ($lote->cantidad_mostrada > 0) {
                 $cantidadADescontar = min($lote->cantidad_mostrada, $cantidadRestante);
                 $lote->cantidad_mostrada -= $cantidadADescontar;
                 $lote->cantidad_vendida += $cantidadADescontar;
                 $cantidadRestante -= $cantidadADescontar;
+                $cantidadADescontarTotalLote += $cantidadADescontar;
             }
 
-            // Si aún queda cantidad, descontar de cantidad_almacenada
+            // 2. Descontar de cantidad_almacenada
             if ($cantidadRestante > 0 && $lote->cantidad_almacenada > 0) {
                 $cantidadADescontar = min($lote->cantidad_almacenada, $cantidadRestante);
                 $lote->cantidad_almacenada -= $cantidadADescontar;
                 $lote->cantidad_vendida += $cantidadADescontar;
                 $cantidadRestante -= $cantidadADescontar;
+                $cantidadADescontarTotalLote += $cantidadADescontar;
             }
 
-            $lote->save();
+            if ($cantidadADescontarTotalLote > 0) {
+                $lote->save();
+
+                $this->registrarMovimientoInventario($lote, $cantidadADescontarTotalLote, $idVenta);
+            }
         }
 
-        // Si no hay suficiente stock en todos los lotes
         if ($cantidadRestante > 0) {
             throw new \Exception("Stock insuficiente para el producto {$producto->nombre_producto}. Faltan: {$cantidadRestante} unidades");
         }

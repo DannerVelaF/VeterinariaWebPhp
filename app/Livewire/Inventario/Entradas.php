@@ -439,7 +439,7 @@ class Entradas extends Component
                 }
             });
 
-            $this->dispatch('notify', title: 'Success', description: "Se registraron {$entradasRegistradas} entradas correctamente.", type: 'success');
+            $this->dispatch('notify', title: 'Success', description: "Se registraron las entradas correctamente.", type: 'success');
             $this->resetForm();
             $this->dispatch('entradasUpdated');
         } catch (Exception $e) {
