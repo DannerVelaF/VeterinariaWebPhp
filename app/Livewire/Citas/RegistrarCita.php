@@ -728,7 +728,8 @@ public function getInfoTurnosTrabajadorProperty()
             'cliente.persona',
             'trabajadorAsignado.persona',
             'mascota',
-            'estadoCita'
+            'estadoCita',
+            //'servicios'
         ])->find($rowId);
 
         $this->showModalDetalle = true;

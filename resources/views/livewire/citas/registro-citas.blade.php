@@ -737,7 +737,7 @@
                 <!-- Información Principal -->
                 <div class="grid grid-cols-3 gap-4 mb-6">
                     <!-- Fecha y Hora -->
-                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <!-- <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
                         <div class="flex items-center mb-2">
                             <svg class="w-5 h-5 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
@@ -750,6 +750,22 @@
                         </p>
                         <p class="text-sm text-blue-700">
                             {{ \Carbon\Carbon::parse($citaSeleccionada->fecha_programada)->format('H:i') }} horas
+                        </p>
+                    </div> -->
+
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <div class="flex items-center mb-2">
+                            <svg class="w-5 h-5 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                            <p class="font-semibold text-blue-800">Fecha y Hora</p>
+                        </div>
+                        <p class="text-lg font-bold text-blue-900">
+                            {{ \Carbon\Carbon::parse($citaSeleccionada->fecha_programada)->translatedFormat('d/m/Y') }}
+                        </p>
+                        <p class="text-sm text-blue-700">
+                            {{ \Carbon\Carbon::parse($citaSeleccionada->fecha_programada)->format('h:i A') }} <!-- CAMBIADO A FORMATO 12H -->
                         </p>
                     </div>
 
@@ -998,9 +1014,10 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
                                     d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                             </svg>
+
                             <div>
                                 <p class="font-semibold">Fecha de Registro</p>
-                                <p>{{ \Carbon\Carbon::parse($citaSeleccionada->fecha_registro)->format('d/m/Y H:i') }}</p>
+                                <p>{{ \Carbon\Carbon::parse($citaSeleccionada->fecha_registro)->format('d/m/Y h:i A') }}</p>
                             </div>
                         </div>
                         <div class="flex items-center">
@@ -1010,7 +1027,7 @@
                             </svg>
                             <div>
                                 <p class="font-semibold">Última Actualización</p>
-                                <p>{{ \Carbon\Carbon::parse($citaSeleccionada->fecha_actualizacion)->format('d/m/Y H:i') }}</p>
+                                <p>{{ \Carbon\Carbon::parse($citaSeleccionada->fecha_actualizacion)->format('d/m/Y h:i A') }}</p>
                             </div>
                         </div>
                     </div>
