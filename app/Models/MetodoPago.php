@@ -80,4 +80,16 @@ class MetodoPago extends Model
     {
         $this->update(['estado' => self::ESTADO_INACTIVO]);
     }
+
+    public function getTipoFormateadoAttribute()
+    {
+        return match ($this->tipo_metodo) {
+            'efectivo' => '💰 Efectivo',
+            'tarjeta' => '💳 Tarjeta',
+            'transferencia' => '🏦 Transferencia',
+            'digital' => '📱 Digital',
+            default => $this->tipo_metodo
+        };
+    }
+
 }

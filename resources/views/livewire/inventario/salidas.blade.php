@@ -1,6 +1,7 @@
 <div class="">
 
-    <x-tabs :tabs="['registro' => 'Registar salida', 'detalle' => 'Listado de salidas']" default="registro" :breadcrumbs="[
+    <x-tabs :tabs="['registro' => 'Registar salida', 'detalle' => 'Listado de salidas']" default="registro"
+            :breadcrumbs="[
         ['label' => 'Inicio', 'href' => '/', 'icon' => 'home'],
         ['label' => 'Inventario', 'href' => '#'],
         ['label' => 'Salidas'],
@@ -15,9 +16,9 @@
                     <div class="flex flex-col gap-2">
                         <p class="font-medium text-xl flex items-center gap-2">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                                fill="none" stroke="red" stroke-width="2" stroke-linecap="round"
-                                stroke-linejoin="round" class="lucide lucide-minus">
-                                <path d="M5 12h14" />
+                                 fill="none" stroke="red" stroke-width="2" stroke-linecap="round"
+                                 stroke-linejoin="round" class="lucide lucide-minus">
+                                <path d="M5 12h14"/>
                             </svg>
                             Registrar Salida
                         </p>
@@ -29,7 +30,7 @@
                             <label for="producto" class="font-medium">Seleccionar Producto <span
                                     class="text-red-500">*</span></label>
                             <select wire:model.live="id_producto" id="producto"
-                                class="border rounded px-2 py-1 focus:outline-none focus:ring focus:ring-red-300">
+                                    class="border rounded px-2 py-1 focus:outline-none focus:ring focus:ring-red-300">
                                 <option value="">Seleccione un producto...</option>
                                 @foreach ($productos as $producto)
                                     <option value="{{ $producto->id_producto }}">
@@ -40,9 +41,9 @@
                             </select>
 
                             @error('id_producto')
-                                <p class="text-red-500 text-xs italic mt-1">
-                                    {{ $message }}
-                                </p>
+                            <p class="text-red-500 text-xs italic mt-1">
+                                {{ $message }}
+                            </p>
                             @enderror
                         </div>
 
@@ -73,19 +74,19 @@
                                 <label for="cantidad" class="font-medium">Cantidad <span class="text-red-500">*</span>
                                 </label>
                                 <input type="number" id="cantidad" min="1" step="1"
-                                    class="border rounded px-2 py-1 focus:outline-none focus:ring focus:ring-red-300 border-gray-200"
-                                    placeholder="Cantidad de producto a salir" wire:model="cantidad">
+                                       class="border rounded px-2 py-1 focus:outline-none focus:ring focus:ring-red-300 border-gray-200"
+                                       placeholder="Cantidad de producto a salir" wire:model="cantidad">
                                 @error('cantidad')
-                                    <p class="text-red-500 text-xs italic mt-1">
-                                        {{ $message }}
-                                    </p>
+                                <p class="text-red-500 text-xs italic mt-1">
+                                    {{ $message }}
+                                </p>
                                 @enderror
                             </div>
                             <div class="flex flex-col gap-2 w-full">
                                 <label for="ubicacion" class="font-medium">Ubicación <span
                                         class="text-red-500">*</span></label>
                                 <select name="ubicacion" id="ubicacion" wire:model="ubicacion"
-                                    class="border rounded px-2 py-1 focus:outline-none focus:ring focus:ring-red-300 border-gray-200 ">
+                                        class="border rounded px-2 py-1 focus:outline-none focus:ring focus:ring-red-300 border-gray-200 ">
                                     <option value="almacen">Almacén</option>
                                     <option value="mostrador">Mostrador</option>
                                 </select>
@@ -97,7 +98,7 @@
                                     class="text-red-500">*</span></label>
 
                             <select wire:model.live="motivo" id="motivo"
-                                class="border rounded px-2 py-1 focus:outline-none focus:ring focus:ring-red-300 border-gray-200">
+                                    class="border rounded px-2 py-1 focus:outline-none focus:ring focus:ring-red-300 border-gray-200">
                                 <option value="">Seleccione un motivo...</option>
                                 @foreach ($motivosSalida as $motivoOption)
                                     <option value="{{ $motivoOption->id_tipo_movimiento }}">
@@ -108,22 +109,23 @@
                             </select>
 
                             @error('motivo')
-                                <p class="text-red-500 text-xs italic mt-1">
-                                    {{ $message }}
-                                </p>
+                            <p class="text-red-500 text-xs italic mt-1">
+                                {{ $message }}
+                            </p>
                             @enderror
 
                             @if ($showMotivoPersonalizado)
                                 <div class="mt-2">
                                     <label for="motivo_personalizado" class="font-medium">Especifique el motivo
                                         <span class="text-red-500">*</span></label>
-                                    <textarea wire:model.lazy="motivo_personalizado" id="motivo_personalizado" rows="3" maxlength="1000"
-                                        class="w-full border rounded px-2 py-1 focus:outline-none focus:ring focus:ring-red-300 border-gray-200 resize-none"
-                                        placeholder="Describa el motivo de la salida..."></textarea>
+                                    <textarea wire:model.lazy="motivo_personalizado" id="motivo_personalizado" rows="3"
+                                              maxlength="1000"
+                                              class="w-full border rounded px-2 py-1 focus:outline-none focus:ring focus:ring-red-300 border-gray-200 resize-none"
+                                              placeholder="Describa el motivo de la salida..."></textarea>
                                     @error('motivo_personalizado')
-                                        <p class="text-red-500 text-xs italic mt-1">
-                                            {{ $message }}
-                                        </p>
+                                    <p class="text-red-500 text-xs italic mt-1">
+                                        {{ $message }}
+                                    </p>
                                     @enderror
                                     <div class="text-right text-xs text-gray-500 mt-1">
                                         {{ strlen($motivo_personalizado) }}/1000 caracteres
@@ -133,7 +135,7 @@
                         </div>
 
                         <button type="submit"
-                            class="w-full p-2 text-white rounded-md transition bg-red-500 hover:bg-red-600 ease-linear">
+                                class="w-full p-2 text-white rounded-md transition bg-red-500 hover:bg-red-600 ease-linear">
                             Registrar salida
                         </button>
                     </form>
@@ -144,7 +146,7 @@
             <x-card class="">
                 <p class="font-medium text-xl">Historial de salidas</p>
                 <p class="text-md">Todas las salidas registradas en el sistema</p>
-                <livewire:salidas-table />
+                <livewire:salidas-table/>
             </x-card>
         </x-tab>
     </x-tabs>
@@ -164,10 +166,11 @@
                 <div class="fixed inset-0 flex items-center justify-center z-50">
                     <!-- Overlay -->
                     <div class="absolute inset-0 bg-black/60 transition-opacity duration-300"
-                        wire:click="$set('showModal', false)"></div>
+                         wire:click="$set('showModal', false)"></div>
 
                     <!-- Modal -->
-                    <div class="relative bg-white rounded-xl shadow-2xl w-full max-w-4xl mx-4 max-h-[90vh] overflow-hidden transform transition-all duration-300 scale-100 opacity-100"
+                    <div
+                        class="relative bg-white rounded-xl shadow-2xl w-full max-w-4xl mx-4 max-h-[90vh] overflow-hidden transform transition-all duration-300 scale-100 opacity-100"
                         x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 scale-95"
                         x-transition:enter-end="opacity-100 scale-100" x-transition:leave="ease-in duration-200"
                         x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95">
@@ -177,9 +180,9 @@
                             <div class="flex items-center gap-3">
                                 <div class="bg-red-100 p-2 rounded-lg">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
-                                        viewBox="0 0 24 24" fill="none" stroke="red" stroke-width="2"
-                                        stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M5 12h14" />
+                                         viewBox="0 0 24 24" fill="none" stroke="red" stroke-width="2"
+                                         stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M5 12h14"/>
                                     </svg>
                                 </div>
                                 <div>
@@ -191,10 +194,10 @@
                                 </div>
                             </div>
                             <button wire:click="$set('showModal', false)"
-                                class="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200">
+                                    class="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
-                                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                    stroke-linecap="round" stroke-linejoin="round">
+                                     viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                     stroke-linecap="round" stroke-linejoin="round">
                                     <line x1="18" y1="6" x2="6" y2="18"></line>
                                     <line x1="6" y1="6" x2="18" y2="18"></line>
                                 </svg>
@@ -208,9 +211,9 @@
                                 <div class="flex items-center gap-2 mb-4 pb-3 border-b border-gray-200">
                                     <div class="bg-blue-100 p-2 rounded-lg">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
-                                            viewBox="0 0 24 24" fill="none" stroke="blue" stroke-width="2"
-                                            stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                             viewBox="0 0 24 24" fill="none" stroke="blue" stroke-width="2"
+                                             stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
                                         </svg>
                                     </div>
                                     <h4 class="font-bold text-gray-800 text-lg">Información del Producto</h4>
@@ -225,7 +228,8 @@
                                             <p class="text-gray-800 font-medium">
                                                 {{ $selectedSalida->lote->producto->nombre_producto }}</p>
                                             <p class="text-gray-500 text-sm mt-1">
-                                                ({{ $selectedSalida->lote->producto->unidad->nombre_unidad ?? 'Sin unidad' }})
+                                                ({{ $selectedSalida->lote->producto->unidad->nombre_unidad ?? 'Sin unidad' }}
+                                                )
                                             </p>
                                         </div>
                                     </div>
@@ -266,12 +270,12 @@
                                 <div class="flex items-center gap-2 mb-4 pb-3 border-b border-gray-200">
                                     <div class="bg-green-100 p-2 rounded-lg">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
-                                            viewBox="0 0 24 24" fill="none" stroke="green" stroke-width="2"
-                                            stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                                            <circle cx="9" cy="7" r="4" />
-                                            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                                            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                                             viewBox="0 0 24 24" fill="none" stroke="green" stroke-width="2"
+                                             stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                                            <circle cx="9" cy="7" r="4"/>
+                                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                                            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
                                         </svg>
                                     </div>
                                     <h4 class="font-bold text-gray-800 text-lg">Información de la Operación</h4>
@@ -293,7 +297,8 @@
                                         <label class="text-sm font-medium text-gray-600 mb-1.5">Registrado por</label>
                                         <div class="p-3 bg-indigo-50 rounded-lg border border-indigo-200">
                                             <p class="text-indigo-700 font-medium">
-                                                {{ $selectedSalida->trabajador->persona->user->usuario }}</p>
+                                                {{ $selectedEntrada->trabajador?->persona?->user?->usuario ?? 'Automático' }}
+                                            </p>
                                             <p class="text-indigo-500 text-sm mt-1">
                                                 {{ $selectedSalida->trabajador->persona->nombre_completo ?? '' }}</p>
                                         </div>
@@ -329,11 +334,11 @@
                                 <div class="flex items-center gap-2 mb-4 pb-3 border-b border-gray-200">
                                     <div class="bg-yellow-100 p-2 rounded-lg">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
-                                            viewBox="0 0 24 24" fill="none" stroke="orange" stroke-width="2"
-                                            stroke-linecap="round" stroke-linejoin="round">
-                                            <circle cx="12" cy="12" r="10" />
-                                            <line x1="12" y1="8" x2="12" y2="12" />
-                                            <line x1="12" y1="16" x2="12.01" y2="16" />
+                                             viewBox="0 0 24 24" fill="none" stroke="orange" stroke-width="2"
+                                             stroke-linecap="round" stroke-linejoin="round">
+                                            <circle cx="12" cy="12" r="10"/>
+                                            <line x1="12" y1="8" x2="12" y2="12"/>
+                                            <line x1="12" y1="16" x2="12.01" y2="16"/>
                                         </svg>
                                     </div>
                                     <h4 class="font-bold text-gray-800 text-lg">Motivo de Salida</h4>
@@ -348,11 +353,11 @@
                                         <div
                                             class="p-4 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center">
                                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
-                                                viewBox="0 0 24 24" fill="none" stroke="gray" stroke-width="2"
-                                                stroke-linecap="round" stroke-linejoin="round" class="mr-2">
-                                                <circle cx="12" cy="12" r="10" />
-                                                <line x1="12" y1="8" x2="12" y2="12" />
-                                                <line x1="12" y1="16" x2="12.01" y2="16" />
+                                                 viewBox="0 0 24 24" fill="none" stroke="gray" stroke-width="2"
+                                                 stroke-linecap="round" stroke-linejoin="round" class="mr-2">
+                                                <circle cx="12" cy="12" r="10"/>
+                                                <line x1="12" y1="8" x2="12" y2="12"/>
+                                                <line x1="12" y1="16" x2="12.01" y2="16"/>
                                             </svg>
                                             <span class="text-gray-500 italic">Sin motivo especificado</span>
                                         </div>
@@ -365,7 +370,7 @@
                         <div class="border-t border-gray-200 bg-gray-50 px-6 py-4">
                             <div class="flex justify-end gap-3">
                                 <button wire:click="$set('showModal', false)"
-                                    class="px-6 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-100 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2">
+                                        class="px-6 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-100 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2">
                                     Cerrar
                                 </button>
 
@@ -377,16 +382,16 @@
         </div>
     </div>
 
-    <x-loader target="registrarSalida, updatedIdProducto" />
+    <x-loader target="registrarSalida, updatedIdProducto"/>
 
     {{-- AGREGAR ESTE SCRIPT PARA MANEJAR EL STOCK --}}
     @script
-        <script>
-            $wire.on('stockUpdated', () => {
-                // Forzar actualización del stock cuando se cambia de producto
-                console.log('Stock actualizado');
-            });
-        </script>
+    <script>
+        $wire.on('stockUpdated', () => {
+            // Forzar actualización del stock cuando se cambia de producto
+            console.log('Stock actualizado');
+        });
+    </script>
     @endscript
 
     @push('scripts')

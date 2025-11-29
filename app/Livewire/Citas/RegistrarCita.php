@@ -7,10 +7,11 @@ use App\Models\Servicio;
 use App\Models\Cita;
 use App\Models\EstadoCita;
 use App\Models\Clientes;
+use App\Models\PuestoTrabajador;
 use App\Models\Trabajador;
 use App\Models\Mascota;
 
-use App\Models\CitaServicio; 
+use App\Models\CitaServicio;
 
 use App\Models\Persona;
 use Carbon\Carbon;
@@ -125,14 +126,14 @@ class RegistrarCita extends Component
         if ($this->trabajadorSeleccionado && $this->fechaSeleccionada) {
             $this->horariosDisponibles = $this->disponibilidadService
                 ->obtenerHorariosDisponibles(
-                    $this->trabajadorSeleccionado, 
+                    $this->trabajadorSeleccionado,
                     $this->fechaSeleccionada,
                     $this->serviciosSeleccionados
                 );
         } else {
             $this->horariosDisponibles = [];
         }
-        
+
         $this->horaSeleccionada = '';
         $this->cita['fecha_programada'] = '';
     }
@@ -154,23 +155,32 @@ class RegistrarCita extends Component
     public function cargarClientes()
     {
         $query = Clientes::with(['persona']);
-        
+
         if ($this->filtroCliente) {
-            $query->whereHas('persona', function($q) {
+            $query->whereHas('persona', function ($q) {
                 $q->where('numero_documento', 'like', '%' . $this->filtroCliente . '%')
-                ->orWhere('nombre', 'like', '%' . $this->filtroCliente . '%')
-                ->orWhere('apellido_paterno', 'like', '%' . $this->filtroCliente . '%')
-                ->orWhere('apellido_materno', 'like', '%' . $this->filtroCliente . '%');
+                    ->orWhere('nombre', 'like', '%' . $this->filtroCliente . '%')
+                    ->orWhere('apellido_paterno', 'like', '%' . $this->filtroCliente . '%')
+                    ->orWhere('apellido_materno', 'like', '%' . $this->filtroCliente . '%');
             });
         }
-        
+
         $this->clientes = $query->get();
     }
 
     public function cargarTrabajadores()
     {
+        $puestoVeterinario = PuestoTrabajador::where("estado", 'activo')->first();
+
+        // Validar si se encontró el puesto de veterinario
+        if (!$puestoVeterinario) {
+            $this->trabajadores = collect(); // Retorna una colección vacía
+            return;
+        }
+
         $this->trabajadores = Trabajador::with(['persona', 'puestoTrabajo'])
-            ->whereHas('estadoTrabajador', function($q) {
+            ->where('id_puesto_trabajo', $puestoVeterinario->id_puesto_trabajo)
+            ->whereHas('estadoTrabajador', function ($q) {
                 $q->where('nombre_estado_trabajador', 'activo');
             })
             ->get();
@@ -237,10 +247,10 @@ class RegistrarCita extends Component
     public function calcularEstadisticas()
     {
         $estados = EstadoCita::all();
-        
+
         foreach ($estados as $estado) {
             $count = Cita::where('id_estado_cita', $estado->id_estado_cita)->count();
-            
+
             switch ($estado->nombre_estado_cita) {
                 case 'Pendiente':
                     $this->cantCitasPendientes = $count;
@@ -264,10 +274,10 @@ class RegistrarCita extends Component
     public function actualizarEstadisticas()
     {
         $estados = EstadoCita::all();
-        
+
         foreach ($estados as $estado) {
             $count = Cita::where('id_estado_cita', $estado->id_estado_cita)->count();
-            
+
             switch ($estado->nombre_estado_cita) {
                 case 'pendiente':
                     $this->cantCitasPendientes = $count;
@@ -325,9 +335,9 @@ class RegistrarCita extends Component
             $this->serviciosSeleccionados
         );
         if (!$disponibilidad['disponible']) {
-            $this->dispatch('notify', 
-                title: 'No disponible', 
-                description: $disponibilidad['mensaje'], 
+            $this->dispatch('notify',
+                title: 'No disponible',
+                description: $disponibilidad['mensaje'],
                 type: 'error'
             );
             return;
@@ -385,7 +395,7 @@ class RegistrarCita extends Component
         }
 
         $trabajador = Trabajador::with(['turnos.horarios'])->find($this->trabajadorSeleccionado);
-        
+
         $info = [];
         foreach ($trabajador->turnos as $turno) {
             $info[] = [
@@ -412,13 +422,13 @@ public function getInfoTurnosTrabajadorProperty()
     }
 
     $trabajador = Trabajador::with(['turnos.horarios'])->find($this->trabajadorSeleccionado);
-    
+
     if (!$trabajador) {
         return null;
     }
 
     $info = [];
-    
+
     // Obtener todos los días de la semana en español
     $diasSemana = [
         'lunes' => ['nombre' => 'Lunes', 'trabaja' => false, 'horarios' => [], 'descanso' => true],
@@ -434,7 +444,7 @@ public function getInfoTurnosTrabajadorProperty()
     foreach ($trabajador->turnos as $turno) {
         foreach ($turno->horarios as $horario) {
             $dia = strtolower($horario->dia_semana);
-            
+
             if (isset($diasSemana[$dia])) {
                 if ($horario->es_descanso) {
                     $diasSemana[$dia]['descanso'] = true;
@@ -464,8 +474,8 @@ public function getInfoTurnosTrabajadorProperty()
     ];
 
     return [
-        'nombre_trabajador' => $trabajador->persona ? 
-            $trabajador->persona->nombre . ' ' . $trabajador->persona->apellido_paterno : 
+        'nombre_trabajador' => $trabajador->persona ?
+            $trabajador->persona->nombre . ' ' . $trabajador->persona->apellido_paterno :
             'Trabajador #' . $trabajador->id_trabajador,
         'puesto' => $trabajador->puestoTrabajo?->nombre_puesto ?? 'Sin puesto asignado',
         'dias_semana' => $diasOrdenados
@@ -477,11 +487,11 @@ public function getInfoTurnosTrabajadorProperty()
     {
         $horas = floor($this->duracionTotal / 60);
         $minutos = $this->duracionTotal % 60;
-        
+
         if ($horas > 0) {
             return "{$horas}h {$minutos}min";
         }
-        
+
         return "{$minutos} min";
     }
 
@@ -600,11 +610,11 @@ public function getInfoTurnosTrabajadorProperty()
     public function render()
     {
         $citas = Cita::with([
-                'cliente.persona', 
-                'trabajadorAsignado.persona', 
-                'mascota', 
-                'estadoCita'
-            ])
+            'cliente.persona',
+            'trabajadorAsignado.persona',
+            'mascota',
+            'estadoCita'
+        ])
             ->orderBy('fecha_programada', 'desc')
             ->orderBy('id_cita', 'desc')
             ->get();
@@ -671,7 +681,7 @@ public function getInfoTurnosTrabajadorProperty()
         $this->trabajadorSeleccionado = '';
         $this->filtroCliente = '';
         $this->mascotas = [];
-        
+
         // Restablecer estado por defecto
         $estadoPendiente = EstadoCita::where('nombre_estado_cita', 'pendiente')->first();
         if ($estadoPendiente) {
@@ -682,7 +692,7 @@ public function getInfoTurnosTrabajadorProperty()
     /* public function resetForm()
     {
         parent::resetForm();
-        
+
         $this->serviciosSeleccionados = [];
         $this->horariosDisponibles = [];
         $this->fechaSeleccionada = now()->addDay()->format('Y-m-d');
@@ -703,7 +713,7 @@ public function getInfoTurnosTrabajadorProperty()
         $this->fechaSeleccionada = now()->addDay()->format('Y-m-d');
         $this->horaSeleccionada = '';
         $this->duracionTotal = 0;
-        
+
         // Restablecer estado por defecto
         $estadoPendiente = EstadoCita::where('nombre_estado_cita', 'pendiente')->first();
         if ($estadoPendiente) {
@@ -764,7 +774,7 @@ public function getInfoTurnosTrabajadorProperty()
         }
 
         $cliente = Clientes::with(['persona'])->find($this->clienteSeleccionado);
-        
+
         if (!$cliente || !$cliente->persona) {
             return null;
         }

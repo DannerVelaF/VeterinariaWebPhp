@@ -1,67 +1,169 @@
 <x-panel title="Gestión de Ventas" :breadcrumbs="[
-    ['label' => 'Inicio', 'href' => '/', 'icon' => 'home'],
-    ['label' => 'Ventas', 'href' => '#'],
-    ['label' => 'Registro de ventas'],
-]">
-    <div class="grid grid-cols-4 gap-4 mb-4">
-        <x-card>
-            <div class="h-[100px] flex flex-col justify-between">
-                <div class="flex justify-between items-center">
-                    <p>Ventas pendientes</p>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+        ['label' => 'Inicio', 'href' => '/', 'icon' => 'home'],
+        ['label' => 'Ventas', 'href' => '#'],
+        ['label' => 'Registro de ventas'],
+    ]">
+    <!-- Panel de caja flotante -->
+    <div
+        class="fixed top-24 right-6 z-40 transition-all duration-300 ease-in-out {{ $cajaContraida ? 'w-16' : 'w-[450px]' }}"
+        x-data="{ isContraida: @entangle('cajaContraida') }">
+        <div class="bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden">
+            <!-- Header del panel de caja -->
+            <div
+                class="bg-gradient-to-r from-blue-600 to-blue-700 p-4 text-white flex justify-between items-center cursor-pointer"
+                @click="$wire.toggleCajaPanel()">
+                <div class="flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
                          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                         class="lucide lucide-clock-icon lucide-clock">
-                        <circle cx="12" cy="12" r="10"/>
-                        <polyline points="12 6 12 12 16 14"/>
+                         class="lucide lucide-cash flex-shrink-0">
+                        <rect width="20" height="12" x="2" y="6" rx="2"/>
+                        <circle cx="12" cy="12" r="2"/>
+                        <path d="M6 12h.01M18 12h.01"/>
+                    </svg>
+                    <span x-show="!isContraida" class="font-medium whitespace-nowrap">Gestión de Caja</span>
+                </div>
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                     class="transition-transform duration-300 flex-shrink-0"
+                     :class="isContraida ? 'rotate-180' : ''">
+                    <path d="m6 9 6 6 6-6"/>
+                </svg>
+            </div>
+
+            <!-- Contenido del panel de caja -->
+            <div x-show="!isContraida"
+                 x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0 transform scale-95"
+                 x-transition:enter-end="opacity-100 transform scale-100"
+                 x-transition:leave="transition ease-in duration-200"
+                 x-transition:leave-start="opacity-100 transform scale-100"
+                 x-transition:leave-end="opacity-0 transform scale-95">
+                <!-- Componente CajaGestion como Livewire separado -->
+                @livewire('ventas.caja-gestion', key('caja-gestion-' . now()->timestamp))
+            </div>
+
+            <!-- Estado de caja cuando está contraído -->
+            <div x-show="isContraida" class="p-2 text-center">
+                <div class="w-10 h-10 mx-auto rounded-full flex items-center justify-center
+                {{ $cajaActual ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600' }}">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect width="20" height="12" x="2" y="6" rx="2"/>
+                        <circle cx="12" cy="12" r="2"/>
                     </svg>
                 </div>
-                <p class="font-medium text-3xl">{{ $cantVentasPendientes }}</p>
+                <p class="text-xs mt-1 {{ $cajaActual ? 'text-green-600' : 'text-red-600' }} font-medium whitespace-nowrap">
+                    {{ $cajaActual ? 'Abierta' : 'Cerrada' }}
+                </p>
             </div>
-        </x-card>
-        <x-card>
-            <div class="h-[100px] flex flex-col justify-between">
-                <div class="flex justify-between items-center">
-                    <p>Ventas completadas</p>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                         fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                         stroke-linejoin="round" class="lucide lucide-check-circle-icon lucide-check-circle">
-                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                        <polyline points="22 4 12 14.01 9 11.01"/>
-                    </svg>
-                </div>
-                <p class="font-medium text-3xl">{{ $cantVentasCompletadas }}</p>
-            </div>
-        </x-card>
-        <x-card>
-            <div class="h-[100px] flex flex-col justify-between">
-                <div class="flex justify-between items-center">
-                    <p>Ventas canceladas</p>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                         fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                         stroke-linejoin="round" class="lucide lucide-x-circle-icon lucide-x-circle">
-                        <circle cx="12" cy="12" r="10"/>
-                        <path d="m15 9-6 6"/>
-                        <path d="m9 9 6 6"/>
-                    </svg>
-                </div>
-                <p class="font-medium text-3xl">{{ $cantVentasCanceladas }}</p>
-            </div>
-        </x-card>
-        <x-card>
-            <div class="h-[100px] flex flex-col justify-between">
-                <div class="flex justify-between items-center">
-                    <p>Total recaudado</p>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                         fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                         stroke-linejoin="round" class="lucide lucide-dollar-sign-icon lucide-dollar-sign">
-                        <line x1="12" x2="12" y1="2" y2="22"/>
-                        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-                    </svg>
-                </div>
-                <p class="font-medium text-3xl">S/ {{ number_format($totalVentasCompletadas, 2) }}</p>
-            </div>
-        </x-card>
+        </div>
     </div>
+
+    <!-- Contenido principal -->
+    <div class="mb-6">
+        <!-- Estadísticas de ventas -->
+        <div>
+            <div class="grid grid-cols-4 gap-4">
+                <!-- Tarjeta de Estado de Caja -->
+                <x-card>
+                    <div class="h-[100px] flex flex-col justify-between">
+                        <div class="flex justify-between items-center">
+                            <p>Estado Caja</p>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                 fill="none"
+                                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                 class="lucide lucide-cash">
+                                <rect width="20" height="12" x="2" y="6" rx="2"/>
+                                <circle cx="12" cy="12" r="2"/>
+                                <path d="M6 12h.01M18 12h.01"/>
+                            </svg>
+                        </div>
+                        <p class="font-medium text-3xl {{ $cajaActual ? 'text-green-600' : 'text-red-600' }}">
+                            {{ $cajaActual ? 'Abierta' : 'Cerrada' }}
+                        </p>
+                    </div>
+                </x-card>
+
+                <x-card>
+                    <div class="h-[100px] flex flex-col justify-between">
+                        <div class="flex justify-between items-center">
+                            <p>Ventas pendientes</p>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                 fill="none"
+                                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                 class="lucide lucide-clock-icon lucide-clock">
+                                <circle cx="12" cy="12" r="10"/>
+                                <polyline points="12 6 12 12 16 14"/>
+                            </svg>
+                        </div>
+                        <p class="font-medium text-3xl">{{ $cantVentasPendientes }}</p>
+                    </div>
+                </x-card>
+                <x-card>
+                    <div class="h-[100px] flex flex-col justify-between">
+                        <div class="flex justify-between items-center">
+                            <p>Ventas completadas</p>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                 stroke-linejoin="round" class="lucide lucide-check-circle-icon lucide-check-circle">
+                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                                <polyline points="22 4 12 14.01 9 11.01"/>
+                            </svg>
+                        </div>
+                        <p class="font-medium text-3xl">{{ $cantVentasCompletadas }}</p>
+                    </div>
+                </x-card>
+                <x-card>
+                    <div class="h-[100px] flex flex-col justify-between">
+                        <div class="flex justify-between items-center">
+                            <p>Ventas canceladas</p>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                 stroke-linejoin="round" class="lucide lucide-x-circle-icon lucide-x-circle">
+                                <circle cx="12" cy="12" r="10"/>
+                                <path d="m15 9-6 6"/>
+                                <path d="m9 9 6 6"/>
+                            </svg>
+                        </div>
+                        <p class="font-medium text-3xl">{{ $cantVentasCanceladas }}</p>
+                    </div>
+                </x-card>
+            </div>
+        </div>
+    </div>
+
+    @if($bloquearVentas)
+        <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <div class="flex items-center gap-3">
+                <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                </svg>
+                <div>
+                    <h4 class="font-semibold text-red-800">Caja Cerrada</h4>
+                    <p class="text-red-600 text-sm">Debes abrir la caja para poder registrar ventas.</p>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    <!-- Tarjeta de Total Recaudado (ocupa todo el ancho) -->
+    <x-card class="mb-6">
+        <div class="h-[100px] flex flex-col justify-between">
+            <div class="flex justify-between items-center">
+                <p>Total recaudado</p>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                     fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                     stroke-linejoin="round" class="lucide lucide-dollar-sign-icon lucide-dollar-sign">
+                    <line x1="12" x2="12" y1="2" y2="22"/>
+                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                </svg>
+            </div>
+            <p class="font-medium text-3xl">S/ {{ number_format($totalVentasCompletadas, 2) }}</p>
+        </div>
+    </x-card>
+
+    <!-- Resto del código permanece igual -->
     <x-card>
         @if (session()->has('success'))
             <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 4000)"
@@ -92,18 +194,24 @@
                 <p class="font-medium text-gray-600 text-xl">Registro de Ventas</p>
                 <p class="font-medium text-gray-600 text-sm">Gestiona las ventas de productos y servicios</p>
             </div>
-            <div class="flex gap-2">
-                <x-exports/>
-                <button wire:click="openModal"
-                        class="inline-flex items-center gap-2 px-4 py-2 h-10 bg-blue-600 hover:bg-blue-700 transition text-white rounded-lg font-medium">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
-                         fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                         stroke-linejoin="round" class="lucide lucide-plus">
-                        <path d="M5 12h14"/>
-                        <path d="M12 5v14"/>
-                    </svg>
-                    Nueva venta
-                </button>
+            <div class="flex flex-col items-end gap-2">
+                <div class="flex gap-2">
+                    <x-exports/>
+                    <button wire:click="openModal"
+                            @if($bloquearVentas) disabled @endif
+                            class="inline-flex items-center gap-2 px-4 py-2 h-10 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition text-white rounded-lg font-medium">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                             fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                             stroke-linejoin="round" class="lucide lucide-plus">
+                            <path d="M5 12h14"/>
+                            <path d="M12 5v14"/>
+                        </svg>
+                        Nueva venta
+                    </button>
+                </div>
+                @if($bloquearVentas)
+                    <p class="text-xs text-red-500">💡 Abre la caja para habilitar las ventas</p>
+                @endif
             </div>
         </div>
 
@@ -194,49 +302,51 @@
                                                             <div class="flex justify-between items-start">
                                                                 <div class="flex-1">
                                                                     <div class="flex items-center mb-1">
-                                                                        <span
-                                                                            class="font-semibold text-gray-800 text-sm">
-                                                                            @if($cliente->persona)
-                                                                                {{ $cliente->persona->nombre ?? $cliente->persona->nombre }}
-                                                                                {{ $cliente->persona->apellido_paterno }}
-                                                                                {{ $cliente->persona->apellido_materno }}
-                                                                            @else
-                                                                                Cliente #{{ $cliente->id_cliente }}
-                                                                            @endif
-                                                                        </span>
+                                                                            <span
+                                                                                class="font-semibold text-gray-800 text-sm">
+                                                                                @if($cliente->persona)
+                                                                                    {{ $cliente->persona->nombre ?? $cliente->persona->nombre }}
+                                                                                    {{ $cliente->persona->apellido_paterno }}
+                                                                                    {{ $cliente->persona->apellido_materno }}
+                                                                                @else
+                                                                                    Cliente #{{ $cliente->id_cliente }}
+                                                                                @endif
+                                                                            </span>
                                                                         <span
                                                                             class="ml-2 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
-                                                                            DNI: {{ $cliente->persona->numero_documento ?? 'N/A' }}
-                                                                        </span>
+                                                                                DNI: {{ $cliente->persona->numero_documento ?? 'N/A' }}
+                                                                            </span>
                                                                     </div>
                                                                     <div class="text-xs text-gray-600 space-y-1">
                                                                         @if ($cliente->persona && $cliente->persona->numero_telefono_personal)
                                                                             <span class="flex items-center">
-                                                                                <svg class="w-3 h-3 mr-1" fill="none"
-                                                                                     stroke="currentColor"
-                                                                                     viewBox="0 0 24 24">
-                                                                                    <path stroke-linecap="round"
-                                                                                          stroke-linejoin="round"
-                                                                                          stroke-width="2"
-                                                                                          d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z">
-                                                                                    </path>
-                                                                                </svg>
-                                                                                {{ $cliente->persona->numero_telefono_personal }}
-                                                                            </span>
+                                                                                    <svg class="w-3 h-3 mr-1"
+                                                                                         fill="none"
+                                                                                         stroke="currentColor"
+                                                                                         viewBox="0 0 24 24">
+                                                                                        <path stroke-linecap="round"
+                                                                                              stroke-linejoin="round"
+                                                                                              stroke-width="2"
+                                                                                              d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z">
+                                                                                        </path>
+                                                                                    </svg>
+                                                                                    {{ $cliente->persona->numero_telefono_personal }}
+                                                                                </span>
                                                                         @endif
                                                                         @if ($cliente->persona && $cliente->persona->correo_electronico_personal)
                                                                             <span class="flex items-center">
-                                                                                <svg class="w-3 h-3 mr-1" fill="none"
-                                                                                     stroke="currentColor"
-                                                                                     viewBox="0 0 24 24">
-                                                                                    <path stroke-linecap="round"
-                                                                                          stroke-linejoin="round"
-                                                                                          stroke-width="2"
-                                                                                          d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z">
-                                                                                    </path>
-                                                                                </svg>
-                                                                                {{ $cliente->persona->correo_electronico_personal }}
-                                                                            </span>
+                                                                                    <svg class="w-3 h-3 mr-1"
+                                                                                         fill="none"
+                                                                                         stroke="currentColor"
+                                                                                         viewBox="0 0 24 24">
+                                                                                        <path stroke-linecap="round"
+                                                                                              stroke-linejoin="round"
+                                                                                              stroke-width="2"
+                                                                                              d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z">
+                                                                                        </path>
+                                                                                    </svg>
+                                                                                    {{ $cliente->persona->correo_electronico_personal }}
+                                                                                </span>
                                                                         @endif
                                                                     </div>
                                                                 </div>
@@ -444,13 +554,13 @@
                                                                     <div class="flex justify-between items-start">
                                                                         <div class="flex-1">
                                                                             <div class="flex items-center mb-1">
-                                        <span class="font-semibold text-gray-800 text-sm">
-                                            {{ $item['nombre'] }}
-                                        </span>
+                                            <span class="font-semibold text-gray-800 text-sm">
+                                                {{ $item['nombre'] }}
+                                            </span>
                                                                                 <span class="ml-2 text-xs px-2 py-1 rounded-full
-                                            @if($item['tipo'] == 'producto') bg-green-100 text-green-800 @else bg-purple-100 text-purple-800 @endif">
-                                            {{ $item['tipo'] == 'producto' ? 'Producto' : 'Servicio' }}
-                                        </span>
+                                                @if($item['tipo'] == 'producto') bg-green-100 text-green-800 @else bg-purple-100 text-purple-800 @endif">
+                                                {{ $item['tipo'] == 'producto' ? 'Producto' : 'Servicio' }}
+                                            </span>
                                                                             </div>
 
                                                                             <div
@@ -542,11 +652,11 @@
                                                     @if($productoInfo)
                                                         <span
                                                             class="text-xs font-normal block {{ $detalle['cantidad'] > $productoInfo['stock_actual'] ? 'text-red-600' : 'text-green-600' }}">
-                    Stock: {{ $productoInfo['stock_actual'] }}
+                        Stock: {{ $productoInfo['stock_actual'] }}
                                                             @if($detalle['cantidad'] > $productoInfo['stock_actual'])
                                                                 • ❌ Excede stock
                                                             @endif
-                </span>
+                    </span>
                                                     @endif
                                                 @endif
                                             </label>
@@ -578,11 +688,11 @@
                                                         <span
                                                             class="text-xs font-normal block {{ $esPrecioModificado ? 'text-yellow-600' : 'text-green-600' }}"
                                                             title="{{ $esPrecioModificado ? 'Precio modificado del valor referencial' : 'Precio referencial del servicio' }}">
-                                    Ref: S/ {{ number_format($precioReferencial, 2) }}
+                                        Ref: S/ {{ number_format($precioReferencial, 2) }}
                                                             @if($esPrecioModificado)
                                                                 • 💰 Modificado
                                                             @endif
-                                </span>
+                                    </span>
                                                     @endif
                                                 @endif
                                             </label>
@@ -594,21 +704,21 @@
                                                        pattern="[0-9.]*"
                                                        inputmode="decimal"
                                                        class="border rounded px-2 py-1 focus:outline-none focus:ring focus:ring-blue-300 text-sm transition-all duration-300 w-full
-        @if($detalle['tipo_item'] == 'servicio' && $detalle['id_item'])
-            @php
-                $servicio = \App\Models\Servicio::find($detalle['id_item']);
-                $precioRef = $servicio ? $servicio->precio : 0;
-                $precioAct = $detalle['precio_unitario'] ?? 0;
-                $modificado = $precioRef > 0 && $precioAct != $precioRef;
-            @endphp
-            @if($modificado)
-                bg-yellow-50 border-yellow-400 text-yellow-700 font-medium shadow-sm
+            @if($detalle['tipo_item'] == 'servicio' && $detalle['id_item'])
+                @php
+                    $servicio = \App\Models\Servicio::find($detalle['id_item']);
+                    $precioRef = $servicio ? $servicio->precio : 0;
+                    $precioAct = $detalle['precio_unitario'] ?? 0;
+                    $modificado = $precioRef > 0 && $precioAct != $precioRef;
+                @endphp
+                @if($modificado)
+                    bg-yellow-50 border-yellow-400 text-yellow-700 font-medium shadow-sm
+                @else
+                    bg-blue-50 border-blue-300
+                @endif
             @else
-                bg-blue-50 border-blue-300
-            @endif
-        @else
-            border-gray-200
-        @endif"
+                border-gray-200
+            @endif"
                                                        placeholder="0.00">
 
                                                 @if($detalle['tipo_item'] == 'servicio' && $detalle['id_item'])
@@ -621,10 +731,10 @@
                                                     @if($modificado)
                                                         <div
                                                             class="absolute right-2 top-1/2 transform -translate-y-1/2">
-                                    <span class="text-yellow-500 text-sm"
-                                          title="Precio modificado del valor referencial">
-                                        💰
-                                    </span>
+                                        <span class="text-yellow-500 text-sm"
+                                              title="Precio modificado del valor referencial">
+                                            💰
+                                        </span>
                                                         </div>
                                                     @endif
                                                 @endif
@@ -729,9 +839,9 @@
                                             <button type="button"
                                                     wire:click="aplicarDescuento({{ $porcentaje }})"
                                                     class="p-4 border-2 rounded-xl text-center transition-all duration-200 hover:scale-105 hover:shadow-md
-                                                        {{ $descuentoSeleccionado == $porcentaje
-                                                            ? 'border-green-500 bg-green-50 shadow-sm'
-                                                            : 'border-gray-200 bg-white hover:border-purple-300' }}">
+                                                            {{ $descuentoSeleccionado == $porcentaje
+                                                                ? 'border-green-500 bg-green-50 shadow-sm'
+                                                                : 'border-gray-200 bg-white hover:border-purple-300' }}">
                                                 <div class="flex flex-col items-center">
                                                     <!-- Porcentaje grande -->
                                                     <span class="text-2xl font-bold text-gray-800 mb-1">{{ $porcentaje }}%</span>
@@ -944,8 +1054,8 @@
                                         <div class="mt-2 p-2 bg-green-50 border border-green-200 rounded text-sm">
                                             <div class="flex items-center justify-between">
                                                 <div>
-                                                    <span
-                                                        class="font-medium text-green-700">Archivo seleccionado:</span>
+                                                        <span
+                                                            class="font-medium text-green-700">Archivo seleccionado:</span>
                                                     <span
                                                         class="text-green-600 ml-2">{{ $comprobanteTemporal->getClientOriginalName() }}</span>
                                                 </div>
@@ -1038,8 +1148,8 @@
 
     <!-- Modal de Detalle de Venta -->
     <div x-data x-init="$watch('$wire.showModalDetalle', value => {
-    if (value) { document.body.classList.add('overflow-hidden') } else { document.body.classList.remove('overflow-hidden') }
-})">
+        if (value) { document.body.classList.add('overflow-hidden') } else { document.body.classList.remove('overflow-hidden') }
+    })">
         @if ($showModalDetalle && $ventaSeleccionada)
             <div class="fixed inset-0 flex items-center justify-center bg-black/50 z-50 p-4">
                 <div class="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -1114,11 +1224,11 @@
                                         <div class="flex justify-between items-center">
                                             <span class="text-gray-600 font-medium">Estado:</span>
                                             <span class="px-3 py-1 rounded-full text-xs font-medium
-                                        {{ $ventaSeleccionada->estadoVenta->nombre_estado_venta_fisica === 'pendiente' ? 'bg-yellow-100 text-yellow-800 border border-yellow-200' :
-                                           ($ventaSeleccionada->estadoVenta->nombre_estado_venta_fisica === 'completado' ? 'bg-green-100 text-green-800 border border-green-200' :
-                                           'bg-red-100 text-red-800 border border-red-200') }}">
-                                        {{ ucfirst($ventaSeleccionada->estadoVenta->nombre_estado_venta_fisica) }}
-                                    </span>
+                                            {{ $ventaSeleccionada->estadoVenta->nombre_estado_venta_fisica === 'pendiente' ? 'bg-yellow-100 text-yellow-800 border border-yellow-200' :
+                                               ($ventaSeleccionada->estadoVenta->nombre_estado_venta_fisica === 'completado' ? 'bg-green-100 text-green-800 border border-green-200' :
+                                               'bg-red-100 text-red-800 border border-red-200') }}">
+                                            {{ ucfirst($ventaSeleccionada->estadoVenta->nombre_estado_venta_fisica) }}
+                                        </span>
                                         </div>
                                     </div>
                                 </div>
@@ -1138,10 +1248,10 @@
                                             <div class="flex justify-between items-center">
                                                 <span class="text-gray-600 font-medium">Nombre:</span>
                                                 <span class="font-semibold text-gray-800">
-                                            {{ $ventaSeleccionada->cliente->persona->nombre }}
+                                                {{ $ventaSeleccionada->cliente->persona->nombre }}
                                                     {{ $ventaSeleccionada->cliente->persona->apellido_paterno }}
                                                     {{ $ventaSeleccionada->cliente->persona->apellido_materno }}
-                                        </span>
+                                            </span>
                                             </div>
                                             <div class="flex justify-between items-center">
                                                 <span class="text-gray-600 font-medium">DNI:</span>
@@ -1187,9 +1297,9 @@
                                             <div class="flex justify-between items-center">
                                                 <span class="text-gray-600 font-medium">Nombre:</span>
                                                 <span class="font-semibold text-gray-800">
-                                            {{ $ventaSeleccionada->trabajador->persona->nombre }}
+                                                {{ $ventaSeleccionada->trabajador->persona->nombre }}
                                                     {{ $ventaSeleccionada->trabajador->persona->apellido_paterno }}
-                                        </span>
+                                            </span>
                                             </div>
                                             <div class="flex justify-between items-center">
                                                 <span class="text-gray-600 font-medium">DNI:</span>
@@ -1291,10 +1401,10 @@
                                             <div class="flex justify-between items-center">
                                                 <span class="text-gray-600 font-medium">Estado Pago:</span>
                                                 <span class="px-2 py-1 rounded text-xs font-medium
-                                            {{ $ventaSeleccionada->transaccionPago->estado === 'completado' ? 'bg-green-100 text-green-800' :
-                                               ($ventaSeleccionada->transaccionPago->estado === 'pendiente' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800') }}">
-                                            {{ ucfirst($ventaSeleccionada->transaccionPago->estado) }}
-                                        </span>
+                                                {{ $ventaSeleccionada->transaccionPago->estado === 'completado' ? 'bg-green-100 text-green-800' :
+                                                   ($ventaSeleccionada->transaccionPago->estado === 'pendiente' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800') }}">
+                                                {{ ucfirst($ventaSeleccionada->transaccionPago->estado) }}
+                                            </span>
                                             </div>
                                         </div>
                                     </div>
@@ -1346,10 +1456,10 @@
                                                 @endif
                                             </td>
                                             <td class="p-3 capitalize">
-                                            <span class="px-2 py-1 rounded text-xs font-medium
-                                                {{ $detalle->tipo_item === 'producto' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800' }}">
-                                                {{ $detalle->tipo_item }}
-                                            </span>
+                                                <span class="px-2 py-1 rounded text-xs font-medium
+                                                    {{ $detalle->tipo_item === 'producto' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800' }}">
+                                                    {{ $detalle->tipo_item }}
+                                                </span>
                                             </td>
                                             <td class="p-3 text-center">{{ $detalle->cantidad }}</td>
                                             <td class="p-3 text-right">
@@ -1368,8 +1478,8 @@
                                     <div class="flex items-center gap-4">
                                         <span class="font-semibold text-gray-700">Total:</span>
                                         <span class="font-bold text-green-600 text-lg">
-                                        S/ {{ number_format($ventaSeleccionada->total, 2) }}
-                                    </span>
+                                            S/ {{ number_format($ventaSeleccionada->total, 2) }}
+                                        </span>
                                     </div>
                                 </div>
                             </div>
@@ -1423,8 +1533,8 @@
 
     <!-- Modal para Transacciones Web -->
     <div x-data x-init="$watch('$wire.showModalTransaccion', value => {
-    if (value) { document.body.classList.add('overflow-hidden') } else { document.body.classList.remove('overflow-hidden') }
-})">
+        if (value) { document.body.classList.add('overflow-hidden') } else { document.body.classList.remove('overflow-hidden') }
+    })">
         @if ($showModalTransaccion && $ventaWebSeleccionada && $transaccionPago)
             <div class="fixed inset-0 flex items-center justify-center bg-black/50 z-50 p-4">
                 <div class="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[95vh] overflow-y-auto">
@@ -1468,9 +1578,9 @@
                                         <div class="flex justify-between">
                                             <span class="text-gray-600">Estado:</span>
                                             <span class="px-2 py-1 rounded-full text-xs font-medium
-                                            {{ $ventaWebSeleccionada->estadoVenta->nombre_estado_venta_fisica === 'pendiente' ? 'bg-yellow-100 text-yellow-800' : '' }}">
-                                            {{ $ventaWebSeleccionada->estadoVenta->nombre_estado_venta_fisica }}
-                                        </span>
+                                                {{ $ventaWebSeleccionada->estadoVenta->nombre_estado_venta_fisica === 'pendiente' ? 'bg-yellow-100 text-yellow-800' : '' }}">
+                                                {{ $ventaWebSeleccionada->estadoVenta->nombre_estado_venta_fisica }}
+                                            </span>
                                         </div>
                                     </div>
                                 </div>
@@ -1481,9 +1591,9 @@
                                         <div class="flex justify-between">
                                             <span class="text-gray-600">Nombre:</span>
                                             <span class="font-semibold">
-                                            {{ $ventaWebSeleccionada->cliente->persona->nombre }}
+                                                {{ $ventaWebSeleccionada->cliente->persona->nombre }}
                                                 {{ $ventaWebSeleccionada->cliente->persona->apellido_paterno }}
-                                        </span>
+                                            </span>
                                         </div>
                                         <div class="flex justify-between">
                                             <span class="text-gray-600">DNI:</span>
@@ -1513,10 +1623,10 @@
                                         <div class="flex justify-between">
                                             <span class="text-gray-600">Estado:</span>
                                             <span class="px-2 py-1 rounded-full text-xs font-medium
-                                            {{ $transaccionPago->estado === 'pendiente' ? 'bg-yellow-100 text-yellow-800' :
-                                               ($transaccionPago->estado === 'confirmado' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800') }}">
-                                            {{ $transaccionPago->estado }}
-                                        </span>
+                                                {{ $transaccionPago->estado === 'pendiente' ? 'bg-yellow-100 text-yellow-800' :
+                                                   ($transaccionPago->estado === 'confirmado' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800') }}">
+                                                {{ $transaccionPago->estado }}
+                                            </span>
                                         </div>
                                         @if($transaccionPago->referencia)
                                             <div class="flex justify-between">
@@ -1654,8 +1764,8 @@
                                     Esta venta ya ha sido
                                     <span
                                         class="font-semibold {{ $transaccionPago->estado === 'confirmado' ? 'text-green-600' : 'text-red-600' }}">
-                                {{ $transaccionPago->estado === 'confirmado' ? 'APROBADA' : 'RECHAZADA' }}
-                            </span>
+                                    {{ $transaccionPago->estado === 'confirmado' ? 'APROBADA' : 'RECHAZADA' }}
+                                </span>
                                 </p>
                             </div>
                         @endif

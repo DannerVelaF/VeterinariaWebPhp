@@ -2,10 +2,12 @@
 
 namespace App\Livewire;
 
+use App\Models\Caja;
 use App\Models\Ventas;
 use App\Models\Clientes;
 use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -57,9 +59,31 @@ final class VentasTable extends PowerGridComponent
 
     public function datasource(): Builder
     {
-        return Ventas::query()
-            ->with(['cliente', 'trabajador.persona.user', 'estadoVenta'])
-            ->orderBy("ventas.fecha_registro", "desc");
+        // 1. Base de la consulta (siempre mantenemos el select para evitar bugs)
+        $query = Ventas::query()
+            ->select('ventas.*')
+            ->with(['cliente', 'trabajador.persona.user', 'estadoVenta']);
+
+        $user = Auth::user();
+
+        // 2. Verificamos si es trabajador
+        if ($user && $user->persona && $user->persona->trabajador) {
+            $idTrabajador = $user->persona->trabajador->id_trabajador;
+
+            // Buscamos si tiene caja abierta
+            $cajaAbierta = Caja::where('id_trabajador', $idTrabajador)
+                ->where('estado', 'abierta')
+                ->first();
+
+            // 3. LÓGICA CONDICIONAL
+            if ($cajaAbierta) {
+                // ✅ CASO A: Hay caja abierta -> Filtramos SOLO las ventas de esa caja
+                $query->where('ventas.id_caja', $cajaAbierta->id_caja);
+            }
+
+        }
+
+        return $query->orderBy("ventas.fecha_registro", "desc");
     }
 
     public function relationSearch(): array

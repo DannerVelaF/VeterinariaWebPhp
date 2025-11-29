@@ -24,6 +24,7 @@ final class SalidasTable extends PowerGridComponent
     public string $sortField = 'id_inventario_movimiento';
     public array $productos = [];
     public array $ubicaciones = [];
+
     public function setUp(): array
     {
         $this->ubicaciones = TipoUbicacion::select('id_tipo_ubicacion as id', 'nombre_tipo_ubicacion as name')->get()->toArray();
@@ -59,12 +60,10 @@ final class SalidasTable extends PowerGridComponent
         return PowerGrid::fields()
             ->add('id', fn($row) => $row->id)
             ->add('producto', fn($inventario) => $inventario->lote->producto->nombre_producto)
-            ->add('cantidad_movimiento', fn($inventario) =>
-            '<span class="bg-red-100 text-red-800 px-3 rounded-md text-sm font-medium">
+            ->add('cantidad_movimiento', fn($inventario) => '<span class="bg-red-100 text-red-800 px-3 rounded-md text-sm font-medium">
                     -' . $inventario->cantidad_movimiento . '
                   </span>')
-            ->add('fecha_movimiento_formatted', fn($inventario) =>
-            $inventario->fecha_movimiento?->format('d/m/Y H:i'))
+            ->add('fecha_movimiento_formatted', fn($inventario) => $inventario->fecha_movimiento?->format('d/m/Y H:i'))
             ->add('ubicacion', function ($salida) {
                 $icon = $salida->tipoUbicacion->nombre_tipo_ubicacion === 'mostrador'
                     ? '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shopping-cart text-gray-600"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>'
@@ -73,7 +72,7 @@ final class SalidasTable extends PowerGridComponent
                 return '<p class="capitalize flex items-center gap-2 text-sm">' . $icon . '<span>' . $salida->tipoUbicacion->nombre_tipo_ubicacion . '</span></p>';
             })
             ->add('motivo', fn($inventario) => $inventario->motivo)
-            ->add('usuario', fn($inventario) => $inventario->trabajador->persona->user->usuario)
+            ->add('usuario', fn($inventario) => $inventario->trabajador?->persona?->user?->usuario ?? 'Automático')
             ->add('lote', fn($inventario) => $inventario->lote->codigo_lote);
     }
 
@@ -113,7 +112,7 @@ final class SalidasTable extends PowerGridComponent
             Filter::datePicker('fecha_movimiento', 'fecha_movimiento')
                 ->params([
                     'dateFormat' => 'Y-m-d',
-                    'locale'     => 'es',
+                    'locale' => 'es',
                     'enableTime' => false,
                 ]),
 

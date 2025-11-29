@@ -26,6 +26,7 @@ class Ventas extends Model
         "tipo_venta",
         "fecha_registro",
         "fecha_actualizacion",
+        "id_caja"
     ];
 
     public function cliente()
@@ -57,4 +58,10 @@ class Ventas extends Model
     {
         return $this->through('transaccionPago')->has('metodoPago');
     }
+
+    public function caja()
+    {
+        return $this->belongsTo(Caja::class, 'id_caja');
+    }
+
 }
