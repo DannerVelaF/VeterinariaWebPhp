@@ -53,19 +53,34 @@ final class EntradasTable extends PowerGridComponent
         return InventarioMovimiento::query()
             ->join('lotes', 'inventario_movimientos.id_lote', '=', 'lotes.id_lote')
             ->join('productos', 'lotes.id_producto', '=', 'productos.id_producto')
-            // ✅ CORRECCIÓN: Usar la tabla pivote para la relación con proveedores
-            ->join('producto_proveedores', 'productos.id_producto', '=', 'producto_proveedores.id_producto')
-            ->join('proveedores', 'producto_proveedores.id_proveedor', '=', 'proveedores.id_proveedor')
-            ->with(['lote.producto.proveedores', 'trabajador.persona.user'])
+
+            // --- CORRECCIÓN INICIO ---
+            // 1. Eliminamos 'producto_proveedores'.
+            // 2. Unimos con la tabla que originó el movimiento (DetalleCompra) para saber el proveedor real.
+
+            // Unimos el movimiento con el detalle de compra (Polimórfico)
+            ->leftJoin('detalle_compras', function ($join) {
+                $join->on('inventario_movimientos.id_movimiento_asociado', '=', 'detalle_compras.id_detalle_compra')
+                    // Asegúrate de que este string coincida con como se guarda en tu BD (App\Models\DetalleCompra o detalle_compra)
+                    ->where('inventario_movimientos.tipo_movimiento_asociado', 'like', '%DetalleCompra');
+            })
+            // Unimos el detalle con la cabecera de la Compra
+            ->leftJoin('compras', 'detalle_compras.id_compra', '=', 'compras.id_compra')
+            // Unimos la compra con el Proveedor que emitió la factura
+            ->leftJoin('proveedores', 'compras.id_proveedor', '=', 'proveedores.id_proveedor')
+
+            // --- CORRECCIÓN FIN ---
+
+            ->with(['lote.producto', 'trabajador.persona.user'])
             ->select(
                 'inventario_movimientos.*',
                 'productos.id_producto',
                 'productos.nombre_producto as producto',
                 'proveedores.id_proveedor',
+                // Ahora 'proveedor' será el que sale en la factura de compra, no todos los del catálogo
                 'proveedores.nombre_proveedor as proveedor',
                 'lotes.codigo_lote as lote'
             )
-            // ✅ CORRECCIÓN: Agregar distinct para evitar duplicados por la relación muchos a muchos
             ->distinct('inventario_movimientos.id_inventario_movimiento')
             ->orderBy('inventario_movimientos.fecha_movimiento', 'desc');
     }

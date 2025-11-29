@@ -38,6 +38,15 @@ class Registro extends Component
     public bool $showModalDetalle = false;
 
     public ?Compra $compraSeleccionada = null;
+    public $busquedaProveedor = '';
+    public $proveedoresFiltrados = [];
+    public $mostrarListaProveedores = false;
+
+    // VARIABLES PARA EL BUSCADOR DE PRODUCTOS (Arrays por índice)
+    public $busquedaProductos = [];
+    public $productosFiltrados = [];
+    public $mostrarListaProductos = [];
+
     public function mount()
     {
         $this->generarCodigoOrden();
@@ -61,6 +70,126 @@ class Registro extends Component
         $this->cantOrdenesRecibidas = Compra::where("id_estado_compra", $recibido->id_estado_compra)->count();
 
         $this->precioCompraTotal = Compra::where("id_estado_compra", $recibido->id_estado_compra)->sum('total');
+        $this->busquedaProductos[0] = '';
+        $this->mostrarListaProductos[0] = false;
+        $this->productosFiltrados[0] = [];
+    }
+
+    public function updatedBusquedaProveedor()
+    {
+        $this->mostrarListaProveedores = true;
+
+        if (!empty($this->busquedaProveedor)) {
+            $this->proveedoresFiltrados = Proveedor::where('estado', 'activo')
+                ->where('nombre_proveedor', 'like', '%' . $this->busquedaProveedor . '%')
+                ->orWhere('ruc', 'like', '%' . $this->busquedaProveedor . '%')
+                ->take(10)
+                ->get();
+        } else {
+            $this->proveedoresFiltrados = [];
+        }
+    }
+
+    public function updated($propertyName)
+    {
+        // Detectar cambio en búsqueda de productos: busquedaProductos.0
+        if (str_starts_with($propertyName, 'busquedaProductos.')) {
+            $parts = explode('.', $propertyName);
+            $index = $parts[1];
+            $this->buscarProducto($index);
+        }
+    }
+
+    public function buscarProducto($index)
+    {
+        $termino = $this->busquedaProductos[$index] ?? '';
+        $this->mostrarListaProductos[$index] = true;
+
+        if (!$this->proveedorSeleccionado) {
+            $this->productosFiltrados[$index] = [];
+            return;
+        }
+
+        if (!empty($termino)) {
+            // Buscar productos DEL proveedor seleccionado
+            $this->productosFiltrados[$index] = Producto::with(['unidad'])
+                ->whereHas('proveedores', function ($query) {
+                    $query->where('proveedores.id_proveedor', $this->proveedorSeleccionado);
+                })
+                ->where('estado', 'activo')
+                ->where(function ($q) use ($termino) {
+                    $q->where('nombre_producto', 'like', '%' . $termino . '%')
+                        ->orWhere('codigo_barras', 'like', '%' . $termino . '%');
+                })
+                ->take(15) // Limitar resultados
+                ->get();
+        } else {
+            // Si está vacío, mostrar los primeros 15 del proveedor
+            $this->productosFiltrados[$index] = Producto::with(['unidad'])
+                ->whereHas('proveedores', function ($query) {
+                    $query->where('proveedores.id_proveedor', $this->proveedorSeleccionado);
+                })
+                ->where('estado', 'activo')
+                ->take(15)
+                ->get();
+        }
+    }
+
+    public function seleccionarProducto($index, $id, $nombre)
+    {
+        $this->detalleCompra[$index]['id_producto'] = $id;
+        $this->busquedaProductos[$index] = $nombre;
+        $this->mostrarListaProductos[$index] = false;
+    }
+
+    // Asegurarse de inicializar arrays al agregar fila
+    public function agregarDetalle()
+    {
+        if (count($this->detalleCompra) < 50) {
+            $nuevoIndex = count($this->detalleCompra);
+            $this->detalleCompra[] = ['id_producto' => '', 'cantidad' => 1, 'precio_unitario' => 0];
+
+            // Inicializar variables de búsqueda para la nueva fila
+            $this->busquedaProductos[$nuevoIndex] = '';
+            $this->mostrarListaProductos[$nuevoIndex] = false;
+            $this->productosFiltrados[$nuevoIndex] = [];
+        }
+    }
+
+    public function eliminarDetalle($index)
+    {
+        unset($this->detalleCompra[$index]);
+        unset($this->busquedaProductos[$index]);
+        unset($this->mostrarListaProductos[$index]);
+        unset($this->productosFiltrados[$index]);
+
+        // Reindexar todo para evitar huecos en los índices
+        $this->detalleCompra = array_values($this->detalleCompra);
+        $this->busquedaProductos = array_values($this->busquedaProductos);
+        $this->mostrarListaProductos = array_values($this->mostrarListaProductos);
+        $this->productosFiltrados = array_values($this->productosFiltrados);
+    }
+
+    public function seleccionarProveedor($id, $nombre)
+    {
+        $this->proveedorSeleccionado = $id;
+        $this->busquedaProveedor = $nombre; // Poner el nombre en el input
+        $this->mostrarListaProveedores = false;
+
+        // Limpiar productos al cambiar proveedor
+        $this->resetDetalleProductos();
+    }
+
+
+    private function resetDetalleProductos()
+    {
+        // Reiniciar el detalle a una fila vacía
+        $this->detalleCompra = [
+            ['id_producto' => '', 'cantidad' => 0, 'precio_unitario' => 0]
+        ];
+        $this->busquedaProductos = [''];
+        $this->productosFiltrados = [[]];
+        $this->mostrarListaProductos = [false];
     }
 
     public function generarCodigoOrden()
@@ -97,6 +226,7 @@ class Registro extends Component
                 })
                 ->where('estado', 'activo')
                 ->get();
+
         }
     }
 
@@ -256,19 +386,9 @@ class Registro extends Component
         $this->detalleCompra = [
             ['id_producto' => '', 'cantidad' => 0, 'precio_unitario' => 0]
         ];
-    }
-
-    public function agregarDetalle()
-    {
-        if (count($this->detalleCompra) < 50) { // límite por seguridad
-            $this->detalleCompra[] = ['id_producto' => '', 'cantidad' => 1, 'precio' => 0];
-        }
-    }
-
-    public function eliminarDetalle($index)
-    {
-        unset($this->detalleCompra[$index]);
-        $this->detalleCompra = array_values($this->detalleCompra); // reindexar
+        $this->busquedaProveedor = '';
+        $this->proveedorSeleccionado = '';
+        $this->resetDetalleProductos();
     }
 
 
@@ -280,6 +400,7 @@ class Registro extends Component
 
         $this->showModalDetalle = true;
     }
+
     #[\Livewire\Attributes\On('rechazar-compra')]
     public function rechazarComprafn(int $rowId): void
     {
@@ -289,6 +410,7 @@ class Registro extends Component
             $this->rechazarCompra();
         }
     }
+
     #[\Livewire\Attributes\On('aprobar-compra')]
     public function aprobarComprafn(int $rowId): void
     {
@@ -326,6 +448,6 @@ class Registro extends Component
 
         return response()->streamDownload(function () use ($pdf) {
             echo $pdf->output();
-        },  'orden_compra.pdf');
+        }, 'orden_compra.pdf');
     }
 }

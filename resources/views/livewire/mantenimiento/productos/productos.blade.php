@@ -586,37 +586,35 @@
 
                                 <div class="col-span-2">
                                     <label class="block text-sm font-medium text-gray-700 mb-2">
-                                        Código QR (Imagen)
+                                        Imagen actual / Nueva
                                     </label>
 
                                     <div class="space-y-4">
-                                        <!-- Selector de archivo -->
                                         <div class="flex items-center justify-between">
                                             <label
                                                 class="bg-blue-600 text-white px-4 py-2 rounded-lg cursor-pointer hover:bg-blue-700 transition-colors text-xs font-semibold flex items-center"
-                                                for="codigo_qr_file_edit">
+                                                for="imagen_editar_input">
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2"
                                                      viewBox="0 0 20 20" fill="currentColor">
                                                     <path fill-rule="evenodd"
                                                           d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z"
                                                           clip-rule="evenodd"/>
                                                 </svg>
-                                                Seleccionar Imagen QR
+                                                Seleccionar Imagen
                                             </label>
 
                                             <span class="text-gray-600 text-xs flex-1 ml-4 truncate" wire:loading.remove
-                                                  wire:target="codigo_qr_file_edit">
-                @if($codigo_qr_file_edit)
-                                                    {{ $codigo_qr_file_edit->getClientOriginalName() }}
-                                                @elseif($metodoPagoEdit->codigo_qr)
+                                                  wire:target="imagenEditar">
+                    @if($imagenEditar)
+                                                    {{ $imagenEditar->getClientOriginalName() }}
+                                                @elseif(!empty($productoEditar['ruta_imagen']))
                                                     Imagen actual seleccionada
                                                 @else
                                                     No se ha seleccionado ninguna imagen
                                                 @endif
-            </span>
+                </span>
 
-                                            <!-- Loader -->
-                                            <div wire:loading wire:target="codigo_qr_file_edit"
+                                            <div wire:loading wire:target="imagenEditar"
                                                  class="flex items-center space-x-2">
                                                 <svg class="animate-spin h-4 w-4 text-blue-600"
                                                      xmlns="http://www.w3.org/2000/svg" fill="none"
@@ -630,19 +628,18 @@
                                             </div>
                                         </div>
 
-                                        <input type="file" id="codigo_qr_file_edit" wire:model="codigo_qr_file_edit"
+                                        <input type="file" id="imagen_editar_input" wire:model="imagenEditar"
                                                accept="image/*" class="hidden">
 
-                                        <!-- Previsualización -->
                                         <div class="flex justify-center">
-                                            @if ($codigo_qr_file_edit)
-                                                <img src="{{ $codigo_qr_file_edit->temporaryUrl() }}"
+                                            @if ($imagenEditar)
+                                                <img src="{{ $imagenEditar->temporaryUrl() }}"
                                                      class="w-32 h-32 object-cover rounded-lg border-2 border-blue-300 shadow-sm">
-                                            @elseif($metodoPagoEdit->codigo_qr)
-                                                <img src="{{ asset('storage/' . $metodoPagoEdit->codigo_qr) }}"
+
+                                            @elseif(!empty($productoEditar['ruta_imagen']))
+                                                <img src="{{ asset('storage/' . $productoEditar['ruta_imagen']) }}"
                                                      class="w-32 h-32 object-cover rounded-lg border-2 border-gray-300 shadow-sm">
                                             @else
-                                                <!-- Skeleton cuando no hay imagen -->
                                                 <div
                                                     class="w-32 h-32 bg-gray-200 rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center p-3">
                                                     <svg xmlns="http://www.w3.org/2000/svg"
@@ -652,24 +649,23 @@
                                                               d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z"
                                                               clip-rule="evenodd"/>
                                                     </svg>
-                                                    <span class="text-gray-500 text-xs text-center">Sin código QR</span>
+                                                    <span class="text-gray-500 text-xs text-center">Sin Imagen</span>
                                                 </div>
                                             @endif
                                         </div>
 
-                                        <!-- Información adicional -->
                                         <div class="text-center">
                                             <p class="text-xs text-gray-500">
-                                                Formatos: JPG, PNG, GIF, WEBP. Tamaño máximo: 2MB
+                                                Formatos: JPG, PNG, WEBP. Tamaño máximo: 2MB
                                             </p>
-                                            @if($metodoPagoEdit->codigo_qr && !$codigo_qr_file_edit)
+                                            @if(!empty($productoEditar['ruta_imagen']) && !$imagenEditar)
                                                 <p class="text-xs text-green-600 mt-1">
                                                     ✓ Imagen actual cargada
                                                 </p>
                                             @endif
                                         </div>
 
-                                        @error('codigo_qr_file_edit')
+                                        @error('imagenEditar')
                                         <p class="text-red-500 text-xs italic mt-1 text-center">{{ $message }}</p>
                                         @enderror
                                     </div>

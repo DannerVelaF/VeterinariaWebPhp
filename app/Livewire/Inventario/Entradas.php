@@ -15,6 +15,7 @@ use App\Models\TipoUbicacion;
 use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 use Illuminate\Support\Str;
 use Livewire\WithPagination;
@@ -47,23 +48,32 @@ class Entradas extends Component
 
     public bool $showModal = false;
     public bool $showModalDetalle = false;
-    public ?InventarioMovimiento $selectedEntrada = null;
-
-    public $ordenCompra = '';
     public $productosOC = []; // productos de la orden de compra
     public $proveedorOC = null; // proveedor de la OC
     public $entradasRapidas = []; // Para entradas rápidas
     public $showFormularioRapido = false;
+    const ESTADO_COMPRA_RECIBIDO = 3;
+    const ESTADO_DETALLE_RECIBIDO = 2;
+    public ?InventarioMovimiento $selectedEntrada = null;
+
+    // ✅ MODIFICACIÓN: Agregar el atributo #[Url] para capturar el parámetro del navegador
+    #[Url(as: 'ordenCompra')]
+    public $ordenCompra = '';
 
     public function mount()
     {
         $this->ubicacion = "almacen";
         $this->productos = Producto::with("unidad")->where("estado", "activo")->get();
         $this->proveedores = Proveedor::where('estado', 'activo')->get();
+
         if (!$this->lote['fecha_recepcion']) {
             $this->lote['fecha_recepcion'] = now()->format('Y-m-d');
         }
-        $tipoEntrad = TipoMovimiento::where("nombre_tipo_movimiento", "entrada")->first();
+
+        if (!empty($this->ordenCompra)) {
+            // Pequeña pausa visual o ejecución directa
+            $this->buscarOrdenCompra();
+        }
     }
 
     public function getProductosPendientesCountProperty()
@@ -354,97 +364,172 @@ class Entradas extends Component
 
     public function registrarEntradasRapidas()
     {
+        // 1. VALIDACIONES ROBUSTAS
+        $this->validate([
+            // Validación: Fecha de recepción NO futura (puede ser hoy o pasado)
+            'lote.fecha_recepcion' => 'required|date|before_or_equal:today',
+
+            // Validaciones por cada fila de la tabla
+            'entradasRapidas.*.cantidad' => 'required|numeric|min:0',
+
+            // Validación: Ubicación solo permitida
+            'entradasRapidas.*.ubicacion' => 'required|in:almacen,mostrador',
+
+            // Validación: Fecha Vencimiento (Futura y lógica)
+            'entradasRapidas.*.fecha_vencimiento' => [
+                'nullable', // Puede estar vacío si no perece
+                'date',
+                'after:today', // Debe ser futura (mañana en adelante)
+                function ($attribute, $value, $fail) {
+                    // Validación lógica extra: Vencimiento > Recepción
+                    if ($value && $this->lote['fecha_recepcion'] && $value <= $this->lote['fecha_recepcion']) {
+                        $fail('La fecha de vencimiento debe ser posterior a la fecha de recepción.');
+                    }
+                },
+            ],
+        ], [
+            // Mensajes personalizados para que el usuario entienda
+            'lote.fecha_recepcion.before_or_equal' => 'La fecha de recepción no puede ser una fecha futura.',
+            'entradasRapidas.*.fecha_vencimiento.after' => 'El producto ya está vencido o vence hoy. La fecha debe ser futura.',
+            'entradasRapidas.*.ubicacion.in' => 'La ubicación seleccionada no es válida.',
+        ]);
+
         try {
             DB::transaction(function () {
-                $entradasRegistradas = 0;
+                $entradasProcesadas = 0;
+                $idCompra = null;
+                $idTrabajador = auth()->user()->persona->trabajador->id_trabajador;
+                $tipoEntrada = TipoMovimiento::where("nombre_tipo_movimiento", "entrada")->firstOrFail();
 
-                // ✅ CORRECCIÓN: Obtener el ID del trabajador de forma segura
-                $idTrabajador = auth()->user()->persona->trabajador->id_trabajador ?? null;
+                foreach ($this->entradasRapidas as $idDetalle => $data) {
+                    $cantidadIngresada = floatval($data['cantidad']);
 
-                if (!$idTrabajador) {
-                    throw new \Exception("No se pudo identificar al trabajador. Verifique que el usuario tenga un perfil de trabajador asociado.");
-                }
+                    if ($cantidadIngresada <= 0) continue;
 
-                foreach ($this->entradasRapidas as $idDetalleCompra => $entrada) {
-                    if (empty($entrada['cantidad']) || $entrada['cantidad'] <= 0) {
-                        continue;
+                    $detalleCompra = DetalleCompra::with('producto')->find($idDetalle);
+
+                    if (!$detalleCompra) continue;
+
+                    // =========================================================
+                    // 🛑 VALIDACIÓN DE EXCESO DE CANTIDAD (STOCK)
+                    // =========================================================
+                    $totalRecibidoPrevio = $this->calcularCantidadRecibida($idDetalle);
+                    $cantidadPendiente = $detalleCompra->cantidad - $totalRecibidoPrevio;
+
+                    if ($cantidadIngresada > ($cantidadPendiente + 0.0001)) {
+                        throw new Exception(
+                            "Error en '{$detalleCompra->producto->nombre_producto}': " .
+                            "Intenta recibir {$cantidadIngresada}, pero solo faltan {$cantidadPendiente}."
+                        );
                     }
+                    // =========================================================
 
-                    $detalleCompra = DetalleCompra::with(['producto.proveedores', 'compra.proveedor'])
-                        ->find($idDetalleCompra);
+                    $idCompra = $detalleCompra->id_compra;
 
-                    if (!$detalleCompra) {
-                        continue;
-                    }
-
-                    // Verificar cantidad máxima
-                    $productoOC = collect($this->productosOC)->firstWhere('id_detalle_compra', $idDetalleCompra);
-                    $cantidadMaxima = $productoOC ? $productoOC['cantidad'] : 0;
-
-                    if ($entrada['cantidad'] > $cantidadMaxima) {
-                        throw new \Exception("La cantidad para {$detalleCompra->producto->nombre_producto} no puede ser mayor a {$cantidadMaxima}");
-                    }
-
-                    // ✅ CORRECCIÓN: Convertir fecha_vencimiento vacía a null
-                    $fechaVencimiento = !empty($entrada['fecha_vencimiento']) ? $entrada['fecha_vencimiento'] : null;
-
-                    // ✅ CORRECCIÓN: Usar el accessor stock_actual del modelo Producto
-                    $stockActual = $detalleCompra->producto->stock_actual;
-
-                    // Generar código de lote
+                    // Generar Lote
                     $codigoLote = $this->generarCodigoLote($detalleCompra->producto->codigo_barras);
 
-                    // Crear el lote
                     $lote = Lotes::create([
                         'codigo_lote' => $codigoLote,
-                        'cantidad_total' => $entrada['cantidad'],
-                        'cantidad_almacenada' => $entrada['ubicacion'] === 'almacen' ? $entrada['cantidad'] : 0,
-                        'cantidad_mostrada' => $entrada['ubicacion'] === 'mostrador' ? $entrada['cantidad'] : 0,
+                        'cantidad_total' => $cantidadIngresada,
+                        'cantidad_almacenada' => $data['ubicacion'] === 'almacen' ? $cantidadIngresada : 0,
+                        'cantidad_mostrada' => $data['ubicacion'] === 'mostrador' ? $cantidadIngresada : 0,
                         'cantidad_vendida' => 0,
                         'fecha_recepcion' => $this->lote['fecha_recepcion'],
-                        'fecha_vencimiento' => $fechaVencimiento,
-                        'observacion' => $entrada['observacion'] ?? '',
-                        'precio_compra' => $productoOC['precio_compra'],
-                        'id_producto' => $detalleCompra->producto->id_producto,
+                        'fecha_vencimiento' => $data['fecha_vencimiento'] ?: null, // null si viene vacío
+                        'observacion' => $this->lote['observacion'] ?? '',
+                        'precio_compra' => $detalleCompra->precio_unitario,
+                        'id_producto' => $detalleCompra->id_producto,
                         'estado' => 'activo',
                     ]);
 
-                    // Obtener tipo de movimiento de entrada
-                    $tipoEntrada = TipoMovimiento::where("nombre_tipo_movimiento", "entrada")->first();
+                    // Crear Movimiento
+                    $stockPrevio = $detalleCompra->producto->lotes()->where('estado', 'activo')->sum(DB::raw('cantidad_almacenada + cantidad_mostrada'));
 
-                    if (!$tipoEntrada) {
-                        throw new \Exception("No se encontró el tipo de movimiento 'entrada' en el sistema.");
-                    }
-
-                    // ✅ CORRECCIÓN: Calcular stock resultante usando el accessor
-                    $stockResultante = $stockActual + $entrada['cantidad'];
-
-                    // Crear movimiento de inventario
                     InventarioMovimiento::create([
-                        'cantidad_movimiento' => $entrada['cantidad'],
-                        'stock_resultante' => $stockResultante,
+                        'cantidad_movimiento' => $cantidadIngresada,
+                        'stock_resultante' => $stockPrevio + $cantidadIngresada,
                         'fecha_movimiento' => now(),
                         'id_tipo_movimiento' => $tipoEntrada->id_tipo_movimiento,
-                        'id_movimiento_asociado' => $detalleCompra->id_detalle_compra,
+                        'id_movimiento_asociado' => $idDetalle,
                         'id_lote' => $lote->id_lote,
                         'id_trabajador' => $idTrabajador,
-                        'id_tipo_ubicacion' => $entrada['ubicacion'] === 'almacen' ? 1 : 2,
+                        'id_tipo_ubicacion' => $data['ubicacion'] === 'almacen' ? 1 : 2,
                     ]);
 
-                    $entradasRegistradas++;
+                    $entradasProcesadas++;
+
+                    // Actualizar Estado Detalle
+                    if (($totalRecibidoPrevio + $cantidadIngresada) >= $detalleCompra->cantidad) {
+                        $detalleCompra->update([
+                            'id_estado_detalle_compra' => self::ESTADO_DETALLE_RECIBIDO
+                        ]);
+                    }
                 }
 
-                if ($entradasRegistradas === 0) {
-                    throw new \Exception("No se registró ninguna entrada. Verifique las cantidades ingresadas.");
+                if ($entradasProcesadas === 0) {
+                    throw new Exception("No ingresó cantidades válidas para ningún producto.");
+                }
+
+                if ($idCompra) {
+                    $this->verificarEstadoCompraGlobal($idCompra);
                 }
             });
 
-            $this->dispatch('notify', title: 'Success', description: "Se registraron las entradas correctamente.", type: 'success');
-            $this->resetForm();
+            $this->dispatch('notify', title: 'Éxito', description: 'Entrada registrada correctamente.', type: 'success');
+
+            $this->buscarOrdenCompra();
             $this->dispatch('entradasUpdated');
+
         } catch (Exception $e) {
-            $this->dispatch('notify', title: 'Error', description: 'Error al registrar las entradas: ' . $e->getMessage(), type: 'error');
-            Log::error('Error al registrar entradas rápidas', ['error' => $e->getMessage()]);
+            Log::error($e->getMessage());
+            // Si es error de validación manual, se muestra limpio
+            $msg = str_replace("App\Livewire\Inventario\Exception: ", "", $e->getMessage());
+            $this->dispatch('notify', title: 'Error', description: $msg, type: 'error');
+        }
+    }
+
+    private function calcularCantidadRecibida($idDetalle)
+    {
+        return InventarioMovimiento::whereHas('tipoMovimiento', function ($q) {
+            $q->where('nombre_tipo_movimiento', 'entrada');
+        })
+            ->where('id_movimiento_asociado', $idDetalle)
+            ->sum('cantidad_movimiento');
+    }
+
+    private function validarEstadoCompra($compra)
+    {
+        $estado = strtolower($compra->estadoCompra->nombre_estado_compra ?? '');
+
+        if ($estado === 'pendiente') {
+            $this->dispatch('notify', title: 'Atención', description: 'La OC está PENDIENTE. Debe aprobarla primero.', type: 'warning');
+            return false;
+        }
+        if ($estado === 'cancelado') {
+            $this->dispatch('notify', title: 'Error', description: 'La OC está CANCELADA.', type: 'error');
+            return false;
+        }
+        // Si ya está recibido, permitimos entrar por si faltó ingresar algo (recepción parcial que se completa después)
+        return true;
+    }
+
+    private function verificarEstadoCompraGlobal($idCompra)
+    {
+        $compra = Compra::with('detalleCompra')->find($idCompra);
+
+        if (!$compra) return;
+
+        // Verificar si TODOS los detalles tienen el estado "Recibido" (ID 2)
+        // El método `every` devuelve true si la condición se cumple para todos los elementos de la colección
+        $todosRecibidos = $compra->detalleCompra->every(function ($detalle) {
+            return $detalle->id_estado_detalle_compra == self::ESTADO_DETALLE_RECIBIDO;
+        });
+
+        if ($todosRecibidos) {
+            $compra->update([
+                'id_estado_compra' => self::ESTADO_COMPRA_RECIBIDO
+            ]);
         }
     }
 

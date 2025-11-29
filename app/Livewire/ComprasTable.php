@@ -168,29 +168,33 @@ final class ComprasTable extends PowerGridComponent
                 ->id()
                 ->class('pg-btn-white dark:bg-pg-primary-700')
                 ->dispatch('rechazar-compra', ['rowId' => $row->id_compra]),
+
+            // Redirige a la ruta de entradas pasando el código de la compra como parámetro 'ordenCompra'
+            Button::add('recepcionar')
+                ->slot('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-package-plus text-blue-600"><path d="M16 16h6"/><path d="M19 13v6"/><path d="M21 10V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l2-1.14"/><path d="M16.5 9.4 7.55 4.24"/><polyline points="3.29 7 12 12 20.71 7"/><line x1="12" x2="12" y1="22" y2="12"/></svg>')
+                ->id()
+                ->class('pg-btn-white dark:bg-pg-primary-700')
+                // ✅ CORREGIDO: Solo usamos route(), al no poner target se abre en la misma pestaña por defecto.
+                ->route('inventario.entradas', ['ordenCompra' => $row->codigo]),
         ];
     }
 
     public function actionRules($row): array
     {
         return [
-            // Ocultar todos los botones si la compra ya fue recibida
-
+            // Ocultar botones aprobar/rechazar si ya está procesado
             Rule::button('aprobar')
-                ->when(
-                    fn($row) => in_array($row->estadoCompra->nombre_estado_compra, ['recibido', 'cancelado', 'aprobado'])
-                        || !auth()->user()->tienePermiso('aprobacion-compras')
-                )
+                ->when(fn($row) => in_array($row->estadoCompra->nombre_estado_compra, ['recibido', 'cancelado', 'aprobado']) || !auth()->user()->tienePermiso('aprobacion-compras'))
                 ->hide(),
 
             Rule::button('rechazar')
-                ->when(
-                    fn($row) => in_array($row->estadoCompra->nombre_estado_compra, ['recibido', 'cancelado', 'aprobado'])
-                        || !auth()->user()->tienePermiso('aprobacion-compras')
-                )
+                ->when(fn($row) => in_array($row->estadoCompra->nombre_estado_compra, ['recibido', 'cancelado', 'aprobado']) || !auth()->user()->tienePermiso('aprobacion-compras'))
                 ->hide(),
 
-
+            // ✅ REGLA NUEVA: Mostrar botón "Recepcionar" SOLO si está "aprobado" (o parcialmente recibido)
+            Rule::button('recepcionar')
+                ->when(fn($row) => $row->estadoCompra->nombre_estado_compra !== 'aprobado')
+                ->hide(),
         ];
     }
 }
