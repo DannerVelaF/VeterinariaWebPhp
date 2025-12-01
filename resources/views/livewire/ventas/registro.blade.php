@@ -1951,8 +1951,8 @@
                                         <p class="text-gray-600">
                                             Esta venta ya ha sido
                                             <span
-                                                class="font-semibold {{ $transaccionPago->estado === 'confirmado' ? 'text-green-600' : 'text-red-600' }}">
-                                    {{ $transaccionPago->estado === 'confirmado' ? 'APROBADA' : 'RECHAZADA' }}
+                                                class="font-semibold {{ $transaccionPago->estado === 'completado' ? 'text-green-600' : 'text-red-600' }}">
+                                    {{ $transaccionPago->estado === 'completado' ? 'APROBADA' : 'RECHAZADA' }}
                                 </span>
                                         </p>
                                     </div>

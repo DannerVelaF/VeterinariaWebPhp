@@ -4,7 +4,9 @@ namespace App\Livewire\Ventas;
 
 use App\Models\Caja;
 use App\Models\Cita;
+use App\Models\EnvioPedido;
 use App\Models\EstadoCita;
+use App\Models\EstadoEnvioPedido;
 use App\Models\InventarioMovimiento;
 use App\Models\TipoMovimiento;
 use App\Models\TransaccionPago;
@@ -1709,13 +1711,13 @@ class RegistrarVenta extends Component
                 $venta = $this->ventaWebSeleccionada;
                 $transaccion = $this->transaccionPago;
 
-                // Cambiar estado de la transacción a confirmado
+                // 1. Cambiar estado de la transacción a confirmado
                 $transaccion->update([
                     'estado' => 'completado',
                     'fecha_pago' => now(),
                 ]);
 
-                // Cambiar estado de la venta a completado
+                // 2. Cambiar estado de la venta a completado
                 $estadoCompletado = EstadoVentas::where('nombre_estado_venta_fisica', 'completado')->first();
                 $usuarioAutenticado = User::findOrFail(Auth::id());
 
@@ -1726,15 +1728,57 @@ class RegistrarVenta extends Component
                     ]);
                 }
 
-                // El stock ya fue reducido al crear la venta, no es necesario hacer nada más
+                // Verificamos si ya existe un envío para no duplicar
+                $existeEnvio = EnvioPedido::where('id_venta', $venta->id_venta)->exists();
+
+                if (!$existeEnvio) {
+                    // Obtenemos el estado "pendiente" para el envío
+                    $estadoEnvioPendiente = EstadoEnvioPedido::where('nombre_estado_envio_pedido', 'pendiente')->first();
+
+                    if (!$estadoEnvioPendiente) {
+                        throw new \Exception("No se encontró el estado de envío 'pendiente'.");
+                    }
+
+                    // Intentamos obtener la dirección del cliente
+                    // Asumiendo que la venta web ya tiene una dirección asociada o usamos la del cliente
+                    $direccion = null;
+
+                    // Opción A: Si tu tabla Ventas tiene 'id_direccion' (Ideal para e-commerce)
+                    if (isset($venta->id_direccion) && $venta->id_direccion) {
+                        $direccion = $venta->id_direccion;
+                    } // Opción B: Usar la primera dirección del cliente (Fallback)
+                    else {
+                        $direccionObj = $venta->cliente->persona->direccion()->first();
+                        if ($direccionObj) {
+                            $direccion = $direccionObj->id_direccion;
+                        }
+                    }
+
+                    if ($direccion) {
+                        EnvioPedido::create([
+                            'id_venta' => $venta->id_venta,
+                            'id_direccion' => $direccion,
+                            'id_estado_envio_pedido' => $estadoEnvioPendiente->id_estado_envio_pedido,
+                            'id_trabajador' => null, // Se asignará después en el módulo de despacho
+                            'fecha_registro' => now(),
+                            'fecha_actualizacion' => now()
+                        ]);
+                    } else {
+                        // Opcional: Loguear advertencia si no hay dirección
+                        Log::warning("Venta Web #{$venta->id_venta} aprobada sin dirección de envío asociada.");
+                    }
+                }
+                // -------------------------------------
+
             });
 
             $this->actualizarEstadisticas();
-            $this->dispatch('notify', title: 'Success', description: 'Venta web aprobada correctamente ✅', type: 'success');
+            $this->dispatch('notify', title: 'Success', description: 'Venta web aprobada y envío generado ✅', type: 'success');
             $this->cerrarModalTransaccion();
             $this->dispatch('ventasUpdated');
 
         } catch (\Exception $e) {
+            Log::error("Error aprobar venta web: " . $e->getMessage());
             $this->dispatch('notify', title: 'Error', description: 'Error al aprobar la venta: ' . $e->getMessage(), type: 'error');
         }
     }

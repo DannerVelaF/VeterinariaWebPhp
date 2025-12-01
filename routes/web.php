@@ -1,5 +1,6 @@
 <?php
 
+use App\Livewire\Inventario\Despacho;
 use App\Livewire\Ventas\ReporteCaja;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -61,6 +62,7 @@ use function Pest\Laravel\get;
 use App\Livewire\Auth\RestablecerContrasena;
 use App\Livewire\Mantenimiento\Productos\MetodosPago;
 
+use App\Livewire\Inventario\EntregaPedido;
 
 /*
 |--------------------------------------------------------------------------
@@ -138,6 +140,8 @@ Route::middleware('auth')->group(function () {
             Route::get('/', Resumen::class)->name('inventario.registro');
             Route::get('/entradas', Entradas::class)->name('inventario.entradas');
             Route::get('/salidas', Salidas::class)->name('inventario.salidas');
+            Route::get("/despacho", Despacho::class)->name('inventario.despacho');
+            Route::get("/EntregaPedido", EntregaPedido::class)->name('inventario.entregas');
         });
         /*
         |--------------------------------------------------------------------------
