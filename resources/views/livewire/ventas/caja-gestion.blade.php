@@ -24,7 +24,7 @@
                                   d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                         </svg>
                     </div>
-                    <h4 class="font-bold text-blue-900">Iniciar Operaciones</h4>fe
+                    <h4 class="font-bold text-blue-900">Iniciar Operaciones</h4>
                 </div>
 
                 <form wire:submit="abrirCaja" class="space-y-4">
@@ -122,19 +122,31 @@
                             <label class="block text-xs font-semibold text-gray-600 mb-1">Efectivo en Caja *</label>
                             <div class="relative">
                                 <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold">S/</span>
-                                <input type="number" step="0.01" wire:model="montoFinal"
+                                <input type="number" step="0.01" wire:model.change="montoFinal"
                                        class="w-full pl-8 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all font-semibold text-gray-800"
                                        placeholder="0.00">
                             </div>
                             <div>
                                 <div class="mt-1 flex justify-between text-xs">
-        <span class="text-gray-500">
-            Base ({{ $cajaActual->monto_inicial }}) + Ventas Efectivo ({{ $cajaActual->ventas_efectivo }})
-        </span>
-                                    <span
-                                        class="font-bold {{ ($montoFinal - ($cajaActual->monto_inicial + $cajaActual->ventas_efectivo)) < 0 ? 'text-red-500' : 'text-green-600' }}">
-             Esperado: S/ {{ number_format($cajaActual->monto_inicial + $cajaActual->ventas_efectivo, 2) }}
-        </span>
+                                    @php
+                                        $diferenciaEfectivo = $montoFinal - ($cajaActual->monto_inicial + $cajaActual->ventas_efectivo);
+                                    @endphp
+                                    @if($diferenciaEfectivo > 0)
+                                        <span class="text-green-600 font-bold">💰 Excedente:</span>
+                                        <span class="font-bold text-green-600">
+                                            S/ {{ number_format(abs($diferenciaEfectivo), 2) }}
+                                        </span>
+                                    @elseif($diferenciaEfectivo < 0)
+                                        <span class="text-red-500 font-bold">⚠️ Sobrante:</span>
+                                        <span class="font-bold text-red-500">
+                                            S/ {{ number_format(abs($diferenciaEfectivo), 2) }}
+                                        </span>
+                                    @else
+                                        <span class="text-gray-500 font-bold">✅ Exacto:</span>
+                                        <span class="font-bold text-gray-600">
+                                            S/ 0.00
+                                        </span>
+                                    @endif
                                 </div>
                             </div>
                             @error('montoFinal') <span

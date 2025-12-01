@@ -1,5 +1,6 @@
 <?php
 
+use App\Livewire\Ventas\ReporteCaja;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -60,6 +61,7 @@ use function Pest\Laravel\get;
 use App\Livewire\Auth\RestablecerContrasena;
 use App\Livewire\Mantenimiento\Productos\MetodosPago;
 
+
 /*
 |--------------------------------------------------------------------------
 | Rutas Públicas (sin autenticación)
@@ -114,9 +116,10 @@ Route::middleware('auth')->group(function () {
         | Ventas
         |--------------------------------------------------------------------------
         */
-         Route::get('/ventas', RegistrarVenta::class)->name('ventas.registrar');
+        Route::get('/ventas', RegistrarVenta::class)->name('ventas.registrar');
+        Route::get("/ventas/reporteCaja", ReporteCaja::class)->name("ventas.caja");
 
-         
+
         /*
         |--------------------------------------------------------------------------
         | Citas
@@ -192,6 +195,6 @@ Route::middleware('auth')->group(function () {
             Route::get('/roles', Roles::class)->name('mantenimiento.roles');
             Route::get('/permisos', Permisos::class)->name('mantenimiento.permisos');
         });
-        
+
     });
 });

@@ -3,6 +3,8 @@
 namespace App\Livewire\Ventas;
 
 use App\Models\Caja;
+use App\Models\Cita;
+use App\Models\EstadoCita;
 use App\Models\InventarioMovimiento;
 use App\Models\TipoMovimiento;
 use App\Models\TransaccionPago;
@@ -68,7 +70,8 @@ class RegistrarVenta extends Component
     public $cantVentasCompletadas = 0;
     public $cantVentasCanceladas = 0;
     public $totalVentasCompletadas = 0;
-
+    public $citasCompletadasCliente = [];
+    public $mostrarCitasCompletadas = false;
     public $detalleVenta = [];
     public $venta = [
         'fecha_venta' => '',
@@ -199,6 +202,8 @@ class RegistrarVenta extends Component
         $this->inicializarBusquedas();
         $this->cargarMetodosPago();
         $this->inicializarTransaccionPago();
+        $this->citasCompletadasCliente = [];
+        $this->mostrarCitasCompletadas = false;
     }
 
     public function cargarMetodosPago()
@@ -414,7 +419,109 @@ class RegistrarVenta extends Component
         $this->clienteSeleccionado = $idCliente;
         $this->filtroCliente = ''; // Limpiar la búsqueda después de seleccionar
         $this->actualizarClienteFormateado();
+        $this->verificarCitasCompletadas($idCliente);
     }
+
+    public function verificarCitasCompletadas($idCliente)
+    {
+        // Primero, necesitamos saber el ID del estado "completada"
+        $estadoCompletada = EstadoCita::where('nombre_estado_cita', 'completada')
+            ->orWhere('nombre_estado_cita', 'finalizada')
+            ->orWhere('nombre_estado_cita', 'like', '%complet%')
+            ->first();
+
+        if (!$estadoCompletada) {
+            $this->citasCompletadasCliente = [];
+            $this->mostrarCitasCompletadas = false;
+            return;
+        }
+
+        // Buscar citas completadas del cliente
+        $this->citasCompletadasCliente = Cita::where('id_cliente', $idCliente)
+            ->where('id_estado_cita', $estadoCompletada->id_estado_cita)
+            ->with(['serviciosCita.servicio', 'mascota'])
+            ->get()
+            ->filter(function ($cita) {
+                // Filtrar solo las citas que tienen servicios no facturados
+                return $cita->serviciosCita->filter(function ($citaServicio) {
+                        return !$this->servicioYaFacturado($citaServicio->id_servicio, $citaServicio->id_cita);
+                    })->count() > 0;
+            });
+
+        $this->mostrarCitasCompletadas = $this->citasCompletadasCliente->count() > 0;
+
+        // Si hay citas completadas, agregarlas automáticamente al detalle de venta
+        if ($this->mostrarCitasCompletadas) {
+            $this->agregarCitasCompletadasAlDetalle();
+        }
+    }
+
+
+    private function servicioYaFacturado($idServicio, $idCita)
+    {
+        // Buscar en las observaciones de las ventas si ya se menciona esta cita
+        return Ventas::where('id_cliente', $this->clienteSeleccionado)
+            ->whereHas('detalleVentas', function ($query) use ($idServicio) {
+                $query->where('id_servicio', $idServicio)
+                    ->where('tipo_item', 'servicio');
+            })
+            ->where('observacion', 'like', "%Cita #{$idCita}%")
+            ->exists();
+    }
+
+
+    public function agregarCitasCompletadasAlDetalle()
+    {
+        foreach ($this->citasCompletadasCliente as $cita) {
+            foreach ($cita->serviciosCita as $citaServicio) {
+                if ($citaServicio->servicio && !$this->servicioYaFacturado($citaServicio->id_servicio, $cita->id_cita)) {
+
+                    // Verificar si ya existe este servicio en el detalle actual
+                    $existeEnDetalle = collect($this->detalleVenta)->contains(function ($detalle) use ($citaServicio, $cita) {
+                        return isset($detalle['id_item']) &&
+                            $detalle['id_item'] == $citaServicio->id_servicio &&
+                            isset($detalle['id_cita']) &&
+                            $detalle['id_cita'] == $cita->id_cita;
+                    });
+
+                    if (!$existeEnDetalle) {
+                        $this->detalleVenta[] = [
+                            'tipo_item' => 'servicio',
+                            'id_item' => $citaServicio->id_servicio,
+                            'cantidad' => $citaServicio->cantidad ?? 1,
+                            'precio_unitario' => $citaServicio->precio_aplicado ?? $citaServicio->servicio->precio_unitario,
+                            'precio_referencial' => $citaServicio->servicio->precio_unitario,
+                            'id_cita' => $cita->id_cita,
+                            'es_cita_completada' => true,
+                            'mascota_nombre' => $cita->mascota->nombre_mascota ?? 'N/A',
+                            'fecha_cita' => $cita->fecha_programada,
+                            'descripcion_servicio' => $citaServicio->servicio->nombre_servicio,
+                            'diagnostico' => $citaServicio->diagnostico,
+                            'observaciones_cita' => "Cita #{$cita->id_cita} - " . ($cita->mascota->nombre_mascota ?? 'Mascota')
+                        ];
+                    }
+                }
+            }
+        }
+
+        $this->calcularTotales();
+
+        // Notificar al usuario
+        if ($this->mostrarCitasCompletadas) {
+            $totalServicios = collect($this->citasCompletadasCliente)->sum(function ($cita) {
+                return $cita->serviciosCita->filter(function ($cs) use ($cita) {
+                    return !$this->servicioYaFacturado($cs->id_servicio, $cita->id_cita);
+                })->count();
+            });
+
+            $this->dispatch('notify',
+                title: 'Citas Completadas Encontradas',
+                description: "Se han agregado {$totalServicios} servicio(s) de citas completadas a la venta.",
+                type: 'info'
+            );
+        }
+    }
+
 
     // Método para limpiar cliente seleccionado
     public function limpiarCliente()
@@ -422,6 +529,17 @@ class RegistrarVenta extends Component
         $this->clienteSeleccionado = '';
         $this->filtroCliente = '';
         $this->clienteSeleccionadoFormateado = null;
+        $this->citasCompletadasCliente = [];
+        $this->mostrarCitasCompletadas = false;
+
+        // Remover items que fueron agregados por citas completadas
+        $this->detalleVenta = array_filter($this->detalleVenta, function ($detalle) {
+            return !isset($detalle['es_cita_completada']) || !$detalle['es_cita_completada'];
+        });
+
+        // Reindexar el array
+        $this->detalleVenta = array_values($this->detalleVenta);
+        $this->calcularTotales();
     }
 
     // Modifica el método cargarClientes para que retorne los datos formateados
@@ -1072,6 +1190,8 @@ class RegistrarVenta extends Component
                         ]);
                     }
                 }
+                $observacionesConCitas = $this->venta['observacion'] ?? '';
+                $citasIncluidas = [];
 
                 // Crear detalles de venta
                 foreach ($this->detalleVenta as $detalle) {
@@ -1091,14 +1211,44 @@ class RegistrarVenta extends Component
 
                     if ($detalle['tipo_item'] === 'producto') {
                         $detalleData['id_producto'] = $detalle['id_item'];
-
                         $this->actualizarStockProducto($detalle['id_item'], $cantidad, $venta->id_venta);
-
                     } else {
                         $detalleData['id_servicio'] = $detalle['id_item'];
+
+                        // Si es una cita completada, registrar la información en observaciones
+                        if (isset($detalle['es_cita_completada']) && $detalle['es_cita_completada']) {
+                            $citaId = $detalle['id_cita'];
+                            if (!in_array($citaId, $citasIncluidas)) {
+                                $citasIncluidas[] = $citaId;
+
+                                $infoCita = "\n• Cita #{$citaId}";
+                                if (isset($detalle['mascota_nombre'])) {
+                                    $infoCita .= " - Mascota: " . $detalle['mascota_nombre'];
+                                }
+                                if (isset($detalle['fecha_cita'])) {
+                                    $infoCita .= " (" . \Carbon\Carbon::parse($detalle['fecha_cita'])->format('d/m/Y') . ")";
+                                }
+
+                                $observacionesConCitas .= $infoCita;
+                            }
+                        }
                     }
 
                     DetalleVentas::create($detalleData);
+                }
+
+                // Actualizar observaciones de la venta con información de citas
+                if (!empty($citasIncluidas)) {
+                    $observacionFinal = trim($observacionesConCitas);
+                    if (!empty($this->venta['observacion'])) {
+                        $observacionFinal = $this->venta['observacion'] . "\n\nServicios de citas:" . $observacionFinal;
+                    } else {
+                        $observacionFinal = "Servicios de citas:" . $observacionFinal;
+                    }
+
+                    $venta->update([
+                        'observacion' => $observacionFinal
+                    ]);
                 }
             });
 
@@ -1678,4 +1828,26 @@ class RegistrarVenta extends Component
         $servicio = Servicio::find($idServicio);
         return $servicio ? $servicio->nombre_servicio : 'Servicio no encontrado';
     }
+
+    public function updatedTransaccionPagoIdMetodoPago($value)
+    {
+        if ($value) {
+            $metodoPago = \App\Models\MetodoPago::find($value);
+            if ($metodoPago) {
+                $esEfectivo = strtolower($metodoPago->nombre_metodo) === 'efectivo' ||
+                    str_contains(strtolower($metodoPago->nombre_metodo), 'contra entrega');
+
+                if (!$esEfectivo) {
+                    // Para métodos no efectivo, establecer el monto automáticamente
+                    $this->transaccionPago['monto'] = $this->totalGeneral;
+                } else {
+                    // Para efectivo, resetear el monto si estaba previamente establecido
+                    if (isset($this->transaccionPago['monto']) && $this->transaccionPago['monto'] == $this->totalGeneral) {
+                        $this->transaccionPago['monto'] = 0;
+                    }
+                }
+            }
+        }
+    }
+
 }

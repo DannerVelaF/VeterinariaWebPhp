@@ -36,4 +36,6 @@ class CitaServicio extends Model
     {
         return $this->belongsTo(Servicio::class, "id_servicio");
     }
+
+   
 }

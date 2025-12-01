@@ -248,7 +248,6 @@
                             </div>
 
                             <!-- INFORMACIÓN DEL CLIENTE (ocupa las 2 columnas) -->
-                            <!-- INFORMACIÓN DEL CLIENTE -->
                             <div class="col-span-2">
                                 <h3 class="font-bold text-gray-700 text-base mb-2">👤 Información del Cliente</h3>
                                 <p class="text-gray-500 text-xs mb-3">Busca un cliente por su DNI o nombre para
@@ -466,6 +465,61 @@
 
                             </div>
                         </div>
+                        <!-- Mostrar citas completadas del cliente -->
+                        @if($mostrarCitasCompletadas)
+                            <div class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                                <div class="flex items-center gap-2 mb-3">
+                                    <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor"
+                                         viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                              d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                                    </svg>
+                                    <h4 class="font-bold text-blue-800">📋 Citas Completadas Pendientes de Pago</h4>
+                                </div>
+
+                                <p class="text-blue-700 text-sm mb-3">
+                                    El cliente tiene {{ count($citasCompletadasCliente) }} cita(s) completada(s) con
+                                    servicios pendientes de pago.
+                                    Se han agregado automáticamente a la venta.
+                                </p>
+
+                                <div class="space-y-3 max-h-48 overflow-y-auto">
+                                    @foreach($citasCompletadasCliente as $cita)
+                                        @foreach($cita->serviciosCita as $citaServicio)
+                                            @if($citaServicio->servicio && !$this->servicioYaFacturado($citaServicio->id_servicio, $cita->id_cita))
+                                                <div class="bg-white p-3 rounded border border-blue-100">
+                                                    <div class="flex justify-between items-start">
+                                                        <div class="flex-1">
+                                                            <p class="font-medium text-gray-800">{{ $citaServicio->servicio->nombre_servicio }}</p>
+                                                            <div class="text-xs text-gray-600 mt-1 space-y-1">
+                                                                <p>
+                                                                    Mascota: {{ $cita->mascota->nombre_mascota ?? 'N/A' }}</p>
+                                                                <p>
+                                                                    Fecha: {{ \Carbon\Carbon::parse($cita->fecha_programada)->format('d/m/Y H:i') }}</p>
+                                                                <p>Cita #{{ $cita->id_cita }}</p>
+                                                                @if($citaServicio->diagnostico)
+                                                                    <p class="text-orange-600">
+                                                                        Diagnóstico: {{ Str::limit($citaServicio->diagnostico, 50) }}</p>
+                                                                @endif
+                                                            </div>
+                                                        </div>
+                                                        <div class="text-right ml-4">
+                                                            <p class="font-semibold text-green-600">
+                                                                S/ {{ number_format($citaServicio->precio_aplicado ?? $citaServicio->servicio->precio_unitario, 2) }}
+                                                            </p>
+                                                            <span
+                                                                class="inline-block px-2 py-1 bg-green-100 text-green-800 text-xs rounded mt-1">
+                                Por pagar
+                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            @endif
+                                        @endforeach
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endif
 
                         <!-- Detalles de Productos/Servicios -->
                         <div class="space-y-4">
@@ -473,7 +527,8 @@
                                 <p class="font-medium text-xl">Productos / Servicios</p>
                                 <button type="button" wire:click="agregarDetalle"
                                         class="inline-flex items-center gap-1 px-3 py-1 bg-green-500 hover:bg-green-600 text-white rounded text-sm">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                                         viewBox="0 0 24 24"
                                          fill="none"
                                          stroke="currentColor" stroke-width="2" stroke-linecap="round"
                                          stroke-linejoin="round" class="lucide lucide-plus">
@@ -499,6 +554,7 @@
                                         </div>
 
                                         <!-- Producto/Servicio con Búsqueda Mejorada -->
+                                        <!-- Producto/Servicio con Búsqueda Mejorada -->
                                         <div class="col-span-3 flex flex-col relative">
                                             <label class="text-sm font-medium text-gray-600 mb-1">
                                                 @if($detalle['tipo_item'] == 'producto')
@@ -509,130 +565,142 @@
                                             </label>
 
                                             <div class="relative">
-                                                <!-- Input de búsqueda -->
+                                                <!-- Input de búsqueda - Modificado para servicios -->
                                                 <div class="flex gap-1">
-                                                    <input type="text"
-                                                           wire:model.live="busquedaItems.{{ $index }}"
-                                                           wire:keydown.escape="limpiarBusqueda({{ $index }})"
-                                                           wire:click="mostrarLista({{ $index }})"
-                                                           wire:focus="mostrarLista({{ $index }})"
-                                                           placeholder="@if($detalle['tipo_item'] == 'producto')Haz clic para buscar producto...@elseHaz clic para buscar servicio...@endif"
-                                                           class="border rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-300 border-gray-200 text-sm flex-1 cursor-pointer"
-                                                           wire:key="search-{{ $index }}-{{ $detalle['tipo_item'] }}">
+                                                    @if($detalle['tipo_item'] == 'servicio' && $detalle['id_item'])
+                                                        <!-- Para servicios: mostrar nombre y hacerlo readonly -->
+                                                        <input type="text"
+                                                               value="{{ $this->getNombreServicio($detalle['id_item']) }}"
+                                                               readonly
+                                                               class="border rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-300 border-gray-200 text-sm flex-1 bg-gray-50 cursor-not-allowed"
+                                                               placeholder="Servicio seleccionado...">
+                                                    @else
+                                                        <!-- Para productos: comportamiento normal -->
+                                                        <input type="text"
+                                                               wire:model.live="busquedaItems.{{ $index }}"
+                                                               wire:keydown.escape="limpiarBusqueda({{ $index }})"
+                                                               wire:click="mostrarLista({{ $index }})"
+                                                               wire:focus="mostrarLista({{ $index }})"
+                                                               placeholder="@if($detalle['tipo_item'] == 'producto')Haz clic para buscar producto...@elseHaz clic para buscar servicio...@endif"
+                                                               class="border rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-300 border-gray-200 text-sm flex-1 cursor-pointer"
+                                                               wire:key="search-{{ $index }}-{{ $detalle['tipo_item'] }}">
 
-                                                    <!-- Botón limpiar -->
-                                                    @if($busquedaItems[$index] ?? '')
-                                                        <button type="button"
-                                                                wire:click="limpiarBusqueda({{ $index }})"
-                                                                class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-2 rounded transition">
-                                                            ✕
-                                                        </button>
+                                                        <!-- Botón limpiar -->
+                                                        @if($busquedaItems[$index] ?? '')
+                                                            <button type="button"
+                                                                    wire:click="limpiarBusqueda({{ $index }})"
+                                                                    class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-2 rounded transition">
+                                                                ✕
+                                                            </button>
+                                                        @endif
                                                     @endif
                                                 </div>
 
-                                                <!-- Lista de resultados - Solo visible cuando se hace clic o focus -->
-                                                @if(($mostrarListaItems[$index] ?? false) && count($itemsFiltrados[$index] ?? []) > 0)
-                                                    <div
-                                                        class="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto search-dropdown">
+                                                <!-- Lista de resultados - Solo para productos o cuando no hay servicio seleccionado -->
+                                                @if($detalle['tipo_item'] == 'producto' || ($detalle['tipo_item'] == 'servicio' && !$detalle['id_item']))
+                                                    @if(($mostrarListaItems[$index] ?? false) && count($itemsFiltrados[$index] ?? []) > 0)
                                                         <div
-                                                            class="p-2 bg-gray-50 border-b flex justify-between items-center">
-                                                            <p class="text-xs font-semibold text-gray-600">
-                                                                {{ count($itemsFiltrados[$index]) }} resultado(s)
-                                                            </p>
-                                                            @if($busquedaItems[$index] ?? '')
-                                                                <button type="button"
-                                                                        wire:click="limpiarBusqueda({{ $index }})"
-                                                                        class="text-xs text-blue-600 hover:text-blue-800">
-                                                                    Limpiar
-                                                                </button>
-                                                            @endif
-                                                        </div>
-                                                        <ul>
-                                                            @foreach($itemsFiltrados[$index] as $item)
-                                                                <li wire:click="seleccionarItem({{ $index }}, {{ $item['id'] }}, '{{ $item['tipo'] }}')"
-                                                                    class="px-3 py-2 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors duration-150">
-                                                                    <div class="flex justify-between items-start">
-                                                                        <div class="flex-1">
-                                                                            <div class="flex items-center mb-1">
+                                                            class="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto search-dropdown">
+                                                            <div
+                                                                class="p-2 bg-gray-50 border-b flex justify-between items-center">
+                                                                <p class="text-xs font-semibold text-gray-600">
+                                                                    {{ count($itemsFiltrados[$index]) }} resultado(s)
+                                                                </p>
+                                                                @if($busquedaItems[$index] ?? '')
+                                                                    <button type="button"
+                                                                            wire:click="limpiarBusqueda({{ $index }})"
+                                                                            class="text-xs text-blue-600 hover:text-blue-800">
+                                                                        Limpiar
+                                                                    </button>
+                                                                @endif
+                                                            </div>
+                                                            <ul>
+                                                                @foreach($itemsFiltrados[$index] as $item)
+                                                                    <li wire:click="seleccionarItem({{ $index }}, {{ $item['id'] }}, '{{ $item['tipo'] }}')"
+                                                                        class="px-3 py-2 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors duration-150">
+                                                                        <div class="flex justify-between items-start">
+                                                                            <div class="flex-1">
+                                                                                <div class="flex items-center mb-1">
                                             <span class="font-semibold text-gray-800 text-sm">
                                                 {{ $item['nombre'] }}
                                             </span>
-                                                                                <span class="ml-2 text-xs px-2 py-1 rounded-full
+                                                                                    <span class="ml-2 text-xs px-2 py-1 rounded-full
                                                 @if($item['tipo'] == 'producto') bg-green-100 text-green-800 @else bg-purple-100 text-purple-800 @endif">
                                                 {{ $item['tipo'] == 'producto' ? 'Producto' : 'Servicio' }}
                                             </span>
-                                                                            </div>
+                                                                                </div>
 
-                                                                            <div
-                                                                                class="text-xs text-gray-600 space-y-1">
-                                                                                @if($item['tipo'] == 'producto')
-                                                                                    <div class="flex justify-between">
-                                                                                        <span>Stock: {{ $item['stock'] }}</span>
-                                                                                        <span
-                                                                                            class="font-semibold">S/ {{ number_format($item['precio'], 2) }}</span>
-                                                                                    </div>
-                                                                                    @if($item['codigo_barras'])
-                                                                                        <span class="text-gray-500">Código: {{ $item['codigo_barras'] }}</span>
+                                                                                <div
+                                                                                    class="text-xs text-gray-600 space-y-1">
+                                                                                    @if($item['tipo'] == 'producto')
+                                                                                        <div
+                                                                                            class="flex justify-between">
+                                                                                            <span>Stock: {{ $item['stock'] }}</span>
+                                                                                            <span class="font-semibold">S/ {{ number_format($item['precio'], 2) }}</span>
+                                                                                        </div>
+                                                                                        @if($item['codigo_barras'])
+                                                                                            <span class="text-gray-500">Código: {{ $item['codigo_barras'] }}</span>
+                                                                                        @endif
+                                                                                    @else
+                                                                                        <div
+                                                                                            class="flex justify-between">
+                                                                                            <span>Duración: {{ $item['duracion'] ?? 'N/A' }}</span>
+                                                                                            <span class="font-semibold">S/ {{ number_format($item['precio'], 2) }}</span>
+                                                                                        </div>
                                                                                     @endif
-                                                                                @else
-                                                                                    <div class="flex justify-between">
-                                                                                        <span>Duración: {{ $item['duracion'] ?? 'N/A' }}</span>
-                                                                                        <span
-                                                                                            class="font-semibold">S/ {{ number_format($item['precio'], 2) }}</span>
-                                                                                    </div>
-                                                                                @endif
-
+                                                                                </div>
+                                                                            </div>
+                                                                            <div class="ml-2 flex-shrink-0">
+                                                                                <svg class="w-4 h-4 text-green-500"
+                                                                                     fill="none" stroke="currentColor"
+                                                                                     viewBox="0 0 24 24">
+                                                                                    <path stroke-linecap="round"
+                                                                                          stroke-linejoin="round"
+                                                                                          stroke-width="2"
+                                                                                          d="M5 13l4 4L19 7"></path>
+                                                                                </svg>
                                                                             </div>
                                                                         </div>
-                                                                        <div class="ml-2 flex-shrink-0">
-                                                                            <svg class="w-4 h-4 text-green-500"
-                                                                                 fill="none" stroke="currentColor"
-                                                                                 viewBox="0 0 24 24">
-                                                                                <path stroke-linecap="round"
-                                                                                      stroke-linejoin="round"
-                                                                                      stroke-width="2"
-                                                                                      d="M5 13l4 4L19 7"></path>
-                                                                            </svg>
-                                                                        </div>
-                                                                    </div>
-                                                                </li>
-                                                            @endforeach
-                                                        </ul>
-                                                    </div>
-                                                @endif
-
-                                                <!-- Mensaje cuando no hay resultados -->
-                                                @if(($mostrarListaItems[$index] ?? false) && count($itemsFiltrados[$index] ?? []) === 0)
-                                                    <div
-                                                        class="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg p-4">
-                                                        <div class="text-center text-gray-500">
-                                                            <svg class="w-8 h-8 mx-auto mb-2 text-gray-400" fill="none"
-                                                                 stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path stroke-linecap="round" stroke-linejoin="round"
-                                                                      stroke-width="2"
-                                                                      d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                                            </svg>
-                                                            <p class="text-sm font-medium">
-                                                                @if($busquedaItems[$index] ?? '')
-                                                                    No se
-                                                                    encontraron {{ $detalle['tipo_item'] == 'producto' ? 'productos' : 'servicios' }}
-                                                                @else
-                                                                    No
-                                                                    hay {{ $detalle['tipo_item'] == 'producto' ? 'productos' : 'servicios' }}
-                                                                    disponibles
-                                                                @endif
-                                                            </p>
-                                                            <p class="text-xs mt-1">
-                                                                @if($busquedaItems[$index] ?? '')
-                                                                    Intente con otro término de búsqueda
-                                                                @else
-                                                                    Todos
-                                                                    los {{ $detalle['tipo_item'] == 'producto' ? 'productos' : 'servicios' }}
-                                                                    están agotados o inactivos
-                                                                @endif
-                                                            </p>
+                                                                    </li>
+                                                                @endforeach
+                                                            </ul>
                                                         </div>
-                                                    </div>
+                                                    @endif
+
+                                                    <!-- Mensaje cuando no hay resultados -->
+                                                    @if(($mostrarListaItems[$index] ?? false) && count($itemsFiltrados[$index] ?? []) === 0)
+                                                        <div
+                                                            class="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg p-4">
+                                                            <div class="text-center text-gray-500">
+                                                                <svg class="w-8 h-8 mx-auto mb-2 text-gray-400"
+                                                                     fill="none" stroke="currentColor"
+                                                                     viewBox="0 0 24 24">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                                          stroke-width="2"
+                                                                          d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                                                </svg>
+                                                                <p class="text-sm font-medium">
+                                                                    @if($busquedaItems[$index] ?? '')
+                                                                        No se
+                                                                        encontraron {{ $detalle['tipo_item'] == 'producto' ? 'productos' : 'servicios' }}
+                                                                    @else
+                                                                        No
+                                                                        hay {{ $detalle['tipo_item'] == 'producto' ? 'productos' : 'servicios' }}
+                                                                        disponibles
+                                                                    @endif
+                                                                </p>
+                                                                <p class="text-xs mt-1">
+                                                                    @if($busquedaItems[$index] ?? '')
+                                                                        Intente con otro término de búsqueda
+                                                                    @else
+                                                                        Todos
+                                                                        los {{ $detalle['tipo_item'] == 'producto' ? 'productos' : 'servicios' }}
+                                                                        están agotados o inactivos
+                                                                    @endif
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    @endif
                                                 @endif
                                             </div>
 
@@ -756,19 +824,50 @@
                                         <!-- Botón Eliminar -->
                                         <div class="col-span-1 flex justify-center">
                                             @if (count($detalleVenta) > 1)
-                                                <button type="button"
-                                                        wire:click="eliminarDetalle({{ $index }})"
-                                                        class="bg-red-500 hover:bg-red-600 text-white rounded-md p-2">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
-                                                         viewBox="0 0 24 24" fill="none"
-                                                         stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                                         stroke-linejoin="round" class="lucide lucide-trash">
-                                                        <path d="M3 6h18"/>
-                                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>
-                                                        <path d="M10 11v6"/>
-                                                        <path d="M14 11v6"/>
-                                                    </svg>
-                                                </button>
+                                                @php
+                                                    $esServicioDeCita = false;
+                                                    if ($detalle['tipo_item'] == 'servicio' && $detalle['id_item']) {
+                                                        // Verificar si es un servicio de cita completada
+                                                        foreach($citasCompletadasCliente as $cita) {
+                                                            foreach($cita->serviciosCita as $citaServicio) {
+                                                                if ($citaServicio->id_servicio == $detalle['id_item'] && !$this->servicioYaFacturado($citaServicio->id_servicio, $cita->id_cita)) {
+                                                                    $esServicioDeCita = true;
+                                                                    break 2;
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                @endphp
+
+                                                @if(!$esServicioDeCita)
+                                                    <button type="button"
+                                                            wire:click="eliminarDetalle({{ $index }})"
+                                                            class="bg-red-500 hover:bg-red-600 text-white rounded-md p-2 transition-colors">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                                                             viewBox="0 0 24 24" fill="none"
+                                                             stroke="currentColor" stroke-width="2"
+                                                             stroke-linecap="round"
+                                                             stroke-linejoin="round" class="lucide lucide-trash">
+                                                            <path d="M3 6h18"/>
+                                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>
+                                                            <path d="M10 11v6"/>
+                                                            <path d="M14 11v6"/>
+                                                        </svg>
+                                                    </button>
+                                                @else
+                                                    <!-- Icono de bloqueo para servicios de citas -->
+                                                    <div
+                                                        class="bg-gray-300 text-gray-500 rounded-md p-2 cursor-not-allowed"
+                                                        title="No se puede eliminar - Servicio de cita completada">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                                                             viewBox="0 0 24 24" fill="none"
+                                                             stroke="currentColor" stroke-width="2"
+                                                             stroke-linecap="round" stroke-linejoin="round">
+                                                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                                                            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                                                        </svg>
+                                                    </div>
+                                                @endif
                                             @endif
                                         </div>
                                     </div>
@@ -827,7 +926,8 @@
                             <!-- Opciones de Descuento (se muestra al hacer clic) -->
                             @if($mostrarOpcionesDescuento)
                                 <div class="mt-4 p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
-                                    <h4 class="font-semibold text-gray-700 mb-3 text-center">Selecciona el porcentaje de
+                                    <h4 class="font-semibold text-gray-700 mb-3 text-center">Selecciona el
+                                        porcentaje de
                                         descuento</h4>
 
                                     <div class="grid grid-cols-5 gap-3">
@@ -870,12 +970,14 @@
                                         <div class="flex items-start">
                                             <svg class="w-5 h-5 text-blue-600 mr-2 mt-0.5 flex-shrink-0" fill="none"
                                                  stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                      stroke-width="2"
                                                       d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                             </svg>
                                             <div class="text-sm text-blue-700">
                                                 <p class="font-semibold">💡 Información sobre descuentos:</p>
-                                                <p class="mt-1">El descuento se aplica sobre el <strong>subtotal actual
+                                                <p class="mt-1">El descuento se aplica sobre el <strong>subtotal
+                                                        actual
                                                         (S/ {{ number_format($subtotal, 2) }})</strong> antes de
                                                     impuestos.</p>
                                                 <p>Puedes cambiar productos y el descuento se recalculará
@@ -892,13 +994,16 @@
                                     class="mt-4 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200 shadow-sm">
                                     <div class="flex items-center justify-between">
                                         <div class="flex items-center">
-                                            <svg class="w-6 h-6 text-green-600 mr-2" fill="none" stroke="currentColor"
+                                            <svg class="w-6 h-6 text-green-600 mr-2" fill="none"
+                                                 stroke="currentColor"
                                                  viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                      stroke-width="2"
                                                       d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                             </svg>
                                             <div>
-                                                <h4 class="font-bold text-green-800 text-lg">¡Descuento Aplicado!</h4>
+                                                <h4 class="font-bold text-green-800 text-lg">¡Descuento
+                                                    Aplicado!</h4>
                                                 <p class="text-green-600 text-sm">Descuento
                                                     del {{ $descuentoSeleccionado }}% sobre el subtotal</p>
                                             </div>
@@ -906,7 +1011,8 @@
                                         <div class="text-right">
                                             <div class="text-2xl font-bold text-green-800">-
                                                 S/ {{ number_format($venta['descuento'], 2) }}</div>
-                                            <div class="text-sm text-green-600">Ahorro del {{ $descuentoSeleccionado }}
+                                            <div class="text-sm text-green-600">Ahorro
+                                                del {{ $descuentoSeleccionado }}
                                                 %
                                             </div>
                                         </div>
@@ -916,7 +1022,8 @@
                                     <div class="mt-3 grid grid-cols-2 gap-4 text-sm">
                                         <div class="bg-white p-3 rounded-lg border">
                                             <p class="text-gray-600">Subtotal original:</p>
-                                            <p class="font-semibold text-lg">S/ {{ number_format($subtotal, 2) }}</p>
+                                            <p class="font-semibold text-lg">
+                                                S/ {{ number_format($subtotal, 2) }}</p>
                                         </div>
                                         <div class="bg-white p-3 rounded-lg border">
                                             <p class="text-gray-600">Subtotal con descuento:</p>
@@ -934,7 +1041,8 @@
                                 <p class="text-sm font-medium text-gray-600">Subtotal</p>
                                 <p class="text-lg font-bold">S/ {{ number_format($subtotal, 2) }}</p>
                             </div>
-                            <div class="flex items-center justify-center"> <!-- Added flex for vertical alignment -->
+                            <div class="flex items-center justify-center">
+                                <!-- Added flex for vertical alignment -->
                                 <p class="text-3xl font-bold">+</p> <!-- Changed to text-3xl -->
                             </div>
                             <div class="text-center">
@@ -942,19 +1050,22 @@
                                 <p class="text-lg font-bold text-red-600">-
                                     S/ {{ number_format($venta['descuento'] ?? 0, 2) }}</p>
                             </div>
-                            <div class="flex items-center justify-center"> <!-- Added flex for vertical alignment -->
+                            <div class="flex items-center justify-center">
+                                <!-- Added flex for vertical alignment -->
                                 <p class="text-3xl font-bold">+</p> <!-- Changed to text-3xl -->
                             </div>
                             <div class="text-center">
                                 <p class="text-sm font-medium text-gray-600">IGV (18%)</p>
                                 <p class="text-lg font-bold">S/ {{ number_format($totalImpuesto, 2) }}</p>
                             </div>
-                            <div class="flex items-center justify-center"> <!-- Added flex for vertical alignment -->
+                            <div class="flex items-center justify-center">
+                                <!-- Added flex for vertical alignment -->
                                 <p class="text-3xl font-bold">=</p> <!-- Changed to text-3xl -->
                             </div>
                             <div class="text-center">
                                 <p class="text-sm font-medium text-gray-600">Total General</p>
-                                <p class="text-lg font-bold text-green-600">S/ {{ number_format($totalGeneral, 2) }}</p>
+                                <p class="text-lg font-bold text-green-600">
+                                    S/ {{ number_format($totalGeneral, 2) }}</p>
                             </div>
                         </div>
 
@@ -966,6 +1077,7 @@
                                       placeholder="Observaciones adicionales sobre la venta..."></textarea>
                         </div>
 
+                        <!-- Información de Pago -->
                         <!-- Información de Pago -->
                         <div class="space-y-4">
                             <div class="flex items-center gap-2">
@@ -981,7 +1093,7 @@
                                 <!-- Método de Pago -->
                                 <div class="flex gap-2 flex-col">
                                     <label class="font-medium text-gray-600">Método de Pago</label>
-                                    <select wire:model="transaccionPago.id_metodo_pago"
+                                    <select wire:model.live="transaccionPago.id_metodo_pago"
                                             class="border rounded px-2 py-1 focus:outline-none focus:ring focus:ring-blue-300 border-gray-200">
                                         <option value="">Seleccionar método de pago</option>
                                         @foreach($metodosPago as $metodo)
@@ -1013,11 +1125,49 @@
                                     <label class="font-medium text-gray-600">Monto Pagado</label>
                                     <div class="relative">
                                         <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">S/</span>
-                                        <input type="text" wire:model="transaccionPago.monto"
-                                               class="border rounded px-2 py-1 pl-8 focus:outline-none focus:ring focus:ring-blue-300 border-gray-200 w-full"
-                                               placeholder="0.00"
-                                               wire:keydown.debounce.500ms="validarMontoPago">
+
+                                        @php
+                                            $esEfectivo = false;
+                                            $metodoPagoSeleccionado = $metodosPago->firstWhere('id_metodo_pago', $transaccionPago['id_metodo_pago']);
+                                            if ($metodoPagoSeleccionado) {
+                                                $esEfectivo = strtolower($metodoPagoSeleccionado->nombre_metodo) === 'efectivo' ||
+                                                             str_contains(strtolower($metodoPagoSeleccionado->nombre_metodo), 'contra entrega');
+                                            }
+                                        @endphp
+
+                                        @if(!$esEfectivo && $transaccionPago['id_metodo_pago'])
+                                            <!-- Para métodos no efectivo: monto automático y readonly -->
+                                            <input type="text"
+                                                   value="{{ number_format($totalGeneral, 2) }}"
+                                                   readonly
+                                                   class="border rounded px-2 py-1 pl-8 focus:outline-none focus:ring focus:ring-blue-300 border-gray-200 w-full bg-green-50 cursor-not-allowed"
+                                                   placeholder="0.00">
+                                            <div class="absolute right-2 top-1/2 transform -translate-y-1/2">
+                        <span class="text-green-500 text-sm" title="Monto automático">
+                            ✅
+                        </span>
+                                            </div>
+                                        @else
+                                            <!-- Para efectivo: input editable -->
+                                            <input type="text"
+                                                   wire:model="transaccionPago.monto"
+                                                   class="border rounded px-2 py-1 pl-8 focus:outline-none focus:ring focus:ring-blue-300 border-gray-200 w-full"
+                                                   placeholder="0.00"
+                                                   wire:keydown.debounce.500ms="validarMontoPago">
+                                        @endif
                                     </div>
+
+                                    <!-- Información sobre el monto automático -->
+                                    @if(!$esEfectivo && $transaccionPago['id_metodo_pago'])
+                                        <div class="mt-1 text-sm text-green-600 flex items-center gap-1">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                      d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                            </svg>
+                                            Monto automático - No editable para este método de pago
+                                        </div>
+                                    @endif
+
                                     @error('transaccionPago.monto')
                                     <span class="text-red-500 text-sm">{{ $message }}</span>
                                     @enderror
@@ -1054,8 +1204,8 @@
                                         <div class="mt-2 p-2 bg-green-50 border border-green-200 rounded text-sm">
                                             <div class="flex items-center justify-between">
                                                 <div>
-                                                        <span
-                                                            class="font-medium text-green-700">Archivo seleccionado:</span>
+                                                    <span
+                                                        class="font-medium text-green-700">Archivo seleccionado:</span>
                                                     <span
                                                         class="text-green-600 ml-2">{{ $comprobanteTemporal->getClientOriginalName() }}</span>
                                                 </div>
@@ -1386,442 +1536,480 @@
                                                 <span
                                                     class="font-semibold text-gray-800">{{ $ventaSeleccionada->transaccionPago->metodoPago->nombre_metodo }}</span>
                                             </div>
-                                            <div class="flex justify-between items-center">
-                                                <span class="text-gray-600 font-medium">Monto Pagado:</span>
-                                                <span
-                                                    class="font-bold text-green-600">S/ {{ number_format($ventaSeleccionada->transaccionPago->monto, 2) }}</span>
-                                            </div>
-                                            @if($ventaSeleccionada->transaccionPago->referencia)
-                                                <div class="flex justify-between items-center">
-                                                    <span class="text-gray-600 font-medium">Referencia:</span>
+                                            <div class="flex gap-2 flex-col">
+                                                <label class="font-medium text-gray-600">Monto Pagado</label>
+                                                <div class="relative">
                                                     <span
-                                                        class="font-mono text-gray-800">{{ $ventaSeleccionada->transaccionPago->referencia }}</span>
+                                                        class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">S/</span>
+
+                                                    @php
+                                                        $esEfectivo = false;
+                                                        $metodoPagoSeleccionado = $metodosPago->firstWhere('id_metodo_pago', $transaccionPago['id_metodo_pago']);
+                                                        if ($metodoPagoSeleccionado) {
+                                                            $esEfectivo = strtolower($metodoPagoSeleccionado->nombre_metodo) === 'efectivo' ||
+                                                                         str_contains(strtolower($metodoPagoSeleccionado->nombre_metodo), 'contra entrega');
+                                                        }
+                                                    @endphp
+
+                                                    @if(!$esEfectivo && $transaccionPago['id_metodo_pago'])
+                                                        <!-- Para métodos no efectivo: monto automático y readonly -->
+                                                        <input type="text"
+                                                               wire:model="transaccionPago.monto"
+                                                               readonly
+                                                               class="border rounded px-2 py-1 pl-8 focus:outline-none focus:ring focus:ring-blue-300 border-gray-200 w-full bg-green-50 cursor-not-allowed"
+                                                               placeholder="0.00">
+                                                    @else
+                                                        <!-- Para efectivo: input editable -->
+                                                        <input type="text"
+                                                               wire:model="transaccionPago.monto"
+                                                               class="border rounded px-2 py-1 pl-8 focus:outline-none focus:ring focus:ring-blue-300 border-gray-200 w-full"
+                                                               placeholder="0.00"
+                                                               wire:keydown.debounce.500ms="validarMontoPago">
+                                                    @endif
                                                 </div>
-                                            @endif
-                                            <div class="flex justify-between items-center">
-                                                <span class="text-gray-600 font-medium">Estado Pago:</span>
-                                                <span class="px-2 py-1 rounded text-xs font-medium
+
+                                                <!-- Información sobre el monto automático -->
+                                                @if(!$esEfectivo && $transaccionPago['id_metodo_pago'])
+                                                    <div class="mt-1 text-sm text-green-600 flex items-center gap-1">
+                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor"
+                                                             viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                                  stroke-width="2"
+                                                                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                                        </svg>
+                                                        Monto automático - No editable para este método de pago
+                                                    </div>
+                                                @endif
+
+                                                <div class="flex justify-between items-center">
+                                                    <span class="text-gray-600 font-medium">Estado Pago:</span>
+                                                    <span class="px-2 py-1 rounded text-xs font-medium
                                                 {{ $ventaSeleccionada->transaccionPago->estado === 'completado' ? 'bg-green-100 text-green-800' :
                                                    ($ventaSeleccionada->transaccionPago->estado === 'pendiente' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800') }}">
                                                 {{ ucfirst($ventaSeleccionada->transaccionPago->estado) }}
                                             </span>
+                                                </div>
                                             </div>
                                         </div>
+                                        @endif
                                     </div>
-                                @endif
                             </div>
-                        </div>
 
-                        <!-- Productos de la Venta - MODIFICADO CON SCROLL -->
-                        <div class="bg-white border border-gray-200 rounded-lg">
-                            <h3 class="font-semibold text-gray-700 p-4 border-b border-gray-200 flex items-center gap-2 bg-white sticky top-0 z-10">
-                                <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor"
-                                     viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                          d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
-                                </svg>
-                                Productos y Servicios de la Venta
-                            </h3>
+                            <!-- Productos de la Venta - MODIFICADO CON SCROLL -->
+                            <div class="bg-white border border-gray-200 rounded-lg">
+                                <h3 class="font-semibold text-gray-700 p-4 border-b border-gray-200 flex items-center gap-2 bg-white sticky top-0 z-10">
+                                    <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor"
+                                         viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                              d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                                    </svg>
+                                    Productos y Servicios de la Venta
+                                </h3>
 
-                            <!-- Contenedor con scroll - altura máxima ajustada -->
-                            <div class="overflow-x-auto max-h-64 overflow-y-auto">
-                                <table class="w-full text-sm">
-                                    <thead class="bg-gray-50 sticky top-0 z-10">
-                                    <tr>
-                                        <th class="text-left p-3 font-medium text-gray-700 border-b border-gray-200">
-                                            Item
-                                        </th>
-                                        <th class="text-left p-3 font-medium text-gray-700 border-b border-gray-200">
-                                            Tipo
-                                        </th>
-                                        <th class="text-center p-3 font-medium text-gray-700 border-b border-gray-200">
-                                            Cantidad
-                                        </th>
-                                        <th class="text-right p-3 font-medium text-gray-700 border-b border-gray-200">
-                                            Precio Unit.
-                                        </th>
-                                        <th class="text-right p-3 font-medium text-gray-700 border-b border-gray-200">
-                                            Subtotal
-                                        </th>
-                                    </tr>
-                                    </thead>
-                                    <tbody class="divide-y divide-gray-200">
-                                    @foreach($ventaSeleccionada->detalleVentas as $detalle)
-                                        <tr class="hover:bg-gray-50 transition-colors">
-                                            <td class="p-3">
-                                                @if($detalle->tipo_item === 'producto')
-                                                    {{ $detalle->producto->nombre_producto ?? 'N/A' }}
-                                                @else
-                                                    {{ $detalle->servicio->nombre_servicio ?? 'N/A' }}
-                                                @endif
-                                            </td>
-                                            <td class="p-3 capitalize">
+                                <!-- Contenedor con scroll - altura máxima ajustada -->
+                                <div class="overflow-x-auto max-h-64 overflow-y-auto">
+                                    <table class="w-full text-sm">
+                                        <thead class="bg-gray-50 sticky top-0 z-10">
+                                        <tr>
+                                            <th class="text-left p-3 font-medium text-gray-700 border-b border-gray-200">
+                                                Item
+                                            </th>
+                                            <th class="text-left p-3 font-medium text-gray-700 border-b border-gray-200">
+                                                Tipo
+                                            </th>
+                                            <th class="text-center p-3 font-medium text-gray-700 border-b border-gray-200">
+                                                Cantidad
+                                            </th>
+                                            <th class="text-right p-3 font-medium text-gray-700 border-b border-gray-200">
+                                                Precio Unit.
+                                            </th>
+                                            <th class="text-right p-3 font-medium text-gray-700 border-b border-gray-200">
+                                                Subtotal
+                                            </th>
+                                        </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-gray-200">
+                                        @foreach($ventaSeleccionada->detalleVentas as $detalle)
+                                            <tr class="hover:bg-gray-50 transition-colors">
+                                                <td class="p-3">
+                                                    @if($detalle->tipo_item === 'producto')
+                                                        {{ $detalle->producto->nombre_producto ?? 'N/A' }}
+                                                    @else
+                                                        {{ $detalle->servicio->nombre_servicio ?? 'N/A' }}
+                                                    @endif
+                                                </td>
+                                                <td class="p-3 capitalize">
                                                 <span class="px-2 py-1 rounded text-xs font-medium
                                                     {{ $detalle->tipo_item === 'producto' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800' }}">
                                                     {{ $detalle->tipo_item }}
                                                 </span>
-                                            </td>
-                                            <td class="p-3 text-center">{{ $detalle->cantidad }}</td>
-                                            <td class="p-3 text-right">
-                                                S/ {{ number_format($detalle->precio_unitario, 2) }}</td>
-                                            <td class="p-3 text-right font-medium">
-                                                S/ {{ number_format($detalle->subtotal, 2) }}</td>
-                                        </tr>
-                                    @endforeach
-                                    </tbody>
-                                </table>
-                            </div>
+                                                </td>
+                                                <td class="p-3 text-center">{{ $detalle->cantidad }}</td>
+                                                <td class="p-3 text-right">
+                                                    S/ {{ number_format($detalle->precio_unitario, 2) }}</td>
+                                                <td class="p-3 text-right font-medium">
+                                                    S/ {{ number_format($detalle->subtotal, 2) }}</td>
+                                            </tr>
+                                        @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
 
-                            <!-- Footer con total - FUERA del scroll, siempre visible -->
-                            <div class="bg-gray-50 border-t border-gray-200">
-                                <div class="flex justify-end p-3">
-                                    <div class="flex items-center gap-4">
-                                        <span class="font-semibold text-gray-700">Total:</span>
-                                        <span class="font-bold text-green-600 text-lg">
+                                <!-- Footer con total - FUERA del scroll, siempre visible -->
+                                <div class="bg-gray-50 border-t border-gray-200">
+                                    <div class="flex justify-end p-3">
+                                        <div class="flex items-center gap-4">
+                                            <span class="font-semibold text-gray-700">Total:</span>
+                                            <span class="font-bold text-green-600 text-lg">
                                             S/ {{ number_format($ventaSeleccionada->total, 2) }}
                                         </span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <!-- Observaciones -->
-                        @if($ventaSeleccionada->observacion)
-                            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                                <h3 class="font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                                    <svg class="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor"
-                                         viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                                    </svg>
-                                    Observaciones
-                                </h3>
-                                <p class="text-gray-700 text-sm">{{ $ventaSeleccionada->observacion }}</p>
-                            </div>
-                        @endif
-
-                        <!-- Botones de Acción -->
-                        <div class="flex justify-end gap-3 pt-4 border-t border-gray-200 sticky bottom-0 bg-white">
-                            @if($ventaSeleccionada->estadoVenta->nombre_estado_venta_fisica == 'pendiente')
-                                <button wire:click="completarVenta"
-                                        class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                              d="M5 13l4 4L19 7"/>
-                                    </svg>
-                                    Completar Venta
-                                </button>
-                                <button wire:click="cancelarVenta"
-                                        class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                              d="M6 18L18 6M6 6l12 12"/>
-                                    </svg>
-                                    Cancelar Venta
-                                </button>
+                            <!-- Observaciones -->
+                            @if($ventaSeleccionada->observacion)
+                                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                                    <h3 class="font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                                        <svg class="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor"
+                                             viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                        </svg>
+                                        Observaciones
+                                    </h3>
+                                    <p class="text-gray-700 text-sm">{{ $ventaSeleccionada->observacion }}</p>
+                                </div>
                             @endif
-                            <button wire:click="closeModalDetalle"
-                                    class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg font-medium transition-colors">
-                                Cerrar
-                            </button>
+
+                            <!-- Botones de Acción -->
+                            <div class="flex justify-end gap-3 pt-4 border-t border-gray-200 sticky bottom-0 bg-white">
+                                @if($ventaSeleccionada->estadoVenta->nombre_estado_venta_fisica == 'pendiente')
+                                    <button wire:click="completarVenta"
+                                            class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                  d="M5 13l4 4L19 7"/>
+                                        </svg>
+                                        Completar Venta
+                                    </button>
+                                    <button wire:click="cancelarVenta"
+                                            class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                  d="M6 18L18 6M6 6l12 12"/>
+                                        </svg>
+                                        Cancelar Venta
+                                    </button>
+                                @endif
+                                <button wire:click="closeModalDetalle"
+                                        class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg font-medium transition-colors">
+                                    Cerrar
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
+                @endif
             </div>
-        @endif
-    </div>
 
-    <!-- Modal para Transacciones Web -->
-    <div x-data x-init="$watch('$wire.showModalTransaccion', value => {
+            <!-- Modal para Transacciones Web -->
+            <div x-data x-init="$watch('$wire.showModalTransaccion', value => {
         if (value) { document.body.classList.add('overflow-hidden') } else { document.body.classList.remove('overflow-hidden') }
     })">
-        @if ($showModalTransaccion && $ventaWebSeleccionada && $transaccionPago)
-            <div class="fixed inset-0 flex items-center justify-center bg-black/50 z-50 p-4">
-                <div class="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[95vh] overflow-y-auto">
-                    <!-- Header -->
-                    <div class="bg-gradient-to-r from-blue-600 to-purple-600 p-6 text-white rounded-t-xl">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <h2 class="text-2xl font-bold mb-2">📋 Revisión de Venta Web</h2>
-                                <p class="text-blue-100">Verificación de comprobante y aprobación de venta</p>
+                @if ($showModalTransaccion && $ventaWebSeleccionada && $transaccionPago)
+                    <div class="fixed inset-0 flex items-center justify-center bg-black/50 z-50 p-4">
+                        <div class="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[95vh] overflow-y-auto">
+                            <!-- Header -->
+                            <div class="bg-gradient-to-r from-blue-600 to-purple-600 p-6 text-white rounded-t-xl">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <h2 class="text-2xl font-bold mb-2">📋 Revisión de Venta Web</h2>
+                                        <p class="text-blue-100">Verificación de comprobante y aprobación de venta</p>
+                                    </div>
+                                    <button wire:click="cerrarModalTransaccion"
+                                            class="text-white hover:text-blue-200 transition-colors">
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                  d="M6 18L18 6M6 6l12 12"/>
+                                        </svg>
+                                    </button>
+                                </div>
                             </div>
-                            <button wire:click="cerrarModalTransaccion"
-                                    class="text-white hover:text-blue-200 transition-colors">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                          d="M6 18L18 6M6 6l12 12"/>
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
 
-                    <div class="p-6 space-y-6">
-                        <!-- Información General -->
-                        <div class="grid grid-cols-2 gap-6">
-                            <div class="space-y-4">
-                                <div class="bg-gray-50 p-4 rounded-lg">
-                                    <h3 class="font-semibold text-gray-700 mb-3">📦 Información de la Venta</h3>
-                                    <div class="space-y-2 text-sm">
-                                        <div class="flex justify-between">
-                                            <span class="text-gray-600">Código:</span>
-                                            <span class="font-semibold">{{ $ventaWebSeleccionada->codigo }}</span>
-                                        </div>
-                                        <div class="flex justify-between">
-                                            <span class="text-gray-600">Fecha:</span>
-                                            <span>{{ \Carbon\Carbon::parse($ventaWebSeleccionada->fecha_venta)->format('d/m/Y H:i') }}</span>
-                                        </div>
-                                        <div class="flex justify-between">
-                                            <span class="text-gray-600">Total:</span>
-                                            <span
-                                                class="font-bold text-green-600">S/ {{ number_format($ventaWebSeleccionada->total, 2) }}</span>
-                                        </div>
-                                        <div class="flex justify-between">
-                                            <span class="text-gray-600">Estado:</span>
-                                            <span class="px-2 py-1 rounded-full text-xs font-medium
+                            <div class="p-6 space-y-6">
+                                <!-- Información General -->
+                                <div class="grid grid-cols-2 gap-6">
+                                    <div class="space-y-4">
+                                        <div class="bg-gray-50 p-4 rounded-lg">
+                                            <h3 class="font-semibold text-gray-700 mb-3">📦 Información de la Venta</h3>
+                                            <div class="space-y-2 text-sm">
+                                                <div class="flex justify-between">
+                                                    <span class="text-gray-600">Código:</span>
+                                                    <span
+                                                        class="font-semibold">{{ $ventaWebSeleccionada->codigo }}</span>
+                                                </div>
+                                                <div class="flex justify-between">
+                                                    <span class="text-gray-600">Fecha:</span>
+                                                    <span>{{ \Carbon\Carbon::parse($ventaWebSeleccionada->fecha_venta)->format('d/m/Y H:i') }}</span>
+                                                </div>
+                                                <div class="flex justify-between">
+                                                    <span class="text-gray-600">Total:</span>
+                                                    <span
+                                                        class="font-bold text-green-600">S/ {{ number_format($ventaWebSeleccionada->total, 2) }}</span>
+                                                </div>
+                                                <div class="flex justify-between">
+                                                    <span class="text-gray-600">Estado:</span>
+                                                    <span class="px-2 py-1 rounded-full text-xs font-medium
                                                 {{ $ventaWebSeleccionada->estadoVenta->nombre_estado_venta_fisica === 'pendiente' ? 'bg-yellow-100 text-yellow-800' : '' }}">
                                                 {{ $ventaWebSeleccionada->estadoVenta->nombre_estado_venta_fisica }}
                                             </span>
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
-                                </div>
 
-                                <div class="bg-gray-50 p-4 rounded-lg">
-                                    <h3 class="font-semibold text-gray-700 mb-3">👤 Información del Cliente</h3>
-                                    <div class="space-y-2 text-sm">
-                                        <div class="flex justify-between">
-                                            <span class="text-gray-600">Nombre:</span>
-                                            <span class="font-semibold">
+                                        <div class="bg-gray-50 p-4 rounded-lg">
+                                            <h3 class="font-semibold text-gray-700 mb-3">👤 Información del Cliente</h3>
+                                            <div class="space-y-2 text-sm">
+                                                <div class="flex justify-between">
+                                                    <span class="text-gray-600">Nombre:</span>
+                                                    <span class="font-semibold">
                                                 {{ $ventaWebSeleccionada->cliente->persona->nombre }}
-                                                {{ $ventaWebSeleccionada->cliente->persona->apellido_paterno }}
+                                                        {{ $ventaWebSeleccionada->cliente->persona->apellido_paterno }}
                                             </span>
-                                        </div>
-                                        <div class="flex justify-between">
-                                            <span class="text-gray-600">DNI:</span>
-                                            <span>{{ $ventaWebSeleccionada->cliente->persona->numero_documento }}</span>
-                                        </div>
-                                        <div class="flex justify-between">
-                                            <span class="text-gray-600">Email:</span>
-                                            <span>{{ $ventaWebSeleccionada->cliente->persona->correo_electronico_personal }}</span>
-                                        </div>
-                                        <div class="flex justify-between">
-                                            <span class="text-gray-600">Teléfono:</span>
-                                            <span>{{ $ventaWebSeleccionada->cliente->persona->numero_telefono_personal ?? 'N/A' }}</span>
+                                                </div>
+                                                <div class="flex justify-between">
+                                                    <span class="text-gray-600">DNI:</span>
+                                                    <span>{{ $ventaWebSeleccionada->cliente->persona->numero_documento }}</span>
+                                                </div>
+                                                <div class="flex justify-between">
+                                                    <span class="text-gray-600">Email:</span>
+                                                    <span>{{ $ventaWebSeleccionada->cliente->persona->correo_electronico_personal }}</span>
+                                                </div>
+                                                <div class="flex justify-between">
+                                                    <span class="text-gray-600">Teléfono:</span>
+                                                    <span>{{ $ventaWebSeleccionada->cliente->persona->numero_telefono_personal ?? 'N/A' }}</span>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            </div>
 
-                            <div class="space-y-4">
-                                <div class="bg-gray-50 p-4 rounded-lg">
-                                    <h3 class="font-semibold text-gray-700 mb-3">💳 Información de Pago</h3>
-                                    <div class="space-y-2 text-sm">
-                                        <div class="flex justify-between">
-                                            <span class="text-gray-600">Método:</span>
-                                            <span
-                                                class="font-semibold">{{ $transaccionPago->metodoPago->nombre_metodo }}</span>
-                                        </div>
-                                        <div class="flex justify-between">
-                                            <span class="text-gray-600">Estado:</span>
-                                            <span class="px-2 py-1 rounded-full text-xs font-medium
+                                    <div class="space-y-4">
+                                        <div class="bg-gray-50 p-4 rounded-lg">
+                                            <h3 class="font-semibold text-gray-700 mb-3">💳 Información de Pago</h3>
+                                            <div class="space-y-2 text-sm">
+                                                <div class="flex justify-between">
+                                                    <span class="text-gray-600">Método:</span>
+                                                    <span
+                                                        class="font-semibold">{{ $transaccionPago->metodoPago->nombre_metodo }}</span>
+                                                </div>
+                                                <div class="flex justify-between">
+                                                    <span class="text-gray-600">Estado:</span>
+                                                    <span class="px-2 py-1 rounded-full text-xs font-medium
                                                 {{ $transaccionPago->estado === 'pendiente' ? 'bg-yellow-100 text-yellow-800' :
                                                    ($transaccionPago->estado === 'confirmado' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800') }}">
                                                 {{ $transaccionPago->estado }}
                                             </span>
+                                                </div>
+                                                @if($transaccionPago->referencia)
+                                                    <div class="flex justify-between">
+                                                        <span class="text-gray-600">Referencia:</span>
+                                                        <span
+                                                            class="font-mono">{{ $transaccionPago->referencia }}</span>
+                                                    </div>
+                                                @endif
+                                                @if($transaccionPago->fecha_pago)
+                                                    <div class="flex justify-between">
+                                                        <span class="text-gray-600">Fecha Pago:</span>
+                                                        <span>{{ $transaccionPago->fecha_pago->format('d/m/Y H:i') }}</span>
+                                                    </div>
+                                                @endif
+                                            </div>
                                         </div>
-                                        @if($transaccionPago->referencia)
-                                            <div class="flex justify-between">
-                                                <span class="text-gray-600">Referencia:</span>
-                                                <span class="font-mono">{{ $transaccionPago->referencia }}</span>
-                                            </div>
-                                        @endif
-                                        @if($transaccionPago->fecha_pago)
-                                            <div class="flex justify-between">
-                                                <span class="text-gray-600">Fecha Pago:</span>
-                                                <span>{{ $transaccionPago->fecha_pago->format('d/m/Y H:i') }}</span>
-                                            </div>
-                                        @endif
+
+                                        <!-- Comprobante -->
+                                        <div class="bg-gray-50 p-4 rounded-lg">
+                                            <h3 class="font-semibold text-gray-700 mb-3">📎 Comprobante de Pago</h3>
+                                            @if($transaccionPago->comprobante_url)
+                                                <div class="text-center">
+                                                    @if(pathinfo($transaccionPago->comprobante_url, PATHINFO_EXTENSION) === 'pdf')
+                                                        <div
+                                                            class="bg-red-50 border border-red-200 rounded-lg p-4 mb-3">
+                                                            <svg class="w-12 h-12 text-red-500 mx-auto mb-2" fill="none"
+                                                                 stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                                      stroke-width="2"
+                                                                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                                            </svg>
+                                                            <p class="text-red-700 font-medium">Documento PDF</p>
+                                                        </div>
+                                                    @else
+                                                        <img src="{{ $transaccionPago->comprobante_url }}"
+                                                             alt="Comprobante de pago"
+                                                             class="max-w-full h-48 object-contain mx-auto rounded-lg border border-gray-200 mb-3">
+                                                    @endif
+
+                                                    <a href="{{ $transaccionPago->comprobante_url }}"
+                                                       target="_blank"
+                                                       class="inline-flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors">
+                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor"
+                                                             viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                                  stroke-width="2"
+                                                                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                                                        </svg>
+                                                        Ver Comprobante Completo
+                                                    </a>
+                                                </div>
+                                            @else
+                                                <div class="text-center text-gray-500 py-4">
+                                                    <svg class="w-12 h-12 mx-auto mb-2" fill="none"
+                                                         stroke="currentColor"
+                                                         viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                              stroke-width="2"
+                                                              d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+                                                    </svg>
+                                                    <p>No hay comprobante disponible</p>
+                                                </div>
+                                            @endif
+                                        </div>
                                     </div>
                                 </div>
 
-                                <!-- Comprobante -->
-                                <div class="bg-gray-50 p-4 rounded-lg">
-                                    <h3 class="font-semibold text-gray-700 mb-3">📎 Comprobante de Pago</h3>
-                                    @if($transaccionPago->comprobante_url)
-                                        <div class="text-center">
-                                            @if(pathinfo($transaccionPago->comprobante_url, PATHINFO_EXTENSION) === 'pdf')
-                                                <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-3">
-                                                    <svg class="w-12 h-12 text-red-500 mx-auto mb-2" fill="none"
-                                                         stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                                              stroke-width="2"
-                                                              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                                    </svg>
-                                                    <p class="text-red-700 font-medium">Documento PDF</p>
-                                                </div>
-                                            @else
-                                                <img src="{{ $transaccionPago->comprobante_url }}"
-                                                     alt="Comprobante de pago"
-                                                     class="max-w-full h-48 object-contain mx-auto rounded-lg border border-gray-200 mb-3">
-                                            @endif
-
-                                            <a href="{{ $transaccionPago->comprobante_url }}"
-                                               target="_blank"
-                                               class="inline-flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor"
-                                                     viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                                          stroke-width="2"
-                                                          d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-                                                </svg>
-                                                Ver Comprobante Completo
-                                            </a>
-                                        </div>
-                                    @else
-                                        <div class="text-center text-gray-500 py-4">
-                                            <svg class="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor"
-                                                 viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                      d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
-                                            </svg>
-                                            <p>No hay comprobante disponible</p>
-                                        </div>
-                                    @endif
+                                <!-- Productos de la Venta -->
+                                <div class="bg-white border border-gray-200 rounded-lg">
+                                    <h3 class="font-semibold text-gray-700 p-4 border-b">🛒 Productos de la Venta</h3>
+                                    <div class="overflow-x-auto">
+                                        <table class="w-full text-sm">
+                                            <thead class="bg-gray-50">
+                                            <tr>
+                                                <th class="text-left p-3 font-medium">Producto/Servicio</th>
+                                                <th class="text-left p-3 font-medium">Tipo</th>
+                                                <th class="text-center p-3 font-medium">Cantidad</th>
+                                                <th class="text-right p-3 font-medium">Precio Unit.</th>
+                                                <th class="text-right p-3 font-medium">Subtotal</th>
+                                            </tr>
+                                            </thead>
+                                            <tbody class="divide-y divide-gray-200">
+                                            @foreach($ventaWebSeleccionada->detalleVentas as $detalle)
+                                                <tr>
+                                                    <td class="p-3">
+                                                        @if($detalle->tipo_item === 'producto')
+                                                            {{ $detalle->producto->nombre_producto ?? 'N/A' }}
+                                                        @else
+                                                            {{ $detalle->servicio->nombre_servicio ?? 'N/A' }}
+                                                        @endif
+                                                    </td>
+                                                    <td class="p-3 capitalize">{{ $detalle->tipo_item }}</td>
+                                                    <td class="p-3 text-center">{{ $detalle->cantidad }}</td>
+                                                    <td class="p-3 text-right">
+                                                        S/ {{ number_format($detalle->precio_unitario, 2) }}</td>
+                                                    <td class="p-3 text-right">
+                                                        S/ {{ number_format($detalle->subtotal, 2) }}</td>
+                                                </tr>
+                                            @endforeach
+                                            </tbody>
+                                            <tfoot class="bg-gray-50">
+                                            <tr>
+                                                <td colspan="4" class="p-3 text-right font-semibold">Total:</td>
+                                                <td class="p-3 text-right font-bold text-green-600">
+                                                    S/ {{ number_format($ventaWebSeleccionada->total, 2) }}
+                                                </td>
+                                            </tr>
+                                            </tfoot>
+                                        </table>
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
 
-                        <!-- Productos de la Venta -->
-                        <div class="bg-white border border-gray-200 rounded-lg">
-                            <h3 class="font-semibold text-gray-700 p-4 border-b">🛒 Productos de la Venta</h3>
-                            <div class="overflow-x-auto">
-                                <table class="w-full text-sm">
-                                    <thead class="bg-gray-50">
-                                    <tr>
-                                        <th class="text-left p-3 font-medium">Producto/Servicio</th>
-                                        <th class="text-left p-3 font-medium">Tipo</th>
-                                        <th class="text-center p-3 font-medium">Cantidad</th>
-                                        <th class="text-right p-3 font-medium">Precio Unit.</th>
-                                        <th class="text-right p-3 font-medium">Subtotal</th>
-                                    </tr>
-                                    </thead>
-                                    <tbody class="divide-y divide-gray-200">
-                                    @foreach($ventaWebSeleccionada->detalleVentas as $detalle)
-                                        <tr>
-                                            <td class="p-3">
-                                                @if($detalle->tipo_item === 'producto')
-                                                    {{ $detalle->producto->nombre_producto ?? 'N/A' }}
-                                                @else
-                                                    {{ $detalle->servicio->nombre_servicio ?? 'N/A' }}
-                                                @endif
-                                            </td>
-                                            <td class="p-3 capitalize">{{ $detalle->tipo_item }}</td>
-                                            <td class="p-3 text-center">{{ $detalle->cantidad }}</td>
-                                            <td class="p-3 text-right">
-                                                S/ {{ number_format($detalle->precio_unitario, 2) }}</td>
-                                            <td class="p-3 text-right">
-                                                S/ {{ number_format($detalle->subtotal, 2) }}</td>
-                                        </tr>
-                                    @endforeach
-                                    </tbody>
-                                    <tfoot class="bg-gray-50">
-                                    <tr>
-                                        <td colspan="4" class="p-3 text-right font-semibold">Total:</td>
-                                        <td class="p-3 text-right font-bold text-green-600">
-                                            S/ {{ number_format($ventaWebSeleccionada->total, 2) }}
-                                        </td>
-                                    </tr>
-                                    </tfoot>
-                                </table>
-                            </div>
-                        </div>
+                                <!-- Botones de Acción -->
+                                @if($transaccionPago->estado === 'pendiente')
+                                    <div class="flex justify-end gap-4 pt-6 border-t">
+                                        <button wire:click="rechazarVentaWeb"
+                                                wire:confirm="¿Estás seguro de rechazar esta venta? El stock será revertido."
+                                                class="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                      d="M6 18L18 6M6 6l12 12"/>
+                                            </svg>
+                                            Rechazar Venta
+                                        </button>
 
-                        <!-- Botones de Acción -->
-                        @if($transaccionPago->estado === 'pendiente')
-                            <div class="flex justify-end gap-4 pt-6 border-t">
-                                <button wire:click="rechazarVentaWeb"
-                                        wire:confirm="¿Estás seguro de rechazar esta venta? El stock será revertido."
-                                        class="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                              d="M6 18L18 6M6 6l12 12"/>
-                                    </svg>
-                                    Rechazar Venta
-                                </button>
-
-                                <button wire:click="aprobarVentaWeb"
-                                        wire:confirm="¿Estás seguro de aprobar esta venta? El pago será confirmado."
-                                        class="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                              d="M5 13l4 4L19 7"/>
-                                    </svg>
-                                    Aprobar Venta
-                                </button>
-                            </div>
-                        @else
-                            <div class="text-center py-4">
-                                <p class="text-gray-600">
-                                    Esta venta ya ha sido
-                                    <span
-                                        class="font-semibold {{ $transaccionPago->estado === 'confirmado' ? 'text-green-600' : 'text-red-600' }}">
+                                        <button wire:click="aprobarVentaWeb"
+                                                wire:confirm="¿Estás seguro de aprobar esta venta? El pago será confirmado."
+                                                class="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                      d="M5 13l4 4L19 7"/>
+                                            </svg>
+                                            Aprobar Venta
+                                        </button>
+                                    </div>
+                                @else
+                                    <div class="text-center py-4">
+                                        <p class="text-gray-600">
+                                            Esta venta ya ha sido
+                                            <span
+                                                class="font-semibold {{ $transaccionPago->estado === 'confirmado' ? 'text-green-600' : 'text-red-600' }}">
                                     {{ $transaccionPago->estado === 'confirmado' ? 'APROBADA' : 'RECHAZADA' }}
                                 </span>
-                                </p>
+                                        </p>
+                                    </div>
+                                @endif
                             </div>
-                        @endif
+                        </div>
                     </div>
-                </div>
+                @endif
             </div>
-        @endif
-    </div>
 
 
-    @push('scripts')
-        <script>
-            Livewire.on('notify', (data) => {
-                Swal.fire({
-                    title: data.title,
-                    text: data.description,
-                    icon: data.type,
-                    timer: 2500,
-                    showConfirmButton: false,
-                    customClass: {
-                        popup: 'rounded-lg',
-                        title: 'text-lg font-semibold',
-                        htmlContainer: 'text-sm'
+            @push('scripts')
+                <script>
+                    Livewire.on('notify', (data) => {
+                        Swal.fire({
+                            title: data.title,
+                            text: data.description,
+                            icon: data.type,
+                            timer: 2500,
+                            showConfirmButton: false,
+                            customClass: {
+                                popup: 'rounded-lg',
+                                title: 'text-lg font-semibold',
+                                htmlContainer: 'text-sm'
+                            }
+                        });
+                    });
+
+                    Livewire.on('ventasUpdated', () => {
+                        // Recargar datos si es necesario
+                    });
+
+                </script>
+                <style>
+                    .search-dropdown {
+                        scrollbar-width: thin;
+                        scrollbar-color: #cbd5e0 #f7fafc;
                     }
-                });
-            });
 
-            Livewire.on('ventasUpdated', () => {
-                // Recargar datos si es necesario
-            });
+                    .search-dropdown::-webkit-scrollbar {
+                        width: 6px;
+                    }
 
-        </script>
-        <style>
-            .search-dropdown {
-                scrollbar-width: thin;
-                scrollbar-color: #cbd5e0 #f7fafc;
-            }
+                    .search-dropdown::-webkit-scrollbar-track {
+                        background: #f7fafc;
+                        border-radius: 3px;
+                    }
 
-            .search-dropdown::-webkit-scrollbar {
-                width: 6px;
-            }
+                    .search-dropdown::-webkit-scrollbar-thumb {
+                        background: #cbd5e0;
+                        border-radius: 3px;
+                    }
 
-            .search-dropdown::-webkit-scrollbar-track {
-                background: #f7fafc;
-                border-radius: 3px;
-            }
-
-            .search-dropdown::-webkit-scrollbar-thumb {
-                background: #cbd5e0;
-                border-radius: 3px;
-            }
-
-            .search-dropdown::-webkit-scrollbar-thumb:hover {
-                background: #a0aec0;
-            }
-        </style>
-    @endpush
-    <x-loader target="guardar, completarVenta, cancelarVenta"/>
+                    .search-dropdown::-webkit-scrollbar-thumb:hover {
+                        background: #a0aec0;
+                    }
+                </style>
+            @endpush
+            <x-loader target="guardar, completarVenta, cancelarVenta"/>
 </x-panel>

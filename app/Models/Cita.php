@@ -44,4 +44,9 @@ class Cita extends Model
     {
         return $this->belongsTo(EstadoCita::class, "id_estado_cita");
     }
+
+    public function serviciosCita()
+    {
+        return $this->hasMany(CitaServicio::class, "id_cita");
+    }
 }
