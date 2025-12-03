@@ -162,18 +162,55 @@ class EntregaPedido extends Component
 
     public function descargarHojaRuta()
     {
-        if (!$this->diaSeleccionado) return;
+        // 1. Validaciones
+        if (!$this->diaSeleccionado) {
+            $this->dispatch('notify', title: 'Error', description: 'Selecciona un día.', type: 'error');
+            return;
+        }
 
         $trabajador = Auth::user()->persona->trabajador;
-        if (!$trabajador) return;
+        if (!$trabajador) {
+            $this->dispatch('notify', title: 'Error', description: 'Usuario sin trabajador asociado.', type: 'error');
+            return;
+        }
 
-        $fecha = $this->diaSeleccionado->format('Y-m-d');
+        // 2. Preparar fecha y datos
+        // Aseguramos que la fecha sea un string Y-m-d
+        $fechaStr = is_array($this->diaSeleccionado)
+            ? substr($this->diaSeleccionado['date'], 0, 10)
+            : $this->diaSeleccionado->format('Y-m-d');
 
-        return Excel::download(
-            new DespachoDetalleExport($fecha, $trabajador->id_trabajador),
-            'hoja_ruta_' . $fecha . '.pdf',
-            \Maatwebsite\Excel\Excel::DOMPDF
-        );
+        // 3. Realizar la consulta (La lógica que antes estaba en el Export, ahora va aquí)
+        $pedidos = EnvioPedido::with(['venta.cliente.persona', 'direccion.ubigeo', 'estadoEnvio'])
+            ->where('id_trabajador', $trabajador->id_trabajador)
+            ->whereDate('fecha_programada', $fechaStr)
+            ->orderBy('fecha_programada', 'asc')
+            ->get();
+
+        if ($pedidos->isEmpty()) {
+            $this->dispatch('notify', title: 'Aviso', description: 'No hay pedidos para exportar en esa fecha.', type: 'warning');
+            return;
+        }
+
+        $nombreTransportista = Auth::user()->persona->nombre . ' ' . Auth::user()->persona->apellido_paterno;
+
+        // 4. Preparar datos para la vista
+        $data = [
+            'pedidos' => $pedidos,
+            'fecha' => $fechaStr,
+            'transportista' => $nombreTransportista
+        ];
+
+        // 5. Generar PDF
+        // 'landscape' es horizontal, 'portrait' es vertical. A4 es el tamaño estándar.
+        $pdf = Pdf::loadView('exports.entrega_pedidos', $data)
+            ->setPaper('a4', 'portrait');
+
+        // 6. Descargar
+        // return response()->streamDownload(...) es la forma correcta en Livewire 3
+        return response()->streamDownload(function () use ($pdf) {
+            echo $pdf->output();
+        }, 'hoja_ruta_' . $fechaStr . '.pdf');
     }
 
     public function verEvidencia($id)
