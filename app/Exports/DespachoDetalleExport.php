@@ -36,7 +36,7 @@ class DespachoDetalleExport implements FromView, ShouldAutoSize
             $transportistaNombre = Auth::user()->persona->nombre . ' ' . Auth::user()->persona->apellido_paterno;
         }
 
-        return view('exports.hoja_ruta', [
+        return view('exports.entrega_pedidos', [
             'pedidos' => $pedidos,
             'fecha' => $this->fecha,
             'transportista' => $transportistaNombre
