@@ -5,6 +5,7 @@ namespace App\Livewire\Inventario;
 use App\Exports\DespachoDetalleExport;
 use App\Models\EnvioPedido;
 use App\Models\EstadoEnvioPedido;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
