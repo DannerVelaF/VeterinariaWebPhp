@@ -62,6 +62,7 @@ Route::prefix('/v1')->group(function () {
 
         Route::prefix("ventas")->group(function () {
             Route::post("/registrar", [VentasController::class, "registrarVenta"]);
+            ROute::get("/obtenerPedidos/{id_usuario}", [VentasController::class, "pedidosCliente"]);
         });
 
         Route::get("metodos-pago", [VentasController::class, "obtenerMetodosPago"]);

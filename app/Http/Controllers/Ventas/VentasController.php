@@ -5,12 +5,14 @@ namespace App\Http\Controllers\Ventas;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\RegistrarVentaRequest;
 use App\Http\Requests\ConfirmarPagoRequest;
+use App\Livewire\Mantenimiento\Usuarios\Usuarios;
 use App\Models\Clientes;
 use App\Models\DetalleVentas;
 use App\Models\EstadoVentas;
 use App\Models\MetodoPago;
 use App\Models\Persona;
 use App\Models\TipoMovimiento;
+use App\Models\User;
 use App\Models\Ventas;
 use App\Models\Producto;
 use App\Models\Lotes;
@@ -381,15 +383,25 @@ class VentasController extends Controller
         }
     }
 
-    public function pedidosCliente(Request $request)
+    public function pedidosCliente($id_usuario)
     {
         try {
-            $cliente = Clientes::with("persona")->findOrFail($request->id_cliente);
+            $usuario = User::find($id_usuario);
 
-            if (!$cliente) {
+            if (!$usuario) {
+                return $this->errorResponse('Usuario no encontrado', 404);
+            }
+
+            if (!$usuario->persona?->cliente) {
                 return $this->errorResponse('El cliente no existe para este usuario', 400);
             }
 
+            $pedidosCliente = Ventas::where("id_cliente", $usuario->persona->cliente->id_cliente)
+                ->where("tipo_venta", "web")
+                ->with(["detalleVentas", "transaccionPago.metodoPago", 'estadoVenta'])
+                ->get();
+
+            return $this->successResponse($pedidosCliente, "Pedidos del cliente obtenidos exitosamente");
 
         } catch (\Exception $e) {
             Log::error('Error al pedidosCliente: ' . $e->getMessage());
