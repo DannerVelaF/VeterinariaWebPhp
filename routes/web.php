@@ -19,6 +19,10 @@ use App\Livewire\Ventas\RegistrarVenta as RegistrarVenta;
 //  🔹 Módulo para citas
 use App\Livewire\Citas\RegistrarCita as RegistrarCita;
 
+//  🔹 Módulo para Historial
+use App\Livewire\Historial\RegistrarHistorial;
+use App\Livewire\Historial\VerHistorial;
+
 // 🔹 Módulos de gestión
 use App\Livewire\Mantenimiento\Productos\Registro as MantenimientoProductos;
 use App\Livewire\Mantenimiento\Trabajadores\Registro as MantenimientoTrabajadores;
@@ -128,6 +132,17 @@ Route::middleware('auth')->group(function () {
         |--------------------------------------------------------------------------
         */
         Route::get('/citas', RegistrarCita::class)->name('citas.registrar');
+
+        /*
+
+        /*
+        |--------------------------------------------------------------------------
+        | HISTORIAL
+        |--------------------------------------------------------------------------
+        */
+        // Historial Clínico
+        Route::get('/historial/registrar', RegistrarHistorial::class)->name('historial.registrar');
+        Route::get('/historial/ver', VerHistorial::class)->name('historial.ver');
 
         /*
 
