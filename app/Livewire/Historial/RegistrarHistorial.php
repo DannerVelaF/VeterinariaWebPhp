@@ -4,10 +4,6 @@ namespace App\Livewire\Historial;
 
 use App\Models\Cita;
 use App\Models\CitaServicio;
-use App\Models\Servicio;
-use App\Models\Clientes;
-use App\Models\Mascota;
-use App\Models\Trabajador;
 use App\Models\EstadoCita;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -19,7 +15,6 @@ class RegistrarHistorial extends Component
     public $citaSeleccionada = null;
     public $serviciosCita = [];
     public $servicioSeleccionado = null;
-    public $citaServicioData = [];
     
     // Filtros para búsqueda
     public $filtroDni = '';
@@ -32,16 +27,19 @@ class RegistrarHistorial extends Component
         'diagnostico' => '',
         'medicamentos' => '',
         'recomendaciones' => '',
-        'notas_adicionales' => ''
     ];
     
     // Estados disponibles
-    public $estadosCita = [];
+    public $estadosCita = ['En progreso', 'Completada'];
+    
+    // Mensaje de estado
+    public $mensaje = '';
+    public $tipoMensaje = '';
     
     public function mount()
     {
         $this->cargarEstadosCita();
-        $this->cargarCitasPendientes();
+        $this->cargarCitas();
     }
     
     public function cargarEstadosCita()
@@ -49,93 +47,119 @@ class RegistrarHistorial extends Component
         $this->estadosCita = EstadoCita::all();
     }
     
-    public function cargarCitasPendientes()
+    public function cargarCitas()
     {
-        $query = Cita::with([
-            'cliente.persona',
-            'mascota',
-            'trabajadorAsignado.persona',
-            'estadoCita',
-            'serviciosCita.servicio'
-        ])
-        ->whereIn('id_estado_cita', function($q) {
-            $q->select('id_estado_cita')
-              ->from('estado_citas')
-              ->whereIn('nombre_estado_cita', ['En progreso', 'Completada']);
-        });
-        
-        // Aplicar filtros
-        if ($this->filtroDni) {
-            $query->whereHas('cliente.persona', function($q) {
-                $q->where('numero_documento', 'like', '%' . $this->filtroDni . '%');
-            });
+        try {
+            $query = Cita::with([
+                'cliente.persona',
+                'mascota',
+                'trabajadorAsignado.persona',
+                'estadoCita',
+                'serviciosCita.servicio'
+            ]);
+            
+            // Aplicar filtros
+            if ($this->filtroDni) {
+                $query->whereHas('cliente.persona', function($q) {
+                    $q->where('numero_documento', 'like', '%' . $this->filtroDni . '%');
+                });
+            }
+            
+            if ($this->filtroMascota) {
+                $query->whereHas('mascota', function($q) {
+                    $q->where('nombre_mascota', 'like', '%' . $this->filtroMascota . '%');
+                });
+            }
+            
+            if ($this->filtroFecha) {
+                $query->whereDate('fecha_programada', $this->filtroFecha);
+            }
+            
+            if ($this->filtroEstado) {
+                $query->where('id_estado_cita', $this->filtroEstado);
+            } else {
+                // Por defecto, mostrar citas "En progreso" o "Completadas"
+                $query->whereIn('id_estado_cita', function($q) {
+                    $q->select('id_estado_cita')
+                      ->from('estado_citas')
+                      ->whereIn('nombre_estado_cita', ['En progreso', 'Completada']);
+                });
+            }
+            
+            $this->citas = $query->orderBy('fecha_programada', 'desc')->get();
+            
+        } catch (\Exception $e) {
+            Log::error('Error al cargar citas para historial', ['error' => $e->getMessage()]);
+            $this->mostrarMensaje('Error al cargar citas: ' . $e->getMessage(), 'error');
         }
-        
-        if ($this->filtroMascota) {
-            $query->whereHas('mascota', function($q) {
-                $q->where('nombre_mascota', 'like', '%' . $this->filtroMascota . '%');
-            });
-        }
-        
-        if ($this->filtroFecha) {
-            $query->whereDate('fecha_programada', $this->filtroFecha);
-        }
-        
-        if ($this->filtroEstado) {
-            $query->where('id_estado_cita', $this->filtroEstado);
-        }
-        
-        $this->citas = $query->orderBy('fecha_programada', 'desc')->get();
     }
     
     public function updatedFiltroDni()
     {
-        $this->cargarCitasPendientes();
+        $this->cargarCitas();
     }
     
     public function updatedFiltroMascota()
     {
-        $this->cargarCitasPendientes();
+        $this->cargarCitas();
     }
     
     public function updatedFiltroFecha()
     {
-        $this->cargarCitasPendientes();
+        $this->cargarCitas();
     }
     
     public function updatedFiltroEstado()
     {
-        $this->cargarCitasPendientes();
+        $this->cargarCitas();
     }
     
     public function seleccionarCita($idCita)
     {
-        $this->citaSeleccionada = Cita::with([
-            'cliente.persona',
-            'mascota',
-            'trabajadorAsignado.persona',
-            'serviciosCita.servicio'
-        ])->find($idCita);
-        
-        $this->serviciosCita = $this->citaSeleccionada->serviciosCita ?? [];
-        $this->servicioSeleccionado = null;
-        $this->citaServicioData = [];
-        $this->resetearFormulario();
+        try {
+            $this->citaSeleccionada = Cita::with([
+                'cliente.persona',
+                'mascota.raza',
+                'trabajadorAsignado.persona',
+                'serviciosCita.servicio'
+            ])->find($idCita);
+            
+            if ($this->citaSeleccionada) {
+                $this->serviciosCita = $this->citaSeleccionada->serviciosCita ?? [];
+                $this->servicioSeleccionado = null;
+                $this->resetearFormulario();
+                
+                // Auto-seleccionar el primer servicio sin historial
+                foreach ($this->serviciosCita as $servicioCita) {
+                    if (empty($servicioCita->diagnostico)) {
+                        $this->seleccionarServicio($servicioCita->id_cita_servicio);
+                        break;
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            Log::error('Error al seleccionar cita', ['error' => $e->getMessage()]);
+            $this->mostrarMensaje('Error al seleccionar cita: ' . $e->getMessage(), 'error');
+        }
     }
     
     public function seleccionarServicio($idCitaServicio)
     {
-        $this->servicioSeleccionado = CitaServicio::with('servicio')->find($idCitaServicio);
-        
-        if ($this->servicioSeleccionado) {
-            $this->historial = [
-                'diagnostico' => $this->servicioSeleccionado->diagnostico ?? '',
-                'medicamentos' => $this->servicioSeleccionado->medicamentos ?? '',
-                'recomendaciones' => $this->servicioSeleccionado->recomendaciones ?? '',
-                'notas_adicionales' => $this->servicioSeleccionado->notas_adicionales ?? ''
-            ];
-        } else {
-            $this->resetearFormulario();
+        try {
+            $this->servicioSeleccionado = CitaServicio::with('servicio')->find($idCitaServicio);
+            
+            if ($this->servicioSeleccionado) {
+                $this->historial = [
+                    'diagnostico' => $this->servicioSeleccionado->diagnostico ?? '',
+                    'medicamentos' => $this->servicioSeleccionado->medicamentos ?? '',
+                    'recomendaciones' => $this->servicioSeleccionado->recomendaciones ?? '',
+                ];
+            } else {
+                $this->resetearFormulario();
+            }
+        } catch (\Exception $e) {
+            Log::error('Error al seleccionar servicio', ['error' => $e->getMessage()]);
+            $this->mostrarMensaje('Error al seleccionar servicio: ' . $e->getMessage(), 'error');
         }
     }
     
@@ -145,70 +169,98 @@ class RegistrarHistorial extends Component
             'diagnostico' => '',
             'medicamentos' => '',
             'recomendaciones' => '',
-            'notas_adicionales' => ''
         ];
+        $this->mensaje = '';
+        $this->tipoMensaje = '';
+    }
+    
+    public function mostrarMensaje($mensaje, $tipo = 'info')
+    {
+        $this->mensaje = $mensaje;
+        $this->tipoMensaje = $tipo;
+        
+        // Auto-ocultar mensaje después de 5 segundos
+        $this->dispatch('mensaje-temporal');
     }
     
     public function guardarHistorial()
     {
-        $this->validate([
-            'servicioSeleccionado' => 'required|exists:cita_servicios,id_cita_servicio',
-            'historial.diagnostico' => 'required|string|min:10|max:2000',
-            'historial.medicamentos' => 'nullable|string|max:1000',
-            'historial.recomendaciones' => 'required|string|min:10|max:1000',
-            //'historial.notas_adicionales' => 'nullable|string|max:500'
-        ], [
-            'servicioSeleccionado.required' => 'Debe seleccionar un servicio de la cita.',
-            'historial.diagnostico.required' => 'El diagnóstico es obligatorio.',
-            'historial.diagnostico.min' => 'El diagnóstico debe tener al menos 10 caracteres.',
-            'historial.recomendaciones.required' => 'Las recomendaciones son obligatorias.',
-            'historial.recomendaciones.min' => 'Las recomendaciones deben tener al menos 10 caracteres.'
-        ]);
+        // Validar que se haya seleccionado un servicio
+        if (!$this->servicioSeleccionado) {
+            $this->mostrarMensaje('Debe seleccionar un servicio para guardar el historial.', 'error');
+            return;
+        }
+        
+        // Validar campos obligatorios
+        if (empty(trim($this->historial['diagnostico']))) {
+            $this->mostrarMensaje('El diagnóstico es obligatorio.', 'error');
+            return;
+        }
+        
+        if (empty(trim($this->historial['recomendaciones']))) {
+            $this->mostrarMensaje('Las recomendaciones son obligatorias.', 'error');
+            return;
+        }
         
         try {
-            DB::transaction(function () {
-                $this->servicioSeleccionado->update([
-                    'diagnostico' => $this->historial['diagnostico'],
-                    'medicamentos' => $this->historial['medicamentos'],
-                    'recomendaciones' => $this->historial['recomendaciones'],
-                    //'notas_adicionales' => $this->historial['notas_adicionales'],
-                    'fecha_actualizacion' => now()
-                ]);
-                
-                // Si todos los servicios de la cita tienen historial, marcar cita como completada
-                $cita = $this->citaSeleccionada;
-                $serviciosSinHistorial = $cita->serviciosCita()
-                    ->whereNull('diagnostico')
-                    ->count();
-                
-                if ($serviciosSinHistorial === 0) {
-                    $estadoCompletado = EstadoCita::where('nombre_estado_cita', 'Completada')->first();
-                    if ($estadoCompletado) {
-                        $cita->update([
-                            'id_estado_cita' => $estadoCompletado->id_estado_cita,
-                            'fecha_actualizacion' => now()
-                        ]);
-                    }
-                }
-            });
+            DB::beginTransaction();
             
-            // Recargar datos
+            // Guardar el historial en la tabla cita_servicios
+            $this->servicioSeleccionado->update([
+                'diagnostico' => $this->historial['diagnostico'],
+                'medicamentos' => $this->historial['medicamentos'],
+                'recomendaciones' => $this->historial['recomendaciones'],
+                'fecha_actualizacion' => now()
+            ]);
+            
+            // Verificar si todos los servicios tienen historial
+            $todosConHistorial = true;
+            foreach ($this->serviciosCita as $servicioCita) {
+                if (empty($servicioCita->diagnostico) && $servicioCita->id_cita_servicio != $this->servicioSeleccionado->id_cita_servicio) {
+                    $todosConHistorial = false;
+                    break;
+                }
+            }
+            
+            // Si todos los servicios tienen historial, marcar la cita como completada
+            if ($todosConHistorial) {
+                $estadoCompletado = EstadoCita::where('nombre_estado_cita', 'Completada')->first();
+                if ($estadoCompletado) {
+                    $this->citaSeleccionada->update([
+                        'id_estado_cita' => $estadoCompletado->id_estado_cita,
+                        'fecha_actualizacion' => now()
+                    ]);
+                }
+            }
+            
+            DB::commit();
+            
+            // Recargar la cita para mostrar los cambios
             $this->seleccionarCita($this->citaSeleccionada->id_cita);
             
-            $this->dispatch('notify', [
-                'title' => '¡Éxito!',
-                'description' => 'Historial clínico registrado correctamente.',
-                'type' => 'success'
-            ]);
+            $this->mostrarMensaje('¡Historial clínico guardado exitosamente!', 'success');
+            
+            // Despachar evento para notificación
+            $this->dispatch('notify', 
+                title: '¡Éxito!',
+                description: 'Historial clínico registrado correctamente.',
+                type: 'success'
+            );
             
         } catch (\Exception $e) {
-            Log::error('Error al guardar historial clínico', ['error' => $e->getMessage()]);
-            
-            $this->dispatch('notify', [
-                'title' => 'Error',
-                'description' => 'Error al guardar el historial clínico: ' . $e->getMessage(),
-                'type' => 'error'
+            DB::rollBack();
+            Log::error('Error al guardar historial clínico', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ]);
+            
+            $this->mostrarMensaje('Error al guardar el historial: ' . $e->getMessage(), 'error');
+            
+            $this->dispatch('notify',
+                title: 'Error',
+                description: 'Error al guardar el historial clínico.',
+                type: 'error'
+            );
         }
     }
     
@@ -218,7 +270,7 @@ class RegistrarHistorial extends Component
         $this->filtroMascota = '';
         $this->filtroFecha = '';
         $this->filtroEstado = '';
-        $this->cargarCitasPendientes();
+        $this->cargarCitas();
     }
     
     public function limpiarSeleccion()
@@ -227,6 +279,41 @@ class RegistrarHistorial extends Component
         $this->serviciosCita = [];
         $this->servicioSeleccionado = null;
         $this->resetearFormulario();
+    }
+    
+    // Calcular progreso del historial
+    public function getProgresoHistorialProperty()
+    {
+        if (!$this->citaSeleccionada || $this->serviciosCita->isEmpty()) {
+            return 0;
+        }
+        
+        $totalServicios = $this->serviciosCita->count();
+        $serviciosConHistorial = 0;
+        
+        foreach ($this->serviciosCita as $servicio) {
+            if (!empty($servicio->diagnostico)) {
+                $serviciosConHistorial++;
+            }
+        }
+        
+        return ($serviciosConHistorial / $totalServicios) * 100;
+    }
+    
+    // Verificar si todos los servicios tienen historial
+    public function getTodosConHistorialProperty()
+    {
+        if (!$this->citaSeleccionada || $this->serviciosCita->isEmpty()) {
+            return false;
+        }
+        
+        foreach ($this->serviciosCita as $servicio) {
+            if (empty($servicio->diagnostico)) {
+                return false;
+            }
+        }
+        
+        return true;
     }
     
     public function render()
