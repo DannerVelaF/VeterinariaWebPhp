@@ -5,6 +5,8 @@ namespace App\Livewire\Historial;
 use App\Models\Cita;
 use App\Models\CitaServicio;
 use App\Models\EstadoCita;
+use App\Models\Cliente;
+use App\Models\Persona;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Livewire\Component;
@@ -17,10 +19,10 @@ class RegistrarHistorial extends Component
     public $servicioSeleccionado = null;
     
     // Filtros para búsqueda
-    public $filtroDni = '';
+    public $filtroCliente = '';
     public $filtroMascota = '';
     public $filtroFecha = '';
-    public $filtroEstado = '';
+    public $filtroEstado = 'En progreso'; // Valor por defecto
     
     // Datos del formulario
     public $historial = [
@@ -29,8 +31,11 @@ class RegistrarHistorial extends Component
         'recomendaciones' => '',
     ];
     
-    // Estados disponibles
-    public $estadosCita = ['En progreso', 'Completada'];
+    // Estados disponibles (solo dos tipos)
+    public $estadosCita = [
+        'En progreso' => 'En progreso',
+        'Completada' => 'Completada'
+    ];
     
     // Mensaje de estado
     public $mensaje = '';
@@ -38,13 +43,7 @@ class RegistrarHistorial extends Component
     
     public function mount()
     {
-        $this->cargarEstadosCita();
         $this->cargarCitas();
-    }
-    
-    public function cargarEstadosCita()
-    {
-        $this->estadosCita = EstadoCita::all();
     }
     
     public function cargarCitas()
@@ -58,35 +57,42 @@ class RegistrarHistorial extends Component
                 'serviciosCita.servicio'
             ]);
             
-            // Aplicar filtros
-            if ($this->filtroDni) {
+            // Aplicar filtro de cliente (nombre completo o DNI)
+            if ($this->filtroCliente) {
                 $query->whereHas('cliente.persona', function($q) {
-                    $q->where('numero_documento', 'like', '%' . $this->filtroDni . '%');
+                    $q->where('numero_documento', 'like', '%' . $this->filtroCliente . '%')
+                      ->orWhere(DB::raw("CONCAT(nombre, ' ', apellido_paterno, ' ', apellido_materno)"), 
+                               'like', '%' . $this->filtroCliente . '%');
                 });
             }
             
+            // Filtro por mascota
             if ($this->filtroMascota) {
                 $query->whereHas('mascota', function($q) {
                     $q->where('nombre_mascota', 'like', '%' . $this->filtroMascota . '%');
                 });
             }
             
+            // Filtro por fecha
             if ($this->filtroFecha) {
                 $query->whereDate('fecha_programada', $this->filtroFecha);
             }
             
+            // Filtro por estado (solo dos tipos)
             if ($this->filtroEstado) {
-                $query->where('id_estado_cita', $this->filtroEstado);
-            } else {
-                // Por defecto, mostrar citas "En progreso" o "Completadas"
-                $query->whereIn('id_estado_cita', function($q) {
-                    $q->select('id_estado_cita')
-                      ->from('estado_citas')
-                      ->whereIn('nombre_estado_cita', ['En progreso', 'Completada']);
+                $query->whereHas('estadoCita', function($q) {
+                    $q->where('nombre_estado_cita', $this->filtroEstado);
                 });
             }
             
-            $this->citas = $query->orderBy('fecha_programada', 'desc')->get();
+            // Ordenar: primero por estado (En progreso primero), luego por fecha descendente
+            $citas = $query->get();
+            
+            // Ordenar manualmente para que las completadas vayan al final
+            $this->citas = $citas->sortBy(function($cita) {
+                // Prioridad 0: En progreso, 1: Completada
+                return $cita->estadoCita->nombre_estado_cita == 'En progreso' ? 0 : 1;
+            })->sortByDesc('fecha_programada')->values();
             
         } catch (\Exception $e) {
             Log::error('Error al cargar citas para historial', ['error' => $e->getMessage()]);
@@ -94,7 +100,7 @@ class RegistrarHistorial extends Component
         }
     }
     
-    public function updatedFiltroDni()
+    public function updatedFiltroCliente()
     {
         $this->cargarCitas();
     }
@@ -135,6 +141,11 @@ class RegistrarHistorial extends Component
                         $this->seleccionarServicio($servicioCita->id_cita_servicio);
                         break;
                     }
+                }
+                
+                // Si todos tienen historial, seleccionar el primero
+                if (!$this->servicioSeleccionado && $this->serviciosCita->count() > 0) {
+                    $this->seleccionarServicio($this->serviciosCita->first()->id_cita_servicio);
                 }
             }
         } catch (\Exception $e) {
@@ -230,13 +241,32 @@ class RegistrarHistorial extends Component
                         'id_estado_cita' => $estadoCompletado->id_estado_cita,
                         'fecha_actualizacion' => now()
                     ]);
+                    
+                    // Actualizar la cita seleccionada
+                    $this->citaSeleccionada->refresh();
                 }
             }
             
             DB::commit();
             
-            // Recargar la cita para mostrar los cambios
-            $this->seleccionarCita($this->citaSeleccionada->id_cita);
+            // Recargar los servicios de la cita
+            $this->serviciosCita = $this->citaSeleccionada->serviciosCita ?? [];
+            
+            // Mantener el mismo servicio seleccionado
+            $this->servicioSeleccionado = CitaServicio::with('servicio')
+                ->find($this->servicioSeleccionado->id_cita_servicio);
+            
+            // Actualizar el formulario con los nuevos datos
+            if ($this->servicioSeleccionado) {
+                $this->historial = [
+                    'diagnostico' => $this->servicioSeleccionado->diagnostico ?? '',
+                    'medicamentos' => $this->servicioSeleccionado->medicamentos ?? '',
+                    'recomendaciones' => $this->servicioSeleccionado->recomendaciones ?? '',
+                ];
+            }
+            
+            // Recargar la lista de citas para actualizar orden
+            $this->cargarCitas();
             
             $this->mostrarMensaje('¡Historial clínico guardado exitosamente!', 'success');
             
@@ -266,10 +296,10 @@ class RegistrarHistorial extends Component
     
     public function limpiarFiltros()
     {
-        $this->filtroDni = '';
+        $this->filtroCliente = '';
         $this->filtroMascota = '';
         $this->filtroFecha = '';
-        $this->filtroEstado = '';
+        $this->filtroEstado = 'En progreso';
         $this->cargarCitas();
     }
     

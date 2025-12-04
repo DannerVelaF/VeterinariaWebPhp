@@ -32,11 +32,11 @@
             <h3 class="font-bold text-gray-700 mb-3">🔍 Buscar Citas para Registrar Historial</h3>
             
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <!-- Filtro por DNI -->
+                <!-- Filtro por Cliente (nombre completo o DNI) -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">DNI del Cliente</label>
-                    <input type="text" wire:model.live.debounce.500ms="filtroDni"
-                        placeholder="Ingrese DNI..."
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Cliente (Nombre o DNI)</label>
+                    <input type="text" wire:model.live.debounce.500ms="filtroCliente"
+                        placeholder="Nombre completo o DNI..."
                         class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                 </div>
 
@@ -55,11 +55,12 @@
                         class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                 </div>
 
-                <!-- Filtro por Estado -->
+                <!-- Filtro por Estado (solo dos opciones) -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Estado de Cita</label>
                     <select wire:model.live.debounce.500ms="filtroEstado"
                         class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Todos</option>
                         <option value="En progreso">En progreso</option>
                         <option value="Completada">Completada</option>
                     </select>
@@ -116,6 +117,9 @@
                                                 {{ $cita->cliente?->persona?->nombre ?? 'N/A' }}
                                                 {{ $cita->cliente?->persona?->apellido_paterno ?? '' }}
                                             </p>
+                                            <p class="text-xs text-gray-500 mt-1">
+                                                DNI: {{ $cita->cliente?->persona?->numero_documento ?? 'N/A' }}
+                                            </p>
                                         </div>
                                         <span class="px-2 py-1 text-xs rounded-full 
                                             {{ $cita->estadoCita?->nombre_estado_cita == 'En progreso' ? 'bg-orange-100 text-orange-800' : 
@@ -126,6 +130,18 @@
                                     <div class="text-xs text-gray-500">
                                         <p>📅 {{ \Carbon\Carbon::parse($cita->fecha_programada)->format('d/m/Y H:i') }}</p>
                                         <p>🛎️ {{ $cita->serviciosCita->count() }} servicio(s)</p>
+                                        <!-- Indicador de progreso de historial -->
+                                        @php
+                                            $totalServicios = $cita->serviciosCita->count();
+                                            $serviciosConHistorial = $cita->serviciosCita->whereNotNull('diagnostico')->count();
+                                            $progreso = $totalServicios > 0 ? ($serviciosConHistorial / $totalServicios) * 100 : 0;
+                                        @endphp
+                                        <div class="mt-1 flex items-center gap-1">
+                                            <div class="w-full bg-gray-200 rounded-full h-1.5">
+                                                <div class="bg-blue-600 h-1.5 rounded-full" style="width: {{ $progreso }}%"></div>
+                                            </div>
+                                            <span class="text-xs">{{ number_format($progreso, 0) }}%</span>
+                                        </div>
                                     </div>
                                 </div>
                             @endforeach
@@ -152,9 +168,12 @@
                                 @if($serviciosCita->count() > 0)
                                     <div class="mt-2 flex items-center gap-2">
                                         <div class="text-sm text-gray-600">
-                                            <span class="font-medium">Progreso:</span>
+                                            <span class="font-medium">Progreso del historial:</span>
                                             <span class="ml-1 font-bold {{ $this->progresoHistorial == 100 ? 'text-green-600' : 'text-blue-600' }}">
                                                 {{ number_format($this->progresoHistorial, 0) }}%
+                                            </span>
+                                            <span class="ml-2 text-xs text-gray-500">
+                                                ({{ $serviciosCita->whereNotNull('diagnostico')->count() }}/{{ $serviciosCita->count() }} servicios)
                                             </span>
                                         </div>
                                         <div class="w-32 bg-gray-200 rounded-full h-2">
@@ -163,7 +182,7 @@
                                         </div>
                                         @if($this->todosConHistorial)
                                             <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">
-                                                ✅ Completo
+                                                ✅ Historial Completo
                                             </span>
                                         @endif
                                     </div>
@@ -187,6 +206,7 @@
                                         <span class="font-medium">Nombre:</span>
                                         {{ $citaSeleccionada->cliente?->persona?->nombre ?? 'N/A' }}
                                         {{ $citaSeleccionada->cliente?->persona?->apellido_paterno ?? '' }}
+                                        {{ $citaSeleccionada->cliente?->persona?->apellido_materno ?? '' }}
                                     </p>
                                     <p class="text-gray-700">
                                         <span class="font-medium">DNI:</span>
@@ -216,13 +236,30 @@
                                         <span class="font-medium">Sexo:</span>
                                         {{ $citaSeleccionada->mascota?->sexo == 'M' ? 'Macho' : 'Hembra' }}
                                     </p>
+                                    @if($citaSeleccionada->mascota?->fecha_nacimiento)
+                                    <p class="text-gray-700">
+                                        <span class="font-medium">Edad:</span>
+                                        {{ \Carbon\Carbon::parse($citaSeleccionada->mascota->fecha_nacimiento)->age }} años
+                                    </p>
+                                    @endif
                                 </div>
                             </div>
                         </div>
 
                         <!-- Lista de servicios -->
                         <div>
-                            <h4 class="font-semibold text-gray-700 mb-3">🛎️ Servicios de la Cita</h4>
+                            <div class="flex justify-between items-center mb-3">
+                                <h4 class="font-semibold text-gray-700 flex items-center">
+                                    🛎️ Servicios de la Cita
+                                    <span class="ml-2 text-sm text-gray-500">
+                                        ({{ $serviciosCita->count() }} servicios)
+                                    </span>
+                                </h4>
+                                <div class="text-sm text-gray-500">
+                                    <span class="text-green-600">● Completado</span>
+                                    <span class="ml-3 text-yellow-600">● Pendiente</span>
+                                </div>
+                            </div>
                             @if($serviciosCita->isEmpty())
                                 <div class="text-center py-8 text-gray-500 border border-gray-200 rounded-lg">
                                     <p>No hay servicios en esta cita</p>
@@ -231,18 +268,29 @@
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                                     @foreach($serviciosCita as $servicioCita)
                                         <div wire:click="seleccionarServicio({{ $servicioCita->id_cita_servicio }})"
-                                            class="border rounded-lg p-3 cursor-pointer transition-all duration-200
+                                            class="border rounded-lg p-3 cursor-pointer transition-all duration-200 hover:shadow-md
                                                 {{ $servicioSeleccionado && $servicioSeleccionado->id_cita_servicio == $servicioCita->id_cita_servicio 
-                                                    ? 'border-blue-400 bg-blue-50 shadow-sm' 
-                                                    : 'border-gray-200 hover:bg-gray-50 hover:shadow-sm' }}">
+                                                    ? 'border-blue-400 bg-blue-50 shadow-sm ring-2 ring-blue-200' 
+                                                    : 'border-gray-200 hover:bg-gray-50' }}">
                                             <div class="flex justify-between items-start">
                                                 <div class="flex-1">
-                                                    <p class="font-semibold text-gray-800">
+                                                    <p class="font-semibold text-gray-800 flex items-center">
                                                         {{ $servicioCita->servicio?->nombre_servicio ?? 'Servicio' }}
+                                                        @if($servicioCita->diagnostico)
+                                                            <span class="ml-2 text-green-600">●</span>
+                                                        @else
+                                                            <span class="ml-2 text-yellow-600">●</span>
+                                                        @endif
                                                     </p>
                                                     <p class="text-sm text-gray-600 mt-1">
                                                         💰 S/ {{ number_format($servicioCita->precio_aplicado, 2) }}
                                                     </p>
+                                                    @if($servicioCita->diagnostico)
+                                                        <div class="mt-2 text-xs text-gray-500">
+                                                            <p class="font-medium">Última actualización:</p>
+                                                            <p>{{ \Carbon\Carbon::parse($servicioCita->fecha_actualizacion)->format('d/m/Y H:i') }}</p>
+                                                        </div>
+                                                    @endif
                                                 </div>
                                                 <div>
                                                     @if($servicioCita->diagnostico)
@@ -265,7 +313,8 @@
                                             @if($servicioCita->diagnostico)
                                                 <div class="mt-2 pt-2 border-t border-gray-100">
                                                     <p class="text-xs text-gray-600 line-clamp-2">
-                                                        {{ Str::limit($servicioCita->diagnostico, 100) }}
+                                                        <span class="font-medium">Diagnóstico:</span>
+                                                        {{ Str::limit($servicioCita->diagnostico, 80) }}
                                                     </p>
                                                 </div>
                                             @endif
@@ -287,10 +336,17 @@
                                     </svg>
                                     Historial Clínico - {{ $servicioSeleccionado->servicio?->nombre_servicio }}
                                 </h3>
-                                <span class="text-sm px-3 py-1 rounded-full 
-                                    {{ $servicioSeleccionado->diagnostico ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800' }}">
-                                    {{ $servicioSeleccionado->diagnostico ? 'Editando' : 'Nuevo' }}
-                                </span>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-sm px-3 py-1 rounded-full 
+                                        {{ $servicioSeleccionado->diagnostico ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800' }}">
+                                        {{ $servicioSeleccionado->diagnostico ? 'Editando historial' : 'Nuevo historial' }}
+                                    </span>
+                                    @if($servicioSeleccionado->fecha_actualizacion)
+                                        <span class="text-xs text-gray-500">
+                                            Editado: {{ \Carbon\Carbon::parse($servicioSeleccionado->fecha_actualizacion)->format('d/m/Y H:i') }}
+                                        </span>
+                                    @endif
+                                </div>
                             </div>
 
                             <form wire:submit.prevent="guardarHistorial" class="space-y-4">
@@ -303,7 +359,7 @@
                                         </svg>
                                         🩺 Diagnóstico (requerido)
                                     </label>
-                                    <textarea wire:model="historial.diagnostico" rows="3"
+                                    <textarea wire:model="historial.diagnostico" rows="4"
                                         class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
                                         placeholder="Describa detalladamente el diagnóstico del paciente..."></textarea>
                                     @error('historial.diagnostico')
@@ -364,7 +420,7 @@
                                     <div class="flex gap-3">
                                         <button type="button" wire:click="resetearFormulario"
                                             class="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition-colors font-medium">
-                                            Limpiar
+                                            Limpiar Formulario
                                         </button>
                                         <button type="submit"
                                             class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium shadow-sm hover:shadow-md flex items-center gap-2">
@@ -372,7 +428,7 @@
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
                                                     d="M5 13l4 4L19 7"/>
                                             </svg>
-                                            💾 Guardar Historial
+                                            💾 {{ $servicioSeleccionado->diagnostico ? 'Actualizar' : 'Guardar' }} Historial
                                         </button>
                                     </div>
                                 </div>
@@ -385,8 +441,8 @@
                                     d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                             </svg>
                             <h3 class="text-yellow-700 font-medium text-lg mb-2">Seleccione un servicio</h3>
-                            <p class="text-yellow-600">Haga clic en uno de los servicios listados arriba para registrar el historial clínico.</p>
-                            <p class="text-yellow-600 text-sm mt-1">Los servicios marcados en verde ya tienen historial registrado.</p>
+                            <p class="text-yellow-600">Haga clic en uno de los servicios listados arriba para registrar o editar el historial clínico.</p>
+                            <p class="text-yellow-600 text-sm mt-1">Los servicios marcados en verde ya tienen historial registrado y pueden ser editados.</p>
                         </div>
                     @endif
                 @else
