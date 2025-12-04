@@ -10,38 +10,35 @@ use App\Models\Clientes;
 use App\Models\PuestoTrabajador;
 use App\Models\Trabajador;
 use App\Models\Mascota;
-
 use App\Models\CitaServicio;
-
 use App\Models\Persona;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Livewire\Component;
 
-
 class RegistrarCita extends Component
 {
-
     public $clientes = [];
     public $trabajadores = [];
     public $mascotas = [];
     public $estadosCita = [];
-    public $cantCitasNoAsistio = 0;
 
     public $clienteSeleccionado = '';
     public $trabajadorSeleccionado = '';
     public $mascotaSeleccionada = '';
     public $estadoCitaSeleccionado = '';
 
-    public $filtroCliente = '';
-    public $filtroMascota = '';
-
-    // Estadísticas
+    // Agregar estas propiedades para estadísticas
+    public $cantCitasNoAsistio = 0;
     public $cantCitasPendientes = 0;
     public $cantCitasConfirmadas = 0;
     public $cantCitasCanceladas = 0;
     public $cantCitasCompletadas = 0;
+
+
+    public $filtroCliente = '';
+    public $filtroMascota = '';
 
     // Nuevas propiedades para disponibilidad
     public $horariosDisponibles = [];
@@ -65,7 +62,6 @@ class RegistrarCita extends Component
     ];
 
     public bool $showModal = false;
-    public bool $showModalDetalle = false;
     public ?Cita $citaSeleccionada = null;
 
     public function mount()
@@ -74,13 +70,44 @@ class RegistrarCita extends Component
         $this->cargarTrabajadores();
         $this->cargarEstadosCita();
         $this->inicializarFormulario();
-        $this->calcularEstadisticas();
-
         $this->cargarServicios();
+        $this->calcularEstadisticas(); // Añadir esta línea
 
         // Fecha por defecto (mañana)
-        $this->fechaSeleccionada = now()->format('Y-m-d');
+        $this->fechaSeleccionada = now()->addDay()->format('Y-m-d');
+    }
 
+    // Agregar este método para calcular estadísticas
+    public function calcularEstadisticas()
+    {
+        $estados = EstadoCita::all();
+
+        foreach ($estados as $estado) {
+            $count = Cita::where('id_estado_cita', $estado->id_estado_cita)->count();
+
+            switch ($estado->nombre_estado_cita) {
+                case 'Pendiente':
+                    $this->cantCitasPendientes = $count;
+                    break;
+                case 'En progreso':
+                    $this->cantCitasConfirmadas = $count;
+                    break;
+                case 'Cancelada':
+                    $this->cantCitasCanceladas = $count;
+                    break;
+                case 'Completada':
+                    $this->cantCitasCompletadas = $count;
+                    break;
+                case 'No asistio':
+                    $this->cantCitasNoAsistio = $count;
+                    break;
+            }
+        }
+    }
+
+    public function actualizarEstadisticas()
+    {
+        $this->calcularEstadisticas();
     }
 
     public function cargarServicios()
@@ -141,11 +168,8 @@ class RegistrarCita extends Component
     public function seleccionarHora($hora, $fechaCompleta)
     {
         $this->horaSeleccionada = $hora;
-        // Asegurarse de que se guarde la fecha y hora completa
         $this->cita['fecha_programada'] = $fechaCompleta;
-
     }
-
 
     public function updatedFiltroCliente()
     {
@@ -172,9 +196,8 @@ class RegistrarCita extends Component
     {
         $puestoVeterinario = PuestoTrabajador::where("estado", 'activo')->first();
 
-        // Validar si se encontró el puesto de veterinario
         if (!$puestoVeterinario) {
-            $this->trabajadores = collect(); // Retorna una colección vacía
+            $this->trabajadores = collect();
             return;
         }
 
@@ -232,66 +255,15 @@ class RegistrarCita extends Component
     public function inicializarFormulario()
     {
         $this->cita = [
-            'fecha_programada' => now()->format('Y-m-d\TH:i'),
+            'fecha_programada' => '',
             'motivo' => '',
             'observaciones' => ''
         ];
 
-        // ✅ Estado por defecto SIEMPRE será "pendiente"
+        // Estado por defecto SIEMPRE será "pendiente"
         $estadoPendiente = EstadoCita::where('nombre_estado_cita', 'pendiente')->first();
         if ($estadoPendiente) {
             $this->estadoCitaSeleccionado = $estadoPendiente->id_estado_cita;
-        }
-    }
-
-    public function calcularEstadisticas()
-    {
-        $estados = EstadoCita::all();
-
-        foreach ($estados as $estado) {
-            $count = Cita::where('id_estado_cita', $estado->id_estado_cita)->count();
-
-            switch ($estado->nombre_estado_cita) {
-                case 'Pendiente':
-                    $this->cantCitasPendientes = $count;
-                    break;
-                case 'En progreso':
-                    $this->cantCitasConfirmadas = $count; // Cambiar nombre si quieres
-                    break;
-                case 'Cancelada':
-                    $this->cantCitasCanceladas = $count;
-                    break;
-                case 'Completada':
-                    $this->cantCitasCompletadas = $count;
-                    break;
-                case 'No asistio':
-                    $this->cantCitasNoAsistio = $count; // Nueva propiedad
-                    break;
-            }
-        }
-    }
-
-    public function actualizarEstadisticas()
-    {
-        $estados = EstadoCita::all();
-
-        foreach ($estados as $estado) {
-            $count = Cita::where('id_estado_cita', $estado->id_estado_cita)->count();
-
-            switch ($estado->nombre_estado_cita) {
-                case 'pendiente':
-                    $this->cantCitasPendientes = $count;
-                    break;
-                case 'confirmada':
-                    $this->cantCitasConfirmadas = $count;
-                    break;
-                case 'cancelada':
-                    $this->cantCitasCanceladas = $count;
-                    break;
-                case 'completada':
-                    $this->cantCitasCompletadas = $count;
-                    break;
-            }
         }
     }
 
@@ -305,7 +277,6 @@ class RegistrarCita extends Component
             'cita.fecha_programada' => 'required|date|after:now',
             'cita.motivo' => 'required|string|max:500',
             'cita.observaciones' => 'nullable|string|max:1000',
-
             'serviciosSeleccionados' => 'required|array|min:1',
             'serviciosSeleccionados.*' => 'exists:servicios,id_servicio',
         ], [
@@ -323,17 +294,17 @@ class RegistrarCita extends Component
             'cita.motivo.required' => 'El motivo es obligatorio.',
             'cita.motivo.max' => 'El motivo no debe exceder los 500 caracteres.',
             'cita.observaciones.max' => 'Las observaciones no deben exceder los 1000 caracteres.',
-
             'serviciosSeleccionados.required' => 'Debe seleccionar al menos un servicio.',
             'serviciosSeleccionados.min' => 'Debe seleccionar al menos un servicio.',
         ]);
 
-        // Validar Diponibilidad antes de guardar
+        // Validar Disponibilidad antes de guardar
         $disponibilidad = $this->disponibilidadService->verificarDisponibilidadTrabajador(
             $this->trabajadorSeleccionado,
             $this->cita['fecha_programada'],
             $this->serviciosSeleccionados
         );
+        
         if (!$disponibilidad['disponible']) {
             $this->dispatch('notify',
                 title: 'No disponible',
@@ -372,23 +343,32 @@ class RegistrarCita extends Component
                 }
             });
 
-            // Actualizar estadísticas después de guardar
-            $this->actualizarEstadisticas();
-
             $this->resetForm();
             $this->closeModal();
 
-            $this->dispatch('notify', title: 'Éxito', description: 'Cita registrada correctamente ✅', type: 'success');
-            $this->dispatch('citasUpdated');
+            $this->dispatch('notify', 
+                title: 'Éxito', 
+                description: 'Cita registrada correctamente ✅', 
+                type: 'success'
+            );
+
+            // Actualizar estadísticas después de guardar
+            $this->actualizarEstadisticas();
+            
+            // Redirigir a la vista de citas
+            return redirect()->route('citas.ver');
 
         } catch (\Exception $e) {
             Log::error('Error al registrar la cita', ['error' => $e->getMessage()]);
-            $this->dispatch('notify', title: 'Error', description: 'Error al registrar la cita: ' . $e->getMessage(), type: 'error');
+            $this->dispatch('notify', 
+                title: 'Error', 
+                description: 'Error al registrar la cita: ' . $e->getMessage(), 
+                type: 'error'
+            );
         }
     }
 
-    // Nuevo método para obtener información de turnos del trabajador
-    /* public function getInfoTurnosTrabajadorProperty()
+    public function getInfoTurnosTrabajadorProperty()
     {
         if (!$this->trabajadorSeleccionado) {
             return null;
@@ -396,94 +376,63 @@ class RegistrarCita extends Component
 
         $trabajador = Trabajador::with(['turnos.horarios'])->find($this->trabajadorSeleccionado);
 
-        $info = [];
-        foreach ($trabajador->turnos as $turno) {
-            $info[] = [
-                'nombre_turno' => $turno->nombre_turno,
-                'horarios' => $turno->horarios->map(function($horario) {
-                    return [
-                        'dia' => $horario->dia_semana,
-                        'inicio' => $horario->hora_inicio,
-                        'fin' => $horario->hora_fin,
-                        'descanso' => $horario->es_descanso
-                    ];
-                })
-            ];
+        if (!$trabajador) {
+            return null;
         }
 
-        return $info;
-    } */
+        $info = [];
 
-        // En tu componente Livewire
-public function getInfoTurnosTrabajadorProperty()
-{
-    if (!$this->trabajadorSeleccionado) {
-        return null;
-    }
+        $diasSemana = [
+            'lunes' => ['nombre' => 'Lunes', 'trabaja' => false, 'horarios' => [], 'descanso' => true],
+            'martes' => ['nombre' => 'Martes', 'trabaja' => false, 'horarios' => [], 'descanso' => true],
+            'miércoles' => ['nombre' => 'Miércoles', 'trabaja' => false, 'horarios' => [], 'descanso' => true],
+            'jueves' => ['nombre' => 'Jueves', 'trabaja' => false, 'horarios' => [], 'descanso' => true],
+            'viernes' => ['nombre' => 'Viernes', 'trabaja' => false, 'horarios' => [], 'descanso' => true],
+            'sábado' => ['nombre' => 'Sábado', 'trabaja' => false, 'horarios' => [], 'descanso' => true],
+            'domingo' => ['nombre' => 'Domingo', 'trabaja' => false, 'horarios' => [], 'descanso' => true],
+        ];
 
-    $trabajador = Trabajador::with(['turnos.horarios'])->find($this->trabajadorSeleccionado);
+        foreach ($trabajador->turnos as $turno) {
+            foreach ($turno->horarios as $horario) {
+                $dia = strtolower($horario->dia_semana);
 
-    if (!$trabajador) {
-        return null;
-    }
-
-    $info = [];
-
-    // Obtener todos los días de la semana en español
-    $diasSemana = [
-        'lunes' => ['nombre' => 'Lunes', 'trabaja' => false, 'horarios' => [], 'descanso' => true],
-        'martes' => ['nombre' => 'Martes', 'trabaja' => false, 'horarios' => [], 'descanso' => true],
-        'miércoles' => ['nombre' => 'Miércoles', 'trabaja' => false, 'horarios' => [], 'descanso' => true],
-        'jueves' => ['nombre' => 'Jueves', 'trabaja' => false, 'horarios' => [], 'descanso' => true],
-        'viernes' => ['nombre' => 'Viernes', 'trabaja' => false, 'horarios' => [], 'descanso' => true],
-        'sábado' => ['nombre' => 'Sábado', 'trabaja' => false, 'horarios' => [], 'descanso' => true],
-        'domingo' => ['nombre' => 'Domingo', 'trabaja' => false, 'horarios' => [], 'descanso' => true],
-    ];
-
-    // Procesar todos los turnos del trabajador
-    foreach ($trabajador->turnos as $turno) {
-        foreach ($turno->horarios as $horario) {
-            $dia = strtolower($horario->dia_semana);
-
-            if (isset($diasSemana[$dia])) {
-                if ($horario->es_descanso) {
-                    $diasSemana[$dia]['descanso'] = true;
-                    $diasSemana[$dia]['trabaja'] = false;
-                } else {
-                    $diasSemana[$dia]['trabaja'] = true;
-                    $diasSemana[$dia]['descanso'] = false;
-                    $diasSemana[$dia]['horarios'][] = [
-                        'inicio' => \Carbon\Carbon::parse($horario->hora_inicio)->format('H:i'),
-                        'fin' => \Carbon\Carbon::parse($horario->hora_fin)->format('H:i'),
-                        'turno' => $turno->nombre_turno
-                    ];
+                if (isset($diasSemana[$dia])) {
+                    if ($horario->es_descanso) {
+                        $diasSemana[$dia]['descanso'] = true;
+                        $diasSemana[$dia]['trabaja'] = false;
+                    } else {
+                        $diasSemana[$dia]['trabaja'] = true;
+                        $diasSemana[$dia]['descanso'] = false;
+                        $diasSemana[$dia]['horarios'][] = [
+                            'inicio' => \Carbon\Carbon::parse($horario->hora_inicio)->format('H:i'),
+                            'fin' => \Carbon\Carbon::parse($horario->hora_fin)->format('H:i'),
+                            'turno' => $turno->nombre_turno
+                        ];
+                    }
                 }
             }
         }
+
+        $diasOrdenados = [
+            'lunes' => $diasSemana['lunes'],
+            'martes' => $diasSemana['martes'],
+            'miércoles' => $diasSemana['miércoles'],
+            'jueves' => $diasSemana['jueves'],
+            'viernes' => $diasSemana['viernes'],
+            'sábado' => $diasSemana['sábado'],
+            'domingo' => $diasSemana['domingo'],
+        ];
+
+        return [
+            'nombre_trabajador' => $trabajador->persona ?
+                $trabajador->persona->nombre . ' ' . $trabajador->persona->apellido_paterno :
+                'Trabajador #' . $trabajador->id_trabajador,
+            'puesto' => $trabajador->puestoTrabajo?->nombre_puesto ?? 'Sin puesto asignado',
+            'dias_semana' => $diasOrdenados
+        ];
     }
 
-    // Convertir a formato de días ordenados
-    $diasOrdenados = [
-        'lunes' => $diasSemana['lunes'],
-        'martes' => $diasSemana['martes'],
-        'miércoles' => $diasSemana['miércoles'],
-        'jueves' => $diasSemana['jueves'],
-        'viernes' => $diasSemana['viernes'],
-        'sábado' => $diasSemana['sábado'],
-        'domingo' => $diasSemana['domingo'],
-    ];
-
-    return [
-        'nombre_trabajador' => $trabajador->persona ?
-            $trabajador->persona->nombre . ' ' . $trabajador->persona->apellido_paterno :
-            'Trabajador #' . $trabajador->id_trabajador,
-        'puesto' => $trabajador->puestoTrabajo?->nombre_puesto ?? 'Sin puesto asignado',
-        'dias_semana' => $diasOrdenados
-    ];
-}
-
-
-     public function getDuracionTotalFormateadaProperty()
+    public function getDuracionTotalFormateadaProperty()
     {
         $horas = floor($this->duracionTotal / 60);
         $minutos = $this->duracionTotal % 60;
@@ -493,166 +442,6 @@ public function getInfoTurnosTrabajadorProperty()
         }
 
         return "{$minutos} min";
-    }
-
-    // Nuevo método para marcar como "En progreso"
-    public function enProgresoCita()
-    {
-        try {
-            DB::transaction(function () {
-                $estadoEnProgreso = EstadoCita::where('nombre_estado_cita', 'En progreso')->first();
-
-                $cita = $this->citaSeleccionada;
-                $cita->id_estado_cita = $estadoEnProgreso->id_estado_cita;
-                $cita->fecha_actualizacion = now();
-                $cita->save();
-            });
-
-            $this->actualizarEstadisticas();
-            $this->dispatch('notify', title: 'Éxito', description: 'Cita marcada como En progreso ✅', type: 'success');
-            $this->closeModalDetalle();
-            $this->dispatch('citasUpdated');
-
-        } catch (\Exception $e) {
-            $this->dispatch('notify', title: 'Error', description: 'Error al cambiar estado de la cita: ' . $e->getMessage(), type: 'error');
-        }
-    }
-
-    public function confirmarCita()
-    {
-        try {
-            DB::transaction(function () {
-                $estadoCitaConfirmada = EstadoCita::where('nombre_estado_cita', 'confirmada')->first();
-
-                $cita = $this->citaSeleccionada;
-                $cita->id_estado_cita = $estadoCitaConfirmada->id_estado_cita;
-                $cita->fecha_actualizacion = now();
-                $cita->save();
-            });
-
-            $this->actualizarEstadisticas();
-            $this->dispatch('notify', title: 'Éxito', description: 'Cita confirmada correctamente ✅', type: 'success');
-            $this->closeModalDetalle();
-            $this->dispatch('citasUpdated');
-
-        } catch (\Exception $e) {
-            $this->dispatch('notify', title: 'Error', description: 'Error al confirmar la cita: ' . $e->getMessage(), type: 'error');
-        }
-    }
-
-    public function cancelarCita()
-    {
-        try {
-            DB::transaction(function () {
-                $estadoCitaCancelada = EstadoCita::where('nombre_estado_cita', 'Cancelada')->first();
-
-                $cita = $this->citaSeleccionada;
-                $cita->id_estado_cita = $estadoCitaCancelada->id_estado_cita;
-                $cita->fecha_actualizacion = now();
-                $cita->save();
-            });
-
-            $this->actualizarEstadisticas();
-            $this->dispatch('notify', title: 'Éxito', description: 'Cita cancelada correctamente ❌', type: 'success');
-            $this->closeModalDetalle();
-            $this->dispatch('citasUpdated');
-
-        } catch (\Exception $e) {
-            $this->dispatch('notify', title: 'Error', description: 'Error al cancelar la cita: ' . $e->getMessage(), type: 'error');
-        }
-    }
-
-    public function completarCita()
-    {
-        try {
-            DB::transaction(function () {
-                $estadoCitaCompletada = EstadoCita::where('nombre_estado_cita', 'Completada')->first();
-
-                $cita = $this->citaSeleccionada;
-                $cita->id_estado_cita = $estadoCitaCompletada->id_estado_cita;
-                $cita->fecha_actualizacion = now();
-                $cita->save();
-            });
-
-            $this->actualizarEstadisticas();
-            $this->dispatch('notify', title: 'Éxito', description: 'Cita marcada como Completada ✅', type: 'success');
-            $this->closeModalDetalle();
-            $this->dispatch('citasUpdated');
-
-        } catch (\Exception $e) {
-            $this->dispatch('notify', title: 'Error', description: 'Error al completar la cita: ' . $e->getMessage(), type: 'error');
-        }
-    }
-
-    // Nuevo método para "No asistió"
-    public function noAsistioCita()
-    {
-        try {
-            DB::transaction(function () {
-                $estadoNoAsistio = EstadoCita::where('nombre_estado_cita', 'No asistio')->first();
-
-                $cita = $this->citaSeleccionada;
-                $cita->id_estado_cita = $estadoNoAsistio->id_estado_cita;
-                $cita->fecha_actualizacion = now();
-                $cita->save();
-            });
-
-            $this->actualizarEstadisticas();
-            $this->dispatch('notify', title: 'Éxito', description: 'Cita marcada como No asistió ⚠️', type: 'success');
-            $this->closeModalDetalle();
-            $this->dispatch('citasUpdated');
-
-        } catch (\Exception $e) {
-            $this->dispatch('notify', title: 'Error', description: 'Error al marcar como no asistió: ' . $e->getMessage(), type: 'error');
-        }
-    }
-
-    public function render()
-    {
-        $citas = Cita::with([
-            'cliente.persona',
-            'trabajadorAsignado.persona',
-            'mascota',
-            'estadoCita'
-        ])
-            ->orderBy('fecha_programada', 'desc')
-            ->orderBy('id_cita', 'desc')
-            ->get();
-
-        return view('livewire.citas.registro-citas', [
-            'citas' => $citas
-        ]);
-    }
-
-    public function redirigirAClientes()
-    {
-        $this->cerrarModalCliente();
-        return redirect()->route('mantenimiento.clientes'); // Ajusta la ruta según tu configuración
-    }
-
-    public function redirigirAMascotas()
-    {
-        $this->cerrarModalCliente();
-        return redirect()->route('mantenimiento.clientes.mascotas'); // Ajusta la ruta según tu configuración
-    }
-
-    // Agregar los nuevos eventos
-    #[\Livewire\Attributes\On('en-progreso-cita')]
-    public function enProgresoCitaFn(int $rowId): void
-    {
-        $this->citaSeleccionada = Cita::find($rowId);
-        if ($this->citaSeleccionada) {
-            $this->enProgresoCita();
-        }
-    }
-
-    #[\Livewire\Attributes\On('no-asistio-cita')]
-    public function noAsistioCitaFn(int $rowId): void
-    {
-        $this->citaSeleccionada = Cita::find($rowId);
-        if ($this->citaSeleccionada) {
-            $this->noAsistioCita();
-        }
     }
 
     public function openModal(): void
@@ -667,40 +456,7 @@ public function getInfoTurnosTrabajadorProperty()
         $this->resetForm();
     }
 
-    public function closeModalDetalle(): void
-    {
-        $this->showModalDetalle = false;
-        $this->citaSeleccionada = null;
-    }
-
-    /* public function resetForm()
-    {
-        $this->inicializarFormulario();
-        $this->clienteSeleccionado = '';
-        $this->mascotaSeleccionada = '';
-        $this->trabajadorSeleccionado = '';
-        $this->filtroCliente = '';
-        $this->mascotas = [];
-
-        // Restablecer estado por defecto
-        $estadoPendiente = EstadoCita::where('nombre_estado_cita', 'pendiente')->first();
-        if ($estadoPendiente) {
-            $this->estadoCitaSeleccionado = $estadoPendiente->id_estado_cita;
-        }
-    } */
-
-    /* public function resetForm()
-    {
-        parent::resetForm();
-
-        $this->serviciosSeleccionados = [];
-        $this->horariosDisponibles = [];
-        $this->fechaSeleccionada = now()->addDay()->format('Y-m-d');
-        $this->horaSeleccionada = '';
-        $this->duracionTotal = 0;
-    } */
-
-        public function resetForm()
+    public function resetForm()
     {
         $this->inicializarFormulario();
         $this->clienteSeleccionado = '';
@@ -714,51 +470,9 @@ public function getInfoTurnosTrabajadorProperty()
         $this->horaSeleccionada = '';
         $this->duracionTotal = 0;
 
-        // Restablecer estado por defecto
         $estadoPendiente = EstadoCita::where('nombre_estado_cita', 'pendiente')->first();
         if ($estadoPendiente) {
             $this->estadoCitaSeleccionado = $estadoPendiente->id_estado_cita;
-        }
-    }
-
-    #[\Livewire\Attributes\On('show-modal-cita')]
-    public function showModal(int $rowId): void
-    {
-        $this->citaSeleccionada = Cita::with([
-            'cliente.persona',
-            'trabajadorAsignado.persona',
-            'mascota',
-            'estadoCita',
-            //'servicios'
-        ])->find($rowId);
-
-        $this->showModalDetalle = true;
-    }
-
-    #[\Livewire\Attributes\On('confirmar-cita')]
-    public function confirmarCitaFn(int $rowId): void
-    {
-        $this->citaSeleccionada = Cita::find($rowId);
-        if ($this->citaSeleccionada) {
-            $this->confirmarCita();
-        }
-    }
-
-    #[\Livewire\Attributes\On('cancelar-cita')]
-    public function cancelarCitaFn(int $rowId): void
-    {
-        $this->citaSeleccionada = Cita::find($rowId);
-        if ($this->citaSeleccionada) {
-            $this->cancelarCita();
-        }
-    }
-
-    #[\Livewire\Attributes\On('completar-cita')]
-    public function completarCitaFn(int $rowId): void
-    {
-        $this->citaSeleccionada = Cita::find($rowId);
-        if ($this->citaSeleccionada) {
-            $this->completarCita();
         }
     }
 
@@ -789,9 +503,18 @@ public function getInfoTurnosTrabajadorProperty()
         ];
     }
 
-    public function cerrarModalCliente()
+    public function redirigirAClientes()
     {
-        // Método para cerrar modal si es necesario
-        $this->filtroCliente = '';
+        return redirect()->route('mantenimiento.clientes');
+    }
+
+    public function redirigirAMascotas()
+    {
+        return redirect()->route('mantenimiento.clientes.mascotas');
+    }
+
+    public function render()
+    {
+        return view('livewire.citas.registrar-cita');
     }
 }

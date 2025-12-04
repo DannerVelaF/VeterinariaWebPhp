@@ -18,6 +18,7 @@ use App\Livewire\Ventas\RegistrarVenta as RegistrarVenta;
 
 //  🔹 Módulo para citas
 use App\Livewire\Citas\RegistrarCita as RegistrarCita;
+use App\Livewire\Citas\VerCitas as VerCitas;
 
 //  🔹 Módulo para Historial
 use App\Livewire\Historial\RegistrarHistorial;
@@ -132,6 +133,7 @@ Route::middleware('auth')->group(function () {
         |--------------------------------------------------------------------------
         */
         Route::get('/citas', RegistrarCita::class)->name('citas.registrar');
+        Route::get('/citas/ver', VerCitas::class)->name('citas.ver');
 
         /*
 
