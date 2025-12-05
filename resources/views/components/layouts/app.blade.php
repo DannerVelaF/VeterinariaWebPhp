@@ -13,24 +13,48 @@
     <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
 </head>
 
-<body class="bg-gray-50 antialiased">
-<div class="flex min-h-screen max-w-full">
+<body class="bg-gray-50 antialiased text-gray-900">
+<div class="flex min-h-screen relative" x-data="{ sidebarOpen: false }">
 
-    {{-- Sidebar mejorado --}}
+    {{-- RESPONSIVE: Overlay oscuro para cerrar el menú al hacer click fuera (solo móvil) --}}
+    <div x-show="sidebarOpen"
+         @click="sidebarOpen = false"
+         x-transition:enter="transition-opacity ease-linear duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition-opacity ease-linear duration-300"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 bg-gray-900/80 z-40 lg:hidden"
+         style="display: none;"></div>
+
+    {{-- SIDEBAR --}}
+    {{-- RESPONSIVE:
+         1. Cambiado min-w-[15%] por w-64 (ancho fijo es mejor para sidebars).
+         2. Logic CSS: fixed en móvil (z-50), static/relative en escritorio (lg:static).
+         3. Transformaciones para ocultar/mostrar.
+    --}}
     <aside id="default-sidebar"
-           class=" min-w-[15%] min-h-screen transition-transform -translate-x-full sm:translate-x-0 bg-white shadow-xl border-r border-gray-200"
+           class="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-xl border-r border-gray-200 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0"
+           :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
            aria-label="Sidebar">
 
-        <div class="h-full flex flex-col">
+        <div class="h-full flex flex-col relative">
+            {{-- Botón cerrar en móvil dentro del sidebar --}}
+            <button @click="sidebarOpen = false" class="absolute top-4 right-4 text-gray-500 lg:hidden">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+
             {{-- Header del sidebar --}}
             <div class="px-6 py-6 border-b border-gray-200 bg-gradient-to-br from-gray-50 to-white">
                 <div class="flex flex-col items-center">
                     <div class="relative group mb-4">
                         <div
-                            class="absolute inset-0 bg-blue-100 rounded-full blur-xl opacity-40 group-hover:opacity-60 transition-opacity duration-300">
-                        </div>
+                            class="absolute inset-0 bg-blue-100 rounded-full blur-xl opacity-40 group-hover:opacity-60 transition-opacity duration-300"></div>
                         <img src="/images/logo.jpg" alt="Logo ADELA"
-                             class="relative h-20 w-20 rounded-full border-4 border-white shadow-xl transform group-hover:scale-105 transition-transform duration-300">
+                             class="relative h-20 w-20 rounded-full border-4 border-white shadow-xl transform group-hover:scale-105 transition-transform duration-300 object-cover">
                     </div>
                     <h2 class="text-xl font-bold text-gray-800 text-center">ADELA</h2>
                     <p class="text-sm text-gray-600 text-center mt-1">Veterinaria & Spa</p>
@@ -40,12 +64,11 @@
             {{-- Navegación --}}
             <div class="flex-1 overflow-y-auto px-3 py-4">
                 <livewire:menu-lateral/>
-
             </div>
 
             {{-- Footer del sidebar --}}
             <div class="px-4 py-3 border-t border-gray-200 bg-gray-50">
-                <div class="flex items-center text-xs text-gray-500">
+                <div class="flex items-center text-xs text-gray-500 justify-center lg:justify-start">
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                               d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -56,74 +79,84 @@
         </div>
     </aside>
 
-    {{-- Contenedor principal --}}
-    <div class="flex-1 max-w-[85%]">
-        <main class="min-h-screen flex flex-col">
-            {{-- Header mejorado --}}
-            <header class="sticky top-0 z-30 bg-white shadow-sm border-b border-gray-200">
-                <div class="px-6 py-4 flex items-center justify-between">
+    {{-- CONTENEDOR PRINCIPAL --}}
+    {{-- RESPONSIVE: Cambiado max-w-[85%] por flex-1 w-full para que ocupe el resto del espacio automáticamente --}}
+    <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+
+        {{-- Header mejorado --}}
+        <header class="sticky top-0 z-30 bg-white shadow-sm border-b border-gray-200">
+            <div class="px-4 sm:px-6 py-4 flex items-center justify-between">
+
+                <div class="flex items-center gap-3">
+                    {{-- RESPONSIVE: Botón Hamburguesa (Solo visible en móvil) --}}
+                    <button @click="sidebarOpen = true"
+                            class="text-gray-500 hover:text-gray-700 focus:outline-none lg:hidden p-1 rounded-md hover:bg-gray-100">
+                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M4 6h16M4 12h16M4 18h16"/>
+                        </svg>
+                    </button>
+
                     {{-- Título --}}
-                    <div class="flex items-center space-x-3">
-                        <div>
-                            <h1 class="text-xl font-bold text-gray-800">
-                                Adela Veterinaria & Spa
-                            </h1>
-                            <p class="text-xs text-gray-500 hidden sm:block">Sistema de Gestión Integral</p>
-                        </div>
-                    </div>
-
-                    {{-- Sección derecha: Usuario --}}
-                    <div class="flex items-center space-x-3">
-                        {{-- Información del usuario --}}
-                        <div class="hidden md:flex flex-col items-end">
-                                    <span class="text-sm font-semibold text-gray-800">
-                                        {{ Auth::user()->persona->nombre }}
-                                        {{ Auth::user()->persona->apellido_paterno }}
-                                    </span>
-                            <span class="text-xs text-gray-500">
-                                        {{ Auth::user()->rol->nombre_rol ?? 'Usuario' }}
-                                    </span>
-                        </div>
-
-                        {{-- Dropdown de usuario --}}
-                        <flux:dropdown position="bottom" align="end">
-                            <button type="button"
-                                    class="flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 focus:ring-2 focus:ring-blue-300 transition-all group">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                     stroke-width="2" stroke="currentColor"
-                                     class="w-6 h-6 text-gray-700 group-hover:text-gray-900">
-                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                          d="M15.75 7.5a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0zM4.5 20.25a8.25 8.25 0 1 1 15 0"/>
-                                </svg>
-                            </button>
-
-                            <flux:menu class="min-w-48">
-                                {{-- Información móvil --}}
-                                <div class="md:hidden px-4 py-3 border-b border-gray-100">
-                                    <p class="text-sm font-semibold text-gray-800">
-                                        {{ Auth::user()->persona->nombre }}
-                                        {{ Auth::user()->persona->apellido_paterno }}
-                                    </p>
-                                    <p class="text-xs text-gray-500 mt-1">
-                                        {{ Auth::user()->email }}
-                                    </p>
-                                </div>
-
-                                <flux:menu.item icon="arrow-right-start-on-rectangle"
-                                                onclick="window.location.href='{{ route('logout') }}'"
-                                                class="text-red-600 hover:text-red-700 hover:bg-red-50">
-                                    Cerrar sesión
-                                </flux:menu.item>
-                            </flux:menu>
-                        </flux:dropdown>
+                    <div>
+                        <h1 class="text-lg sm:text-xl font-bold text-gray-800 truncate">
+                            Adela Vet <span class="hidden sm:inline">& Spa</span>
+                        </h1>
+                        <p class="text-xs text-gray-500 hidden sm:block">Sistema de Gestión Integral</p>
                     </div>
                 </div>
-            </header>
 
-            {{-- Contenido --}}
-            <div class="flex-1 p-6 bg-gray-50">
-                {{ $slot }}
+                {{-- Sección derecha: Usuario --}}
+                <div class="flex items-center space-x-3">
+                    {{-- Información del usuario (Oculto en móvil muy pequeño) --}}
+                    <div class="hidden md:flex flex-col items-end">
+                        <span class="text-sm font-semibold text-gray-800">
+                            {{ Auth::user()->persona->nombre ?? 'Usuario' }}
+                            {{ Auth::user()->persona->apellido_paterno ?? '' }}
+                        </span>
+                        <span class="text-xs text-gray-500">
+                            {{ Auth::user()->rol->nombre_rol ?? 'Usuario' }}
+                        </span>
+                    </div>
+
+                    {{-- Dropdown de usuario --}}
+                    <flux:dropdown position="bottom" align="end">
+                        <button type="button"
+                                class="flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 focus:ring-2 focus:ring-blue-300 transition-all group overflow-hidden">
+                            {{-- Si tienes foto de perfil usa img, sino svg --}}
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                 stroke-width="2" stroke="currentColor"
+                                 class="w-6 h-6 text-gray-700 group-hover:text-gray-900">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                      d="M15.75 7.5a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0zM4.5 20.25a8.25 8.25 0 1 1 15 0"/>
+                            </svg>
+                        </button>
+
+                        <flux:menu class="min-w-48">
+                            {{-- Información móvil dentro del menú --}}
+                            <div class="md:hidden px-4 py-3 border-b border-gray-100 bg-gray-50">
+                                <p class="text-sm font-semibold text-gray-800">
+                                    {{ Auth::user()->persona->nombre ?? 'Usuario' }}
+                                </p>
+                                <p class="text-xs text-gray-500 mt-1 truncate">
+                                    {{ Auth::user()->email }}
+                                </p>
+                            </div>
+
+                            <flux:menu.item icon="arrow-right-start-on-rectangle"
+                                            onclick="window.location.href='{{ route('logout') }}'"
+                                            class="text-red-600 hover:text-red-700 hover:bg-red-50">
+                                Cerrar sesión
+                            </flux:menu.item>
+                        </flux:menu>
+                    </flux:dropdown>
+                </div>
             </div>
+        </header>
+
+        {{-- Contenido Scrollable --}}
+        <main class="flex-1 overflow-y-auto bg-gray-50 p-4 sm:p-6">
+            {{ $slot }}
         </main>
     </div>
 </div>
