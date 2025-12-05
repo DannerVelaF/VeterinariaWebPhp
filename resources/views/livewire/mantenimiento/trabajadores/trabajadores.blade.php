@@ -749,7 +749,7 @@
                     <div class="col-span-2 flex justify-end mt-6 space-x-2">
                         <button type="reset" class="bg-gray-500 text-white px-4 py-2 rounded">Limpiar</button>
                         <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Registrar
-                            Traaajador
+                            Trabajador
                         </button>
                     </div>
                 </form>
