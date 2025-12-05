@@ -72,6 +72,12 @@ class RegistrarCita extends Component
         'observaciones' => ''
     ];
 
+    protected $listeners = [
+    'editar-cita-event' => 'cargarCitaParaEditar',
+    'cambiar-estado-cita-event' => 'cambiarEstadoCita',
+    'citasUpdated' => '$refresh',
+    ];
+
     public bool $showModal = false;
     public ?Cita $citaSeleccionada = null;
 
@@ -89,6 +95,120 @@ class RegistrarCita extends Component
 
         // Rango por defecto para calendario (semana actual)
         $this->rangoFechaCalendario = now()->format('Y-m-d');
+    }
+
+    public function cargarCitaParaEditar($citaId)
+    {
+        try {
+            $this->citaSeleccionada = Cita::with([
+                'cliente.persona',
+                'mascota',
+                'estadoCita',
+                'serviciosCita.servicio',
+                'trabajadorAsignado.persona'
+            ])->findOrFail($citaId);
+
+            // Cargar datos en el formulario
+            $this->clienteSeleccionado = $this->citaSeleccionada->id_cliente;
+            $this->mascotaSeleccionada = $this->citaSeleccionada->id_mascota;
+            $this->trabajadorSeleccionado = $this->citaSeleccionada->id_trabajador_asignado;
+            $this->estadoCitaSeleccionado = $this->citaSeleccionada->id_estado_cita;
+            
+            // Cargar servicios seleccionados
+            $this->serviciosSeleccionados = $this->citaSeleccionada->serviciosCita
+                ->pluck('id_servicio')
+                ->toArray();
+            
+            // Cargar datos adicionales de la cita
+            $this->cita = [
+                'fecha_programada' => $this->citaSeleccionada->fecha_programada,
+                'motivo' => $this->citaSeleccionada->motivo,
+                'observaciones' => $this->citaSeleccionada->observaciones
+            ];
+            
+            // Parsear fecha y hora
+            $fechaHora = Carbon::parse($this->citaSeleccionada->fecha_programada);
+            $this->fechaSeleccionada = $fechaHora->format('Y-m-d');
+            $this->horaSeleccionada = $fechaHora->format('H:i');
+            
+            // Cargar mascotas del cliente
+            $this->cargarMascotas();
+            
+            // Actualizar horarios disponibles
+            if ($this->trabajadorSeleccionado && $this->fechaSeleccionada) {
+                $this->actualizarHorariosDisponibles();
+            }
+            
+            // Abrir modal
+            $this->showModal = true;
+            
+            $this->dispatch('notify',
+                title: 'Cita cargada',
+                description: 'Puede editar los datos de la cita.',
+                type: 'info'
+            );
+
+        } catch (\Exception $e) {
+            Log::error('Error al cargar cita para editar', ['error' => $e->getMessage()]);
+            $this->dispatch('notify',
+                title: 'Error',
+                description: 'No se pudo cargar la cita para editar.',
+                type: 'error'
+            );
+        }
+    }
+
+    public function cambiarEstadoCita($params)
+    {
+        try {
+            // Verificar si $params es un array con las claves correctas
+            if (!is_array($params) || !isset($params['rowId']) || !isset($params['nuevoEstado'])) {
+                throw new \Exception("Parámetros inválidos para cambiar el estado de la cita.");
+            }
+            
+            $citaId = $params['rowId'];
+            $nuevoEstadoNombre = $params['nuevoEstado'];
+            
+            // Buscar el estado por nombre
+            $nuevoEstado = EstadoCita::where('nombre_estado_cita', $nuevoEstadoNombre)->first();
+            
+            if (!$nuevoEstado) {
+                throw new \Exception("Estado no encontrado: {$nuevoEstadoNombre}");
+            }
+
+            DB::transaction(function () use ($citaId, $nuevoEstado, $nuevoEstadoNombre) {
+                $cita = Cita::findOrFail($citaId);
+                $cita->update([
+                    'id_estado_cita' => $nuevoEstado->id_estado_cita,
+                    'fecha_actualizacion' => now()
+                ]);
+                
+                // Si el estado es "Completada", podrías agregar lógica adicional aquí
+                if ($nuevoEstadoNombre == 'Completada') {
+                    // Lógica para citas completadas (ej: generar factura, historial, etc.)
+                }
+            });
+
+            $this->dispatch('notify',
+                title: 'Estado actualizado',
+                description: 'El estado de la cita se actualizó correctamente.',
+                type: 'success'
+            );
+
+            // Actualizar estadísticas
+            $this->actualizarEstadisticas();
+            
+            // Disparar evento para refrescar la tabla
+            $this->dispatch('citasUpdated');
+
+        } catch (\Exception $e) {
+            Log::error('Error al cambiar estado de cita', ['error' => $e->getMessage()]);
+            $this->dispatch('notify',
+                title: 'Error',
+                description: 'No se pudo actualizar el estado de la cita: ' . $e->getMessage(),
+                type: 'error'
+            );
+        }
     }
 
     // Nuevo método para obtener los días no laborales del trabajador
@@ -130,25 +250,36 @@ class RegistrarCita extends Component
         return array_unique($diasNoLaborales);
     }
 
-    /* private function calcularDisponibilidadPorDia($fechaInicio, $fechaFin)
+    
+
+    private function calcularDisponibilidadPorDia($fechaInicio, $fechaFin)
     {
         $periodo = CarbonPeriod::create($fechaInicio, $fechaFin);
         $this->fechasDisponibilidad = [];
 
+        // Asegurar que sea colección
+        $citasColeccion = $this->citasVeterinario instanceof \Illuminate\Support\Collection 
+            ? $this->citasVeterinario 
+            : collect($this->citasVeterinario);
+
         foreach ($periodo as $fecha) {
             $fechaStr = $fecha->format('Y-m-d');
-            $diaSemanaIngles = strtolower($fecha->englishDayOfWeek); // 'monday', 'tuesday', etc.
+            $diaSemanaIngles = strtolower($fecha->englishDayOfWeek);
             
             // Verificar si es día no laboral
             $esDiaNoLaboral = in_array($diaSemanaIngles, $this->diasNoLaborales);
             
             // Obtener citas para este día
-            $citasDelDia = $this->citasVeterinario->filter(function ($cita) use ($fechaStr) {
+            $citasDelDia = $citasColeccion->filter(function ($cita) use ($fechaStr) {
                 return Carbon::parse($cita->fecha_programada)->format('Y-m-d') === $fechaStr;
             });
 
             // Calcular horas ocupadas
             $horasOcupadas = $citasDelDia->sum(function ($cita) {
+                if (!$cita->serviciosCita) {
+                    return 0;
+                }
+                
                 return $cita->serviciosCita->sum(function ($citaServicio) {
                     return $citaServicio->servicio->duracion_estimada ?? 0;
                 });
@@ -171,10 +302,10 @@ class RegistrarCita extends Component
             }
 
             // Para días laborales, calcular disponibilidad
-            $jornadaLaboral = 480; // 8 horas en minutos
+            $jornadaLaboral = 480;
             $porcentajeOcupacion = $horasOcupadas > 0 ? ($horasOcupadas / $jornadaLaboral) * 100 : 0;
             
-            // Determinar disponibilidad basada en ocupación
+            // Determinar disponibilidad
             if ($porcentajeOcupacion >= 90) {
                 $disponibilidad = 'muy_baja';
                 $puedeSeleccionar = false;
@@ -210,107 +341,21 @@ class RegistrarCita extends Component
                 })->toArray()
             ];
         }
-    } */
-
-        private function calcularDisponibilidadPorDia($fechaInicio, $fechaFin)
-{
-    $periodo = CarbonPeriod::create($fechaInicio, $fechaFin);
-    $this->fechasDisponibilidad = [];
-
-    // Asegurar que sea colección
-    $citasColeccion = $this->citasVeterinario instanceof \Illuminate\Support\Collection 
-        ? $this->citasVeterinario 
-        : collect($this->citasVeterinario);
-
-    foreach ($periodo as $fecha) {
-        $fechaStr = $fecha->format('Y-m-d');
-        $diaSemanaIngles = strtolower($fecha->englishDayOfWeek);
-        
-        // Verificar si es día no laboral
-        $esDiaNoLaboral = in_array($diaSemanaIngles, $this->diasNoLaborales);
-        
-        // Obtener citas para este día
-        $citasDelDia = $citasColeccion->filter(function ($cita) use ($fechaStr) {
-            return Carbon::parse($cita->fecha_programada)->format('Y-m-d') === $fechaStr;
-        });
-
-        // Calcular horas ocupadas
-        $horasOcupadas = $citasDelDia->sum(function ($cita) {
-            if (!$cita->serviciosCita) {
-                return 0;
-            }
-            
-            return $cita->serviciosCita->sum(function ($citaServicio) {
-                return $citaServicio->servicio->duracion_estimada ?? 0;
-            });
-        });
-
-        // Si es día no laboral, marcarlo como no disponible
-        if ($esDiaNoLaboral) {
-            $this->fechasDisponibilidad[$fechaStr] = [
-                'fecha' => $fechaStr,
-                'fecha_formateada' => $fecha->translatedFormat('d M'),
-                'dia_semana' => $fecha->translatedFormat('l'),
-                'total_citas' => 0,
-                'horas_ocupadas' => 0,
-                'porcentaje_ocupacion' => 0,
-                'disponibilidad' => 'no_laboral',
-                'es_no_laboral' => true,
-                'puede_seleccionar' => false
-            ];
-            continue;
-        }
-
-        // Para días laborales, calcular disponibilidad
-        $jornadaLaboral = 480;
-        $porcentajeOcupacion = $horasOcupadas > 0 ? ($horasOcupadas / $jornadaLaboral) * 100 : 0;
-        
-        // Determinar disponibilidad
-        if ($porcentajeOcupacion >= 90) {
-            $disponibilidad = 'muy_baja';
-            $puedeSeleccionar = false;
-        } elseif ($porcentajeOcupacion >= 80) {
-            $disponibilidad = 'baja';
-            $puedeSeleccionar = true;
-        } elseif ($porcentajeOcupacion >= 50) {
-            $disponibilidad = 'media';
-            $puedeSeleccionar = true;
-        } else {
-            $disponibilidad = 'alta';
-            $puedeSeleccionar = true;
-        }
-        
-        $this->fechasDisponibilidad[$fechaStr] = [
-            'fecha' => $fechaStr,
-            'fecha_formateada' => $fecha->translatedFormat('d M'),
-            'dia_semana' => $fecha->translatedFormat('l'),
-            'total_citas' => $citasDelDia->count(),
-            'horas_ocupadas' => $horasOcupadas,
-            'porcentaje_ocupacion' => min(100, $porcentajeOcupacion),
-            'disponibilidad' => $disponibilidad,
-            'es_no_laboral' => false,
-            'puede_seleccionar' => $puedeSeleccionar,
-            'citas' => $citasDelDia->map(function($cita) {
-                return [
-                    'hora' => Carbon::parse($cita->fecha_programada)->format('H:i'),
-                    'duracion' => $cita->serviciosCita->sum(function ($citaServicio) {
-                        return $citaServicio->servicio->duracion_estimada ?? 0;
-                    }) ?: 60,
-                    'estado' => $cita->estadoCita->nombre_estado_cita
-                ];
-            })->toArray()
-        ];
     }
-}
 
-    // Nuevo método para obtener próximos horarios disponibles después de citas existentes
-    /* public function obtenerHorariosDespuesDeCitas($fecha)
+    
+    public function obtenerHorariosDespuesDeCitas($fecha)
     {
         if (!$this->trabajadorSeleccionado || !$fecha) {
             return [];
         }
 
-        $citasDelDia = $this->citasVeterinario->filter(function ($cita) use ($fecha) {
+        // Convertir a colección si es necesario
+        $citasColeccion = $this->citasVeterinario instanceof \Illuminate\Support\Collection 
+            ? $this->citasVeterinario 
+            : collect($this->citasVeterinario);
+
+        $citasDelDia = $citasColeccion->filter(function ($cita) use ($fecha) {
             return Carbon::parse($cita->fecha_programada)->format('Y-m-d') === $fecha;
         })->sortBy('fecha_programada');
 
@@ -330,40 +375,7 @@ class RegistrarCita extends Component
             $horaSlot = Carbon::parse($slot['fecha_completa']);
             return $horaSlot->greaterThanOrEqualTo($horaFinUltimaCita);
         })->values()->toArray();
-    } */
-
-        public function obtenerHorariosDespuesDeCitas($fecha)
-{
-    if (!$this->trabajadorSeleccionado || !$fecha) {
-        return [];
     }
-
-    // Convertir a colección si es necesario
-    $citasColeccion = $this->citasVeterinario instanceof \Illuminate\Support\Collection 
-        ? $this->citasVeterinario 
-        : collect($this->citasVeterinario);
-
-    $citasDelDia = $citasColeccion->filter(function ($cita) use ($fecha) {
-        return Carbon::parse($cita->fecha_programada)->format('Y-m-d') === $fecha;
-    })->sortBy('fecha_programada');
-
-    if ($citasDelDia->isEmpty()) {
-        return $this->horariosDisponibles;
-    }
-
-    // Obtener la última cita del día
-    $ultimaCita = $citasDelDia->last();
-    $horaFinUltimaCita = Carbon::parse($ultimaCita->fecha_programada)
-        ->addMinutes($ultimaCita->serviciosCita->sum(function ($citaServicio) {
-            return $citaServicio->servicio->duracion_estimada ?? 0;
-        }) ?: 60);
-
-    // Filtrar horarios disponibles que sean después de la última cita
-    return collect($this->horariosDisponibles)->filter(function ($slot) use ($horaFinUltimaCita) {
-        $horaSlot = Carbon::parse($slot['fecha_completa']);
-        return $horaSlot->greaterThanOrEqualTo($horaFinUltimaCita);
-    })->values()->toArray();
-}
 
     public function seleccionarFechaCalendario($fecha)
     {
@@ -536,15 +548,6 @@ class RegistrarCita extends Component
         $this->actualizarHorariosDisponibles();
     }
 
-    /* public function updatedTrabajadorSeleccionado($value)
-    {
-        if ($value && $this->fechaSeleccionada) {
-            $this->actualizarHorariosDisponibles();
-        } else {
-            $this->horariosDisponibles = [];
-        }
-    } */
-
     public function updatedTrabajadorSeleccionado($value)
     {
         if ($value && $this->fechaSeleccionada) {
@@ -560,9 +563,15 @@ class RegistrarCita extends Component
         }
     }
 
-    /* public function estaOcupadoEnHora($fecha, $hora)
+
+    public function estaOcupadoEnHora($fecha, $hora)
     {
-        $citasDelDia = $this->citasVeterinario->filter(function ($cita) use ($fecha) {
+        // Convertir a colección si es necesario
+        $citasColeccion = $this->citasVeterinario instanceof \Illuminate\Support\Collection 
+            ? $this->citasVeterinario 
+            : collect($this->citasVeterinario);
+
+        $citasDelDia = $citasColeccion->filter(function ($cita) use ($fecha) {
             return Carbon::parse($cita->fecha_programada)->format('Y-m-d') === $fecha;
         });
 
@@ -581,35 +590,7 @@ class RegistrarCita extends Component
         }
 
         return false;
-    } */
-
-    public function estaOcupadoEnHora($fecha, $hora)
-{
-    // Convertir a colección si es necesario
-    $citasColeccion = $this->citasVeterinario instanceof \Illuminate\Support\Collection 
-        ? $this->citasVeterinario 
-        : collect($this->citasVeterinario);
-
-    $citasDelDia = $citasColeccion->filter(function ($cita) use ($fecha) {
-        return Carbon::parse($cita->fecha_programada)->format('Y-m-d') === $fecha;
-    });
-
-    foreach ($citasDelDia as $cita) {
-        $horaCita = Carbon::parse($cita->fecha_programada);
-        $duracionCita = $cita->serviciosCita->sum(function ($citaServicio) {
-            return $citaServicio->servicio->duracion_estimada ?? 0;
-        }) ?: 60;
-        $horaFinCita = $horaCita->copy()->addMinutes($duracionCita);
-        
-        $horaSeleccionada = Carbon::parse($fecha . ' ' . $hora);
-        
-        if ($horaSeleccionada->between($horaCita, $horaFinCita)) {
-            return true;
-        }
     }
-
-    return false;
-}
 
 
     public function updatedRangoFechaCalendario($value)
@@ -829,17 +810,25 @@ class RegistrarCita extends Component
 
     public function guardar()
     {
-        $this->validate([
+            $reglas = [
             'clienteSeleccionado' => 'required|exists:clientes,id_cliente',
             'mascotaSeleccionada' => 'required|exists:mascotas,id_mascota',
             'trabajadorSeleccionado' => 'required|exists:trabajadores,id_trabajador',
             'estadoCitaSeleccionado' => 'required|exists:estado_citas,id_estado_cita',
-            'cita.fecha_programada' => 'required|date|after:now',
             'cita.motivo' => 'required|string|max:500',
             'cita.observaciones' => 'nullable|string|max:1000',
             'serviciosSeleccionados' => 'required|array|min:1',
             'serviciosSeleccionados.*' => 'exists:servicios,id_servicio',
-        ], [
+        ];
+
+        // Para nuevas citas, la fecha debe ser futura
+        if (!$this->citaSeleccionada) {
+            $reglas['cita.fecha_programada'] = 'required|date|after:now';
+        } else {
+            $reglas['cita.fecha_programada'] = 'required|date';
+        }
+
+        $this->validate($reglas, [
             'clienteSeleccionado.required' => 'El cliente es obligatorio.',
             'clienteSeleccionado.exists' => 'El cliente seleccionado no es válido.',
             'mascotaSeleccionada.required' => 'La mascota es obligatoria.',
@@ -874,26 +863,43 @@ class RegistrarCita extends Component
             return;
         }
 
-        try {
+            try {
             DB::transaction(function () {
-                // Crear la cita
-                $cita = Cita::create([
-                    'id_cliente' => $this->clienteSeleccionado,
-                    'id_mascota' => $this->mascotaSeleccionada,
-                    'id_trabajador_asignado' => $this->trabajadorSeleccionado,
-                    'id_estado_cita' => $this->estadoCitaSeleccionado,
-                    'fecha_programada' => $this->cita['fecha_programada'],
-                    'motivo' => $this->cita['motivo'],
-                    'observaciones' => $this->cita['observaciones'] ?? null,
-                    'fecha_registro' => now(),
-                    'fecha_actualizacion' => now(),
-                ]);
+                if ($this->citaSeleccionada) {
+                    // ACTUALIZAR CITA EXISTENTE
+                    $this->citaSeleccionada->update([
+                        'id_cliente' => $this->clienteSeleccionado,
+                        'id_mascota' => $this->mascotaSeleccionada,
+                        'id_trabajador_asignado' => $this->trabajadorSeleccionado,
+                        'id_estado_cita' => $this->estadoCitaSeleccionado,
+                        'fecha_programada' => $this->cita['fecha_programada'],
+                        'motivo' => $this->cita['motivo'],
+                        'observaciones' => $this->cita['observaciones'] ?? null,
+                        'fecha_actualizacion' => now(),
+                    ]);
+
+                    // Eliminar servicios antiguos
+                    CitaServicio::where('id_cita', $this->citaSeleccionada->id_cita)->delete();
+                } else {
+                    // CREAR NUEVA CITA
+                    $this->citaSeleccionada = Cita::create([
+                        'id_cliente' => $this->clienteSeleccionado,
+                        'id_mascota' => $this->mascotaSeleccionada,
+                        'id_trabajador_asignado' => $this->trabajadorSeleccionado,
+                        'id_estado_cita' => $this->estadoCitaSeleccionado,
+                        'fecha_programada' => $this->cita['fecha_programada'],
+                        'motivo' => $this->cita['motivo'],
+                        'observaciones' => $this->cita['observaciones'] ?? null,
+                        'fecha_registro' => now(),
+                        'fecha_actualizacion' => now(),
+                    ]);
+                }
 
                 // Crear servicios de la cita
                 foreach ($this->serviciosSeleccionados as $servicioId) {
                     $servicio = Servicio::find($servicioId);
                     CitaServicio::create([
-                        'id_cita' => $cita->id_cita,
+                        'id_cita' => $this->citaSeleccionada->id_cita,
                         'id_servicio' => $servicioId,
                         'precio_aplicado' => $servicio->precio_unitario,
                         'cantidad' => 1,
@@ -906,92 +912,30 @@ class RegistrarCita extends Component
             $this->resetForm();
             $this->closeModal();
 
+            $mensaje = $this->citaSeleccionada ? 'Cita actualizada correctamente ✅' : 'Cita registrada correctamente ✅';
+            
             $this->dispatch('notify', 
                 title: 'Éxito', 
-                description: 'Cita registrada correctamente ✅', 
+                description: $mensaje, 
                 type: 'success'
             );
 
             // Actualizar estadísticas después de guardar
             $this->actualizarEstadisticas();
             
-            // Redirigir a la vista de citas
-            //return redirect()->route('citas.ver');
+            // Disparar evento para refrescar la tabla
+            $this->dispatch('citasUpdated');
 
         } catch (\Exception $e) {
             Log::error('Error al registrar la cita', ['error' => $e->getMessage()]);
             $this->dispatch('notify', 
                 title: 'Error', 
-                description: 'Error al registrar la cita: ' . $e->getMessage(), 
+                description: 'Error al guardar la cita: ' . $e->getMessage(), 
                 type: 'error'
             );
         }
     }
-
-    /* public function getInfoTurnosTrabajadorProperty()
-    {
-        if (!$this->trabajadorSeleccionado) {
-            return null;
-        }
-
-        $trabajador = Trabajador::with(['turnos.horarios'])->find($this->trabajadorSeleccionado);
-
-        if (!$trabajador) {
-            return null;
-        }
-
-        $info = [];
-
-        $diasSemana = [
-            'lunes' => ['nombre' => 'Lunes', 'trabaja' => false, 'horarios' => [], 'descanso' => true],
-            'martes' => ['nombre' => 'Martes', 'trabaja' => false, 'horarios' => [], 'descanso' => true],
-            'miércoles' => ['nombre' => 'Miércoles', 'trabaja' => false, 'horarios' => [], 'descanso' => true],
-            'jueves' => ['nombre' => 'Jueves', 'trabaja' => false, 'horarios' => [], 'descanso' => true],
-            'viernes' => ['nombre' => 'Viernes', 'trabaja' => false, 'horarios' => [], 'descanso' => true],
-            'sábado' => ['nombre' => 'Sábado', 'trabaja' => false, 'horarios' => [], 'descanso' => true],
-            'domingo' => ['nombre' => 'Domingo', 'trabaja' => false, 'horarios' => [], 'descanso' => true],
-        ];
-
-        foreach ($trabajador->turnos as $turno) {
-            foreach ($turno->horarios as $horario) {
-                $dia = strtolower($horario->dia_semana);
-
-                if (isset($diasSemana[$dia])) {
-                    if ($horario->es_descanso) {
-                        $diasSemana[$dia]['descanso'] = true;
-                        $diasSemana[$dia]['trabaja'] = false;
-                    } else {
-                        $diasSemana[$dia]['trabaja'] = true;
-                        $diasSemana[$dia]['descanso'] = false;
-                        $diasSemana[$dia]['horarios'][] = [
-                            'inicio' => \Carbon\Carbon::parse($horario->hora_inicio)->format('H:i'),
-                            'fin' => \Carbon\Carbon::parse($horario->hora_fin)->format('H:i'),
-                            'turno' => $turno->nombre_turno
-                        ];
-                    }
-                }
-            }
-        }
-
-        $diasOrdenados = [
-            'lunes' => $diasSemana['lunes'],
-            'martes' => $diasSemana['martes'],
-            'miércoles' => $diasSemana['miércoles'],
-            'jueves' => $diasSemana['jueves'],
-            'viernes' => $diasSemana['viernes'],
-            'sábado' => $diasSemana['sábado'],
-            'domingo' => $diasSemana['domingo'],
-        ];
-
-        return [
-            'nombre_trabajador' => $trabajador->persona ?
-                $trabajador->persona->nombre . ' ' . $trabajador->persona->apellido_paterno :
-                'Trabajador #' . $trabajador->id_trabajador,
-            'puesto' => $trabajador->puestoTrabajo?->nombre_puesto ?? 'Sin puesto asignado',
-            'dias_semana' => $diasOrdenados
-        ];
-    } */
-
+    
     public function getDuracionTotalFormateadaProperty()
     {
         $horas = floor($this->duracionTotal / 60);
@@ -1029,6 +973,7 @@ class RegistrarCita extends Component
         $this->fechaSeleccionada = now()->addDay()->format('Y-m-d');
         $this->horaSeleccionada = '';
         $this->duracionTotal = 0;
+        $this->citaSeleccionada = null; 
 
         $estadoPendiente = EstadoCita::where('nombre_estado_cita', 'pendiente')->first();
         if ($estadoPendiente) {

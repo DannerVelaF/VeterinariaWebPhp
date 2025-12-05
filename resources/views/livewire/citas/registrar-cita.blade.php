@@ -1105,6 +1105,18 @@
     @push('scripts')
 <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.9/index.global.min.js'></script>
 <script>
+    document.addEventListener('livewire:init', () => {
+        Livewire.on('confirmar-cambio-estado', (data) => {
+            if (confirm(data.mensaje)) {
+                Livewire.dispatch('confirmar-cambiar-estado', {
+                    citaId: data.citaId,
+                    estado: data.estado
+                });
+            }
+        });
+    });
+</script>
+<script>
     // Inicializar FullCalendar si es necesario
     document.addEventListener('livewire:init', () => {
         Livewire.on('citasCargadas', (eventos) => {

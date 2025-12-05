@@ -221,44 +221,77 @@ final class CitaTable extends PowerGridComponent
         ];
     }
 
-    #[\Livewire\Attributes\On('edit')]
-    public function edit($rowId): void
+    #[\Livewire\Attributes\On('editar-cita')]
+    public function editarCita($rowId): void
     {
-        $this->js('alert(' . $rowId . ')');
+        $this->dispatch('editar-cita-event', $rowId);
+    }
+
+    #[\Livewire\Attributes\On('cambiar-estado-cita')]
+    public function cambiarEstadoCita($rowId, $nuevoEstado): void
+    {
+        $this->dispatch('cambiar-estado-cita-event', $rowId, $nuevoEstado);
     }
 
     public function actions(Cita $row): array
     {
         return [
-            Button::add('ver')
-                ->slot('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-eye-icon lucide-eye"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>')
+            // Botón EDITAR (en lugar de solo ver)
+            Button::add('editar')
+                ->slot('<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="blue" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pencil">
+                        <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
+                        <path d="m15 5 4 4"/>
+                    </svg>')
                 ->id()
-                ->class('pg-btn-white dark:bg-pg-primary-700')
-                ->dispatch('show-modal-cita', ['rowId' => $row->id_cita]),
+                ->class('pg-btn-white dark:bg-pg-primary-700 hover:bg-blue-50')
+                ->dispatch('editar-cita', ['rowId' => $row->id_cita])
+                ->tooltip('Editar cita'),
 
+            // Botón para cambiar a "En progreso"
             Button::add('en-progreso')
-                ->slot('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="blue" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-play-icon lucide-play"><polygon points="6 3 20 12 6 21 6 3"/></svg>')
+                ->slot('<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="blue" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-play">
+                        <polygon points="6 3 20 12 6 21 6 3"/>
+                    </svg>')
                 ->id()
-                ->class('pg-btn-white dark:bg-pg-primary-700')
-                ->dispatch('en-progreso-cita', ['rowId' => $row->id_cita]),
+                ->class('pg-btn-white dark:bg-pg-primary-700 hover:bg-blue-50')
+                ->dispatch('cambiar-estado-cita', ['rowId' => $row->id_cita, 'nuevoEstado' => 'En progreso'])
+                ->tooltip('Marcar como En progreso'),
 
+            // Botón para cambiar a "Completada"
             Button::add('completar')
-                ->slot('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="green" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check-circle-icon lucide-check-circle"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>')
+                ->slot('<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="green" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check-circle">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                        <polyline points="22 4 12 14.01 9 11.01"/>
+                    </svg>')
                 ->id()
-                ->class('pg-btn-white dark:bg-pg-primary-700')
-                ->dispatch('completar-cita', ['rowId' => $row->id_cita]),
+                ->class('pg-btn-white dark:bg-pg-primary-700 hover:bg-green-50')
+                ->dispatch('cambiar-estado-cita', ['rowId' => $row->id_cita, 'nuevoEstado' => 'Completada'])
+                ->tooltip('Marcar como Completada'),
 
+            // Botón para cambiar a "Cancelada"
             Button::add('cancelar')
-                ->slot('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="red" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-x-icon lucide-circle-x"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>')
+                ->slot('<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="red" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-circle">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="m15 9-6 6"/>
+                        <path d="m9 9 6 6"/>
+                    </svg>')
                 ->id()
-                ->class('pg-btn-white dark:bg-pg-primary-700')
-                ->dispatch('cancelar-cita', ['rowId' => $row->id_cita]),
+                ->class('pg-btn-white dark:bg-pg-primary-700 hover:bg-red-50')
+                ->dispatch('cambiar-estado-cita', ['rowId' => $row->id_cita, 'nuevoEstado' => 'Cancelada'])
+                ->tooltip('Cancelar cita'),
 
+            // Botón para cambiar a "No asistio"
             Button::add('no-asistio')
-                ->slot('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="gray" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-user-x-icon lucide-user-x"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="m17 8 5 5"/><path d="m22 8-5 5"/></svg>')
+                ->slot('<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="orange" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-user-x">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                        <circle cx="9" cy="7" r="4"/>
+                        <path d="m17 8 5 5"/>
+                        <path d="m22 8-5 5"/>
+                    </svg>')
                 ->id()
-                ->class('pg-btn-white dark:bg-pg-primary-700')
-                ->dispatch('no-asistio-cita', ['rowId' => $row->id_cita]),
+                ->class('pg-btn-white dark:bg-pg-primary-700 hover:bg-orange-50')
+                ->dispatch('cambiar-estado-cita', ['rowId' => $row->id_cita, 'nuevoEstado' => 'No asistio'])
+                ->tooltip('Marcar como No asistió'),
         ];
     }
 
@@ -270,25 +303,27 @@ final class CitaTable extends PowerGridComponent
                 ->when(fn($row) => $row->estadoCita->nombre_estado_cita !== 'Pendiente')
                 ->hide(),
 
-            // Ocultar botón completar si la cita no está En progreso
+            // Ocultar botón "completar" si la cita no está "En progreso"
             Rule::button('completar')
                 ->when(fn($row) => $row->estadoCita->nombre_estado_cita !== 'En progreso')
                 ->hide(),
 
-            // Ocultar botón cancelar si la cita ya está Cancelada, Completada o No asistio
+            // Ocultar botones "cancelar" y "no-asistio" si la cita ya está en estado final
             Rule::button('cancelar')
                 ->when(fn($row) => in_array($row->estadoCita->nombre_estado_cita, ['Completada', 'Cancelada', 'No asistio']))
                 ->hide(),
 
-            // Ocultar botón "no asistio" si la cita ya está Cancelada, Completada o No asistio
             Rule::button('no-asistio')
                 ->when(fn($row) => in_array($row->estadoCita->nombre_estado_cita, ['Completada', 'Cancelada', 'No asistio']))
                 ->hide(),
 
-            // Mostrar solo el botón ver para citas Completada, Cancelada, No asistio
-            Rule::button('ver')
-                ->when(fn($row) => in_array($row->estadoCita->nombre_estado_cita, ['Completada', 'Cancelada', 'No asistio']))
-                ->setAttribute('class', 'pg-btn-white dark:bg-pg-primary-700'),
+            // El botón editar no necesita regla, ya que siempre será visible
+            // Pero podrías agregar reglas adicionales si necesitas
+            // Por ejemplo, ocultar edición si la cita está completada
+            Rule::button('editar')
+                ->when(fn($row) => $row->estadoCita->nombre_estado_cita === 'Completada')
+                ->setAttribute('class', 'pg-btn-white dark:bg-pg-primary-700 opacity-50 cursor-not-allowed')
+                ->disable(),
         ];
     }
 }
