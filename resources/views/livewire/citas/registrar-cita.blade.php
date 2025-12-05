@@ -72,6 +72,22 @@
                 <p class="font-medium text-3xl">{{ $cantCitasCompletadas }}</p>
             </div>
         </x-card>
+
+        <!-- Citas No asistio -->
+        <x-card>
+            <div class="h-[100px] flex flex-col justify-between">
+                <div class="flex justify-between items-center">
+                    <p>Citas No asistió</p>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-user-x text-gray-500">
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                    <circle cx="9" cy="7" r="4"/>
+                    <line x1="17" x2="22" y1="8" y2="13"/>
+                    <line x1="22" x2="17" y1="8" y2="13"/>
+                    </svg>
+                </div>
+                <p class="font-medium text-3xl">{{ $cantCitasNoAsistio }}</p>
+            </div>
+        </x-card>
     </div>
 
     <x-card>
@@ -539,99 +555,471 @@
     </div>
 </div>
 
-                <!-- SECCIÓN 4: FECHA Y HORA -->
-                @if($trabajadorSeleccionado && count($serviciosSeleccionados) > 0)
-                <div class="border-t pt-6">
-                    <h3 class="font-bold text-gray-700 text-lg mb-4">📅 Seleccionar Fecha y Hora</h3>
+
+<!-- SECCIÓN 3.5: CALENDARIO DE CITAS DEL VETERINARIO -->
+@if($trabajadorSeleccionado)
+<div class="border-t pt-6">
+    <div class="flex justify-between items-center mb-4">
+        <h3 class="font-bold text-gray-700 text-lg">🗓️ Calendario de Citas del Veterinario</h3>
+        <button type="button" wire:click="toggleCalendario"
+            class="inline-flex items-center gap-2 px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+            {{ $mostrarCalendario ? 'Ocultar Calendario' : 'Mostrar Calendario' }}
+        </button>
+    </div>
+
+    @if($mostrarCalendario)
+    <div class="bg-white border border-gray-200 rounded-lg p-4 mb-6">
+        <!-- Controles del calendario -->
+        <div class="flex justify-between items-center mb-4">
+            <div class="flex items-center gap-3">
+                <input type="month" wire:model.live="rangoFechaCalendario" 
+                    class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <span class="text-sm text-gray-600">
+                    Mostrando {{ \Carbon\Carbon::parse($rangoFechaCalendario . '-01')->translatedFormat('F Y') }}
+                </span>
+            </div>
+            
+            <!-- Leyenda mejorada -->
+            <div class="flex items-center gap-3 text-xs">
+                <div class="flex items-center">
+                    <div class="w-3 h-3 bg-gray-200 rounded-full mr-1"></div>
+                    <span>No laboral</span>
+                </div>
+                <div class="flex items-center">
+                    <div class="w-3 h-3 bg-red-100 rounded-full mr-1"></div>
+                    <span>Muy ocupado</span>
+                </div>
+                <div class="flex items-center">
+                    <div class="w-3 h-3 bg-yellow-100 rounded-full mr-1"></div>
+                    <span>Ocupado</span>
+                </div>
+                <div class="flex items-center">
+                    <div class="w-3 h-3 bg-green-100 rounded-full mr-1"></div>
+                    <span>Disponible</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Encabezados de días de la semana -->
+        <div class="grid grid-cols-7 gap-2 mb-2">
+            @foreach(['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'] as $dia)
+                <div class="text-center text-sm font-semibold text-gray-600 p-2">
+                    {{ $dia }}
+                </div>
+            @endforeach
+        </div>
+
+        <!-- Grid de disponibilidad por día - MES COMPLETO -->
+        <div class="grid grid-cols-7 gap-2 mb-6">
+            @php
+                $fechaInicio = \Carbon\Carbon::parse($rangoFechaCalendario . '-01')->startOfMonth();
+                $fechaFin = $fechaInicio->copy()->endOfMonth();
+                $diasMes = $fechaInicio->daysInMonth;
+                $primerDiaSemana = $fechaInicio->dayOfWeekIso; // 1=lunes, 7=domingo
+            @endphp
+            
+            <!-- Espacios vacíos al inicio del mes -->
+            @for($i = 1; $i < $primerDiaSemana; $i++)
+                <div class="p-3 border rounded-lg bg-gray-50"></div>
+            @endfor
+            
+            <!-- Días del mes -->
+            @for($dia = 1; $dia <= $diasMes; $dia++)
+                @php
+                    $fecha = $fechaInicio->copy()->addDays($dia - 1);
+                    $fechaStr = $fecha->format('Y-m-d');
+                    $disponibilidad = $fechasDisponibilidad[$fechaStr] ?? null;
                     
-                    <div class="grid grid-cols-2 gap-6">
-                        <!-- Selector de Fecha -->
-                        <div class="space-y-3">
-                            <label class="font-semibold text-gray-700">Fecha de la Cita:</label>
-                            <input wire:model.live="fechaSeleccionada" type="date" 
-                                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                min="{{ now()->format('Y-m-d') }}">
-                            @error('fechaSeleccionada')
-                                <span class="text-red-500 text-sm">{{ $message }}</span>
-                            @enderror
-                            
-                            @if($fechaSeleccionada)
-                                <div class="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                    // Determinar colores y clases
+                    $bgClass = 'bg-white';
+                    $textClass = 'text-gray-800';
+                    $hoverClass = 'hover:bg-gray-50';
+                    $disabled = false;
+                    
+                    if ($disponibilidad) {
+                        if ($disponibilidad['es_no_laboral']) {
+                            $bgClass = 'bg-gray-100';
+                            $textClass = 'text-gray-400';
+                            $hoverClass = '';
+                            $disabled = true;
+                        } elseif ($disponibilidad['disponibilidad'] === 'muy_baja') {
+                            $bgClass = 'bg-red-100';
+                            $textClass = 'text-red-700';
+                            $hoverClass = 'hover:bg-red-200';
+                            $disabled = true;
+                        } elseif ($disponibilidad['disponibilidad'] === 'baja') {
+                            $bgClass = 'bg-orange-100';
+                            $textClass = 'text-orange-700';
+                            $hoverClass = 'hover:bg-orange-200';
+                            $disabled = false;
+                        } elseif ($disponibilidad['disponibilidad'] === 'media') {
+                            $bgClass = 'bg-yellow-100';
+                            $textClass = 'text-yellow-700';
+                            $hoverClass = 'hover:bg-yellow-200';
+                            $disabled = false;
+                        } else {
+                            $bgClass = 'bg-green-100';
+                            $textClass = 'text-green-700';
+                            $hoverClass = 'hover:bg-green-200';
+                            $disabled = false;
+                        }
+                    }
+                @endphp
+                
+                <button type="button" 
+                    wire:click="seleccionarFechaCalendario('{{ $fechaStr }}')"
+                    @if($disabled) disabled @endif
+                    class="p-3 border rounded-lg text-center transition-colors {{ $bgClass }} {{ $textClass }} {{ $hoverClass }}
+                           {{ $fechaSeleccionada === $fechaStr ? 'ring-2 ring-blue-500 ring-offset-2' : '' }}
+                           @if($disabled) cursor-not-allowed opacity-75 @endif
+                           min-h-[80px] flex flex-col justify-between">
+                    
+                    <div class="text-sm font-semibold">{{ $dia }}</div>
+                    
+                    @if($disponibilidad)
+                        @if($disponibilidad['es_no_laboral'])
+                            <div class="text-xs mt-1">
+                                <div class="text-gray-500">✗</div>
+                                <div class="text-[10px] mt-1">No laboral</div>
+                            </div>
+                        @elseif($disponibilidad['total_citas'] > 0)
+                            <div class="text-xs mt-1">
+                                <div class="font-medium mb-1">
+                                    {{ $disponibilidad['total_citas'] }} cita(s)
+                                </div>
+                                @if($disponibilidad['horas_ocupadas'] > 0)
+                                    <div class="mb-1">
+                                        {{ floor($disponibilidad['horas_ocupadas']/60) }}h {{ $disponibilidad['horas_ocupadas']%60 }}min
+                                    </div>
+                                @endif
+                                <div class="mt-1">
+                                    <div class="w-full bg-gray-200 rounded-full h-1.5">
+                                        <div class="bg-blue-600 h-1.5 rounded-full" 
+                                             style="width: {{ min(100, $disponibilidad['porcentaje_ocupacion']) }}%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        @else
+                            <div class="text-xs text-green-600 font-medium mt-1">Libre</div>
+                        @endif
+                    @else
+                        <div class="text-xs text-gray-500 mt-1">Cargando...</div>
+                    @endif
+                </button>
+            @endfor
+        </div>
+
+        <!-- Información detallada de disponibilidad -->
+        @if($fechaSeleccionada && isset($fechasDisponibilidad[$fechaSeleccionada]))
+            @php
+                $infoDia = $fechasDisponibilidad[$fechaSeleccionada];
+                $horariosDespuesCitas = $this->obtenerHorariosDespuesDeCitas($fechaSeleccionada);
+            @endphp
+            
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                <h4 class="font-semibold text-blue-800 mb-3">
+                    📅 Información para {{ \Carbon\Carbon::parse($fechaSeleccionada)->translatedFormat('l, d \\d\\e F') }}
+                </h4>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <p class="text-sm font-medium text-gray-700">Estado:</p>
+                        @if($infoDia['es_no_laboral'])
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                                Día no laboral
+                            </span>
+                        @elseif($infoDia['disponibilidad'] === 'muy_baja')
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                                </svg>
+                                Muy ocupado
+                            </span>
+                        @elseif($infoDia['disponibilidad'] === 'baja')
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                                ⚠️ Poco disponible
+                            </span>
+                        @elseif($infoDia['disponibilidad'] === 'media')
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                📊 Disponibilidad media
+                            </span>
+                        @else
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                ✅ Buena disponibilidad
+                            </span>
+                        @endif
+                    </div>
+                    
+                    <div>
+                        <p class="text-sm font-medium text-gray-700">Citas programadas:</p>
+                        <p class="text-lg font-bold text-blue-700">{{ $infoDia['total_citas'] }}</p>
+                    </div>
+                    
+                    <div>
+                        <p class="text-sm font-medium text-gray-700">Tiempo ocupado:</p>
+                        <p class="text-lg font-bold text-blue-700">
+                            {{ floor($infoDia['horas_ocupadas']/60) }}h {{ $infoDia['horas_ocupadas']%60 }}min
+                        </p>
+                    </div>
+                    
+                    <div>
+                        <p class="text-sm font-medium text-gray-700">Ocupación:</p>
+                        <p class="text-lg font-bold text-blue-700">
+                            {{ number_format($infoDia['porcentaje_ocupacion'], 1) }}%
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- Mostrar horarios disponibles después de citas existentes -->
+                @if(!$infoDia['es_no_laboral'] && $infoDia['total_citas'] > 0)
+                    <div class="mt-4 pt-4 border-t border-blue-200">
+                        <p class="text-sm font-medium text-gray-700 mb-2">
+                            🕒 Horarios disponibles después de las citas existentes:
+                        </p>
+                        @if(count($horariosDespuesCitas) > 0)
+                            <div class="grid grid-cols-3 gap-2">
+                                @foreach($horariosDespuesCitas as $slot)
+                                    <button type="button" 
+                                        wire:click="seleccionarHora('{{ $slot['formato'] }}', '{{ $slot['fecha_completa'] }}')"
+                                        class="p-2 text-sm border border-green-300 rounded-lg bg-green-50 hover:bg-green-100 transition">
+                                        {{ $slot['formato'] }}
+                                    </button>
+                                @endforeach
+                            </div>
+                        @else
+                            <p class="text-sm text-gray-600">No hay horarios disponibles después de las citas existentes.</p>
+                        @endif
+                    </div>
+                @endif
+            </div>
+        @endif
+
+        <!-- Lista de citas (se mantiene igual pero con mejoras) -->
+        <div>
+            <h4 class="font-semibold text-gray-700 mb-3">📋 Citas Programadas del Mes</h4>
+            
+            @if(count($citasVeterinario) > 0)
+                <div class="space-y-3 max-h-96 overflow-y-auto p-3 border border-gray-200 rounded-lg">
+                    @foreach($citasVeterinario as $cita)
+                        @php
+                            $color = $this->getColorByEstado($cita->estadoCita->nombre_estado_cita);
+                            $duracionTotal = $cita->serviciosCita->sum(function ($citaServicio) {
+                                return $citaServicio->servicio->duracion_estimada ?? 0;
+                            }) ?: 60;
+                        @endphp
+                        
+                        <div class="p-4 border-l-4 rounded-lg bg-white shadow-sm" 
+                             style="border-left-color: {{ $color }};">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <span class="font-semibold text-gray-900">
+                                            {{ $cita->mascota->nombre_mascota ?? 'Sin mascota' }}
+                                        </span>
+                                        <span class="px-2 py-1 text-xs rounded-full font-medium"
+                                              style="background-color: {{ $color }}20; color: {{ $color }};">
+                                            {{ $cita->estadoCita->nombre_estado_cita }}
+                                        </span>
+                                    </div>
+                                    <p class="text-sm text-gray-600 mb-1">
+                                        🕒 {{ \Carbon\Carbon::parse($cita->fecha_programada)->format('d/m/Y H:i') }}
+                                    </p>
                                     <p class="text-sm text-gray-600">
-                                        📅 {{ \Carbon\Carbon::parse($fechaSeleccionada)->translatedFormat('l, d \\d\\e F \\d\\e Y') }}
+                                        👤 {{ $cita->cliente->persona->nombre ?? 'N/A' }} 
+                                        {{ $cita->cliente->persona->apellido_paterno ?? '' }}
+                                    </p>
+                                </div>
+                                
+                                <div class="text-right">
+                                    <p class="text-sm font-medium text-gray-700">
+                                        {{ $duracionTotal }} min
+                                    </p>
+                                    <p class="text-xs text-gray-500">
+                                        {{ $cita->serviciosCita->count() }} servicio(s)
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            @if($cita->motivo)
+                                <div class="mt-2 pt-2 border-t border-gray-100">
+                                    <p class="text-xs text-gray-600">
+                                        <span class="font-medium">Motivo:</span> 
+                                        {{ \Illuminate\Support\Str::limit($cita->motivo, 100) }}
                                     </p>
                                 </div>
                             @endif
                         </div>
+                    @endforeach
+                </div>
+            @else
+                <div class="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
+                    <svg class="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                    <p class="text-gray-500 font-medium">No hay citas programadas para este mes</p>
+                    <p class="text-gray-400 text-sm mt-1">El veterinario está disponible para nuevas citas</p>
+                </div>
+            @endif
+        </div>
+    </div>
+    @endif
+</div>
+@endif
 
-                        <!-- Horarios Disponibles -->
-                        <div class="space-y-3">
-                            <label class="font-semibold text-gray-700">Horarios Disponibles:</label>
-                            
-                            @if(count($horariosDisponibles) > 0)
-                                <div class="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto p-3 border border-gray-200 rounded-lg bg-white">
-                                    @foreach ($horariosDisponibles as $slot)
-                                        <button type="button" 
-                                            wire:click="seleccionarHora('{{ $slot['formato'] }}', '{{ $slot['fecha_completa'] }}')"
-                                            class="p-3 text-sm border rounded-lg transition-all duration-200 
-                                                   {{ $horaSeleccionada === $slot['formato'] 
-                                                       ? 'bg-green-500 text-white border-green-600 shadow-md transform scale-105' 
-                                                       : 'bg-white border-gray-300 hover:bg-green-50 hover:border-green-300 hover:shadow-sm' }}">
-                                            <div class="font-medium">{{ $slot['formato'] }}</div>
-                                            <div class="text-xs opacity-75 mt-1">
-                                                @php
-                                                    $horas = floor($duracionTotal / 60);
-                                                    $minutos = $duracionTotal % 60;
-                                                    $duracionFormateada = $horas > 0 ? "{$horas}h {$minutos}min" : "{$minutos} min";
-                                                @endphp
-                                                {{ $duracionFormateada }}
-                                            </div>
-                                        </button>
-                                    @endforeach
-                                </div>
+                <!-- SECCIÓN 4: FECHA Y HORA -->
+                <!-- SECCIÓN 4: FECHA Y HORA -->
+@if($trabajadorSeleccionado && count($serviciosSeleccionados) > 0 && $fechaSeleccionada)
+<div class="border-t pt-6">
+    <h3 class="font-bold text-gray-700 text-lg mb-4">📅 Seleccionar Fecha y Hora</h3>
+    
+    <!-- Advertencia si el día está muy ocupado -->
+    @if(isset($fechasDisponibilidad[$fechaSeleccionada]) && $fechasDisponibilidad[$fechaSeleccionada]['disponibilidad'] === 'muy_baja')
+        <div class="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <div class="flex items-center">
+                <svg class="w-5 h-5 text-red-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                </svg>
+                <div>
+                    <p class="font-medium text-red-700">Este día está muy ocupado ({{ $fechasDisponibilidad[$fechaSeleccionada]['porcentaje_ocupacion'] }}% ocupación)</p>
+                    <p class="text-sm text-red-600 mt-1">Considere seleccionar otro día para evitar conflictos</p>
+                </div>
+            </div>
+        </div>
+    @endif
+    
+    <div class="grid grid-cols-2 gap-6">
+        <!-- Selector de Fecha -->
+        <div class="space-y-3">
+            <label class="font-semibold text-gray-700">Fecha de la Cita:</label>
+            <input wire:model.live="fechaSeleccionada" type="date" 
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                min="{{ now()->format('Y-m-d') }}">
+            @error('fechaSeleccionada')
+                <span class="text-red-500 text-sm">{{ $message }}</span>
+            @enderror
+            
+            @if($fechaSeleccionada)
+                <div class="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                    <p class="text-sm text-gray-600">
+                        📅 {{ \Carbon\Carbon::parse($fechaSeleccionada)->translatedFormat('l, d \\d\\e F \\d\\e Y') }}
+                    </p>
+                    @if(isset($fechasDisponibilidad[$fechaSeleccionada]))
+                        <p class="text-sm text-gray-600 mt-1">
+                            {{ $fechasDisponibilidad[$fechaSeleccionada]['total_citas'] }} cita(s) programada(s)
+                        </p>
+                    @endif
+                </div>
+            @endif
+        </div>
+
+        <!-- Horarios Disponibles -->
+        <div class="space-y-3">
+            <label class="font-semibold text-gray-700">Horarios Disponibles:</label>
+            
+            @if(count($horariosDisponibles) > 0)
+                <div class="max-h-64 overflow-y-auto">
+                    <!-- Horarios regulares -->
+                    <div class="mb-3">
+                        <p class="text-sm font-medium text-gray-600 mb-2">Horarios disponibles:</p>
+                        <div class="grid grid-cols-3 gap-2 p-3 border border-gray-200 rounded-lg bg-white">
+                            @foreach ($horariosDisponibles as $slot)
+                                @php
+                                    $ocupado = $this->estaOcupadoEnHora($fechaSeleccionada, $slot['formato']);
+                                @endphp
                                 
-                                @if($horaSeleccionada)
-                                    <div class="bg-green-50 border border-green-200 rounded-lg p-3">
-                                        <p class="text-green-700 font-semibold flex items-center">
-                                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                                            </svg>
-                                            Hora seleccionada: {{ $horaSeleccionada }}
-                                        </p>
-                                        <p class="text-green-600 text-sm mt-1">
-                                            Duración: 
-                                            @php
-                                                $horas = floor($duracionTotal / 60);
-                                                $minutos = $duracionTotal % 60;
-                                                $duracionFormateada = $horas > 0 ? "{$horas}h {$minutos}min" : "{$minutos} min";
-                                            @endphp
-                                            {{ $duracionFormateada }}
-                                        </p>
+                                <button type="button" 
+                                    wire:click="seleccionarHora('{{ $slot['formato'] }}', '{{ $slot['fecha_completa'] }}')"
+                                    @if($ocupado) disabled @endif
+                                    class="p-3 text-sm border rounded-lg transition-all duration-200 
+                                           {{ $horaSeleccionada === $slot['formato'] 
+                                               ? 'bg-green-500 text-white border-green-600 shadow-md transform scale-105' 
+                                               : ($ocupado 
+                                                   ? 'bg-gray-100 text-gray-400 border-gray-300 cursor-not-allowed' 
+                                                   : 'bg-white border-gray-300 hover:bg-green-50 hover:border-green-300 hover:shadow-sm') }}">
+                                    <div class="font-medium">{{ $slot['formato'] }}</div>
+                                    <div class="text-xs opacity-75 mt-1">
+                                        {{ $duracionTotal }} min
                                     </div>
-                                @endif
-                            @else
-                                <div class="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
-                                    <svg class="w-8 h-8 text-red-500 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
-                                    </svg>
-                                    <p class="text-red-700 font-medium">No hay horarios disponibles</p>
-                                    <p class="text-red-600 text-sm mt-1">
-                                        El trabajador no tiene disponibilidad para esta fecha
-                                    </p>
-                                </div>
-                            @endif
+                                    @if($ocupado)
+                                        <div class="text-[10px] text-red-500 mt-1">Ocupado</div>
+                                    @endif
+                                </button>
+                            @endforeach
                         </div>
                     </div>
                     
-                    <!-- Campo oculto para la fecha completa -->
-                    <input type="hidden" wire:model="cita.fecha_programada">
-                    @error('cita.fecha_programada')
-                        <div class="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
-                            <span class="text-red-600 text-sm">{{ $message }}</span>
-                        </div>
-                    @enderror
+                    <!-- Horarios después de citas existentes -->
+                    @if(isset($fechasDisponibilidad[$fechaSeleccionada]) && $fechasDisponibilidad[$fechaSeleccionada]['total_citas'] > 0)
+                        @php
+                            $horariosDespues = $this->obtenerHorariosDespuesDeCitas($fechaSeleccionada);
+                        @endphp
+                        
+                        @if(count($horariosDespues) > 0)
+                            <div>
+                                <p class="text-sm font-medium text-gray-600 mb-2">Horarios después de citas existentes:</p>
+                                <div class="grid grid-cols-3 gap-2 p-3 border border-blue-200 rounded-lg bg-blue-50">
+                                    @foreach ($horariosDespues as $slot)
+                                        <button type="button" 
+                                            wire:click="seleccionarHora('{{ $slot['formato'] }}', '{{ $slot['fecha_completa'] }}')"
+                                            class="p-3 text-sm border border-blue-300 rounded-lg transition-all duration-200 
+                                                   {{ $horaSeleccionada === $slot['formato'] 
+                                                       ? 'bg-blue-500 text-white border-blue-600 shadow-md transform scale-105' 
+                                                       : 'bg-white border-blue-300 hover:bg-blue-50 hover:border-blue-400 hover:shadow-sm' }}">
+                                            <div class="font-medium">{{ $slot['formato'] }}</div>
+                                            <div class="text-xs opacity-75 mt-1">
+                                                {{ $duracionTotal }} min
+                                            </div>
+                                            <div class="text-[10px] text-blue-600 mt-1">Disponible</div>
+                                        </button>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endif
+                    @endif
                 </div>
+                
+                @if($horaSeleccionada)
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-3">
+                        <p class="text-green-700 font-semibold flex items-center">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                            </svg>
+                            Hora seleccionada: {{ $horaSeleccionada }}
+                        </p>
+                        <p class="text-green-600 text-sm mt-1">
+                            Duración: {{ $duracionTotal }} min
+                        </p>
+                    </div>
                 @endif
+            @else
+                <div class="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
+                    <svg class="w-8 h-8 text-red-500 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                    </svg>
+                    <p class="text-red-700 font-medium">No hay horarios disponibles</p>
+                    <p class="text-red-600 text-sm mt-1">
+                        El trabajador no tiene disponibilidad para esta fecha
+                    </p>
+                </div>
+            @endif
+        </div>
+    </div>
+    
+    <!-- Campo oculto para la fecha completa -->
+    <input type="hidden" wire:model="cita.fecha_programada">
+    @error('cita.fecha_programada')
+        <div class="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <span class="text-red-600 text-sm">{{ $message }}</span>
+        </div>
+    @enderror
+</div>
+@endif
 
                 <!-- SECCIÓN 5: INFORMACIÓN ADICIONAL -->
                 @if($horaSeleccionada)
@@ -713,5 +1101,53 @@
             });
         </script>
     @endpush
+
+    @push('scripts')
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.9/index.global.min.js'></script>
+<script>
+    // Inicializar FullCalendar si es necesario
+    document.addEventListener('livewire:init', () => {
+        Livewire.on('citasCargadas', (eventos) => {
+            if (window.calendar) {
+                window.calendar.destroy();
+            }
+            
+            const calendarEl = document.getElementById('calendar');
+            if (calendarEl) {
+                window.calendar = new FullCalendar.Calendar(calendarEl, {
+                    initialView: 'dayGridMonth',
+                    events: eventos,
+                    headerToolbar: {
+                        left: 'prev,next today',
+                        center: 'title',
+                        right: 'dayGridMonth,timeGridWeek,timeGridDay'
+                    },
+                    eventClick: function(info) {
+                        // Mostrar detalles de la cita
+                        const cita = info.event.extendedProps;
+                        Swal.fire({
+                            title: info.event.title,
+                            html: `
+                                <div class="text-left">
+                                    <p><strong>Cliente:</strong> ${cita.cliente}</p>
+                                    <p><strong>Mascota:</strong> ${cita.mascota}</p>
+                                    <p><strong>Estado:</strong> ${cita.estado}</p>
+                                    <p><strong>Motivo:</strong> ${cita.motivo}</p>
+                                    <p><strong>Servicios:</strong></p>
+                                    <ul class="list-disc pl-4">
+                                        ${cita.servicios.map(s => `<li>${s.nombre} (${s.duracion}min)</li>`).join('')}
+                                    </ul>
+                                </div>
+                            `,
+                            icon: 'info'
+                        });
+                    }
+                });
+                window.calendar.render();
+            }
+        });
+    });
+</script>
+@endpush
     <x-loader />
 </x-panel>

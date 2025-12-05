@@ -129,28 +129,17 @@
                         <input type="date" wire:model.live.debounce.500ms="filtroFechaHasta"
                             class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     </div>
-                </div>
 
-                <!-- Botones de acción filtros -->
-                <div class="flex justify-between items-center">
-                    <button wire:click="limpiarFiltros"
-                        class="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition-colors font-medium flex items-center gap-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                        </svg>
-                        Limpiar Filtros
-                    </button>
-                    
-                    <a href="{{ route('citas.registrar') }}" 
-                       class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" 
-                             fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" 
-                             stroke-linejoin="round" class="lucide lucide-plus">
-                            <path d="M5 12h14"/>
-                            <path d="M12 5v14"/>
-                        </svg>
-                        Nueva Cita
-                    </a>
+                    <!-- Botones de acción filtros -->
+                    <div class="flex justify-between items-center">
+                        <button wire:click="limpiarFiltros"
+                            class="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition-colors font-medium flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                            Limpiar Filtros
+                        </button>
+                    </div>
                 </div>
             </div>
 
