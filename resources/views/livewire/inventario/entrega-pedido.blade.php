@@ -335,13 +335,15 @@
         @if($modalEvidenciaOpen)
             <div class="fixed inset-0 z-[60] overflow-y-auto">
                 <div class="flex items-center justify-center min-h-screen px-4 pb-4 text-center sm:block sm:p-0">
+
+                    {{-- Overlay (Fondo oscuro) --}}
                     <div class="fixed inset-0 bg-black/50 transition-opacity" wire:click="cerrarModalEvidencia"></div>
 
-                    {{-- Centrado vertical en móvil --}}
                     <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
 
                     <div
-                        class="inline-block align-middle bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:max-w-md w-full p-6">
+                        class="inline-block align-middle bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:max-w-md w-full p-6 relative z-10">
+
                         <h3 class="text-lg font-bold mb-4 text-gray-900 dark:text-white flex items-center gap-2">
                             <span>📸</span> Confirmar Entrega
                         </h3>
