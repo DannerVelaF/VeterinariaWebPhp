@@ -38,6 +38,20 @@ class RegistrarCita extends Component
     public $cantCitasCanceladas = 0;
     public $cantCitasCompletadas = 0;
 
+     // MODIFICADO: Cambiar a propiedades de estadísticas con arreglos
+    public $estadisticas = [
+        'Pendiente' => ['total' => 0, 'porcentaje' => 0],
+        'En progreso' => ['total' => 0, 'porcentaje' => 0],
+        'Cancelada' => ['total' => 0, 'porcentaje' => 0],
+        'Completada' => ['total' => 0, 'porcentaje' => 0],
+        'No asistio' => ['total' => 0, 'porcentaje' => 0],
+    ];
+
+    protected $listeners = [
+        'editar-cita-event' => 'cargarCitaParaEditar',
+        'cambiar-estado-cita-event' => 'cambiarEstadoCita',
+        'citasUpdated' => 'refreshCitas'
+    ];
 
     public $filtroCliente = '';
     public $filtroMascota = '';
@@ -72,14 +86,13 @@ class RegistrarCita extends Component
         'observaciones' => ''
     ];
 
-    protected $listeners = [
-    'editar-cita-event' => 'cargarCitaParaEditar',
-    'cambiar-estado-cita-event' => 'cambiarEstadoCita',
-    'citasUpdated' => '$refresh',
-    ];
-
     public bool $showModal = false;
     public ?Cita $citaSeleccionada = null;
+
+    public function refreshCitas()
+    {
+        $this->calcularEstadisticas();
+    }
 
     public function mount()
     {
@@ -100,6 +113,8 @@ class RegistrarCita extends Component
     public function cargarCitaParaEditar($citaId)
     {
         try {
+            Log::info('Cargando cita para editar', ['cita_id' => $citaId]);
+            
             $this->citaSeleccionada = Cita::with([
                 'cliente.persona',
                 'mascota',
@@ -134,6 +149,9 @@ class RegistrarCita extends Component
             // Cargar mascotas del cliente
             $this->cargarMascotas();
             
+            // Recalcular duración
+            $this->calcularDuracionTotal();
+
             // Actualizar horarios disponibles
             if ($this->trabajadorSeleccionado && $this->fechaSeleccionada) {
                 $this->actualizarHorariosDisponibles();
@@ -152,46 +170,43 @@ class RegistrarCita extends Component
             Log::error('Error al cargar cita para editar', ['error' => $e->getMessage()]);
             $this->dispatch('notify',
                 title: 'Error',
-                description: 'No se pudo cargar la cita para editar.',
+                description: 'No se pudo cargar la cita para editar: ' . $e->getMessage(),
                 type: 'error'
             );
         }
     }
 
-    public function cambiarEstadoCita($params)
+    public function cambiarEstadoCita($citaId, $nuevoEstado)
     {
         try {
-            // Verificar si $params es un array con las claves correctas
-            if (!is_array($params) || !isset($params['rowId']) || !isset($params['nuevoEstado'])) {
-                throw new \Exception("Parámetros inválidos para cambiar el estado de la cita.");
-            }
+            Log::info('Cambiando estado de cita', [
+                'cita_id' => $citaId, 
+                'nuevo_estado' => $nuevoEstado
+            ]);
+
+            // Buscar el estado por nombre (mantener consistencia con la base de datos)
+            $estadoModel = EstadoCita::where('nombre_estado_cita', $nuevoEstado)->first();
             
-            $citaId = $params['rowId'];
-            $nuevoEstadoNombre = $params['nuevoEstado'];
-            
-            // Buscar el estado por nombre
-            $nuevoEstado = EstadoCita::where('nombre_estado_cita', $nuevoEstadoNombre)->first();
-            
-            if (!$nuevoEstado) {
-                throw new \Exception("Estado no encontrado: {$nuevoEstadoNombre}");
+            if (!$estadoModel) {
+                throw new \Exception("Estado no encontrado: {$nuevoEstado}");
             }
 
-            DB::transaction(function () use ($citaId, $nuevoEstado, $nuevoEstadoNombre) {
+            DB::transaction(function () use ($citaId, $estadoModel) {
                 $cita = Cita::findOrFail($citaId);
                 $cita->update([
-                    'id_estado_cita' => $nuevoEstado->id_estado_cita,
+                    'id_estado_cita' => $estadoModel->id_estado_cita,
                     'fecha_actualizacion' => now()
                 ]);
                 
-                // Si el estado es "Completada", podrías agregar lógica adicional aquí
-                if ($nuevoEstadoNombre == 'Completada') {
-                    // Lógica para citas completadas (ej: generar factura, historial, etc.)
-                }
+                Log::info('Estado de cita actualizado', [
+                    'cita_id' => $citaId,
+                    'nuevo_estado_id' => $estadoModel->id_estado_cita
+                ]);
             });
 
             $this->dispatch('notify',
-                title: 'Estado actualizado',
-                description: 'El estado de la cita se actualizó correctamente.',
+                title: '✅ Estado actualizado',
+                description: "La cita ha pasado a estado: {$nuevoEstado}",
                 type: 'success'
             );
 
@@ -202,13 +217,26 @@ class RegistrarCita extends Component
             $this->dispatch('citasUpdated');
 
         } catch (\Exception $e) {
-            Log::error('Error al cambiar estado de cita', ['error' => $e->getMessage()]);
+            Log::error('Error al cambiar estado de cita', [
+                'error' => $e->getMessage(),
+                'cita_id' => $citaId,
+                'nuevo_estado' => $nuevoEstado
+            ]);
+            
             $this->dispatch('notify',
-                title: 'Error',
+                title: '❌ Error',
                 description: 'No se pudo actualizar el estado de la cita: ' . $e->getMessage(),
                 type: 'error'
             );
         }
+    }
+
+    public function confirmarCambiarEstado($citaId, $estado)
+    {
+        $this->dispatch('confirmar-cambio-estado', [
+            'citaId' => $citaId,
+            'estado' => $estado
+        ]);
     }
 
     // Nuevo método para obtener los días no laborales del trabajador
@@ -250,7 +278,6 @@ class RegistrarCita extends Component
         return array_unique($diasNoLaborales);
     }
 
-    
 
     private function calcularDisponibilidadPorDia($fechaInicio, $fechaFin)
     {
@@ -502,33 +529,38 @@ class RegistrarCita extends Component
         }
     }
 
-    // Agregar este método para calcular estadísticas
     public function calcularEstadisticas()
     {
         $estados = EstadoCita::all();
-
+        $totalGeneral = Cita::count();
+        
+        // Reiniciar estadísticas
+        $this->estadisticas = [
+            'Pendiente' => ['total' => 0, 'porcentaje' => 0],
+            'En progreso' => ['total' => 0, 'porcentaje' => 0],
+            'Cancelada' => ['total' => 0, 'porcentaje' => 0],
+            'Completada' => ['total' => 0, 'porcentaje' => 0],
+            'No asistio' => ['total' => 0, 'porcentaje' => 0],
+        ];
+        
         foreach ($estados as $estado) {
             $count = Cita::where('id_estado_cita', $estado->id_estado_cita)->count();
-
-            switch ($estado->nombre_estado_cita) {
-                case 'Pendiente':
-                    $this->cantCitasPendientes = $count;
-                    break;
-                case 'En progreso':
-                    $this->cantCitasConfirmadas = $count;
-                    break;
-                case 'Cancelada':
-                    $this->cantCitasCanceladas = $count;
-                    break;
-                case 'Completada':
-                    $this->cantCitasCompletadas = $count;
-                    break;
-                case 'No asistio':
-                    $this->cantCitasNoAsistio = $count;
-                    break;
+            $porcentaje = $totalGeneral > 0 ? round(($count / $totalGeneral) * 100, 1) : 0;
+            
+            // Usar el nombre exacto de la base de datos
+            $nombreEstado = $estado->nombre_estado_cita;
+            
+            if (isset($this->estadisticas[$nombreEstado])) {
+                $this->estadisticas[$nombreEstado] = [
+                    'total' => $count,
+                    'porcentaje' => $porcentaje
+                ];
             }
         }
+        
+        Log::info('Estadísticas calculadas', $this->estadisticas);
     }
+
 
     public function actualizarEstadisticas()
     {
@@ -750,9 +782,18 @@ class RegistrarCita extends Component
             ->get();
     }
 
-    public function cargarEstadosCita()
+    /* public function cargarEstadosCita()
     {
         $this->estadosCita = EstadoCita::all();
+    } */
+
+    public function cargarEstadosCita()
+    {
+        $this->estadosCita = EstadoCita::orderBy('id_estado_cita')->get();
+        Log::info('Estados de cita cargados', [
+            'total' => $this->estadosCita->count(),
+            'estados' => $this->estadosCita->pluck('nombre_estado_cita')->toArray()
+        ]);
     }
 
     public function cargarMascotas()
@@ -801,8 +842,8 @@ class RegistrarCita extends Component
             'observaciones' => ''
         ];
 
-        // Estado por defecto SIEMPRE será "pendiente"
-        $estadoPendiente = EstadoCita::where('nombre_estado_cita', 'pendiente')->first();
+        // Estado por defecto SIEMPRE será "Pendiente"
+        $estadoPendiente = EstadoCita::where('nombre_estado_cita', 'Pendiente')->first();
         if ($estadoPendiente) {
             $this->estadoCitaSeleccionado = $estadoPendiente->id_estado_cita;
         }

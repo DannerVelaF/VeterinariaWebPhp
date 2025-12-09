@@ -17,15 +17,17 @@ class VerCitas extends Component
 {
     use WithPagination;
     
-    // Propiedades para filtros
-    public $filtroDni = '';
-    public $filtroCliente = '';
+    // Propiedades para filtros (actualizado)
+    public $filtroClienteDni = ''; // Unificado: DNI o nombre del cliente
     public $filtroMascota = '';
     public $filtroTrabajador = '';
     public $filtroEstado = '';
     public $filtroFechaDesde = '';
     public $filtroFechaHasta = '';
     public $filtroServicio = '';
+    
+    // Propiedades para búsqueda avanzada
+    public $mostrarFiltrosAvanzados = false;
     
     // Propiedad para el modal de detalle
     public $showModalDetalle = false;
@@ -39,8 +41,7 @@ class VerCitas extends Component
     public $estadisticas = [];
     
     protected $queryString = [
-        'filtroDni' => ['except' => ''],
-        'filtroCliente' => ['except' => ''],
+        'filtroClienteDni' => ['except' => ''],
         'filtroMascota' => ['except' => ''],
         'filtroTrabajador' => ['except' => ''],
         'filtroEstado' => ['except' => ''],
@@ -104,17 +105,15 @@ class VerCitas extends Component
             $query->where('id_estado_cita', $this->filtroEstado);
         }
         
-        if ($this->filtroCliente) {
+        // Filtro unificado de cliente (DNI o nombre)
+        if ($this->filtroClienteDni) {
             $query->whereHas('cliente.persona', function($q) {
-                $q->where('nombre', 'like', '%' . $this->filtroCliente . '%')
-                  ->orWhere('apellido_paterno', 'like', '%' . $this->filtroCliente . '%')
-                  ->orWhere('apellido_materno', 'like', '%' . $this->filtroCliente . '%');
-            });
-        }
-        
-        if ($this->filtroDni) {
-            $query->whereHas('cliente.persona', function($q) {
-                $q->where('numero_documento', 'like', '%' . $this->filtroDni . '%');
+                $q->where('numero_documento', 'like', '%' . $this->filtroClienteDni . '%')
+                  ->orWhere('nombre', 'like', '%' . $this->filtroClienteDni . '%')
+                  ->orWhere('apellido_paterno', 'like', '%' . $this->filtroClienteDni . '%')
+                  ->orWhere('apellido_materno', 'like', '%' . $this->filtroClienteDni . '%')
+                  ->orWhere(DB::raw("CONCAT(nombre, ' ', apellido_paterno)"), 'like', '%' . $this->filtroClienteDni . '%')
+                  ->orWhere(DB::raw("CONCAT(apellido_paterno, ' ', apellido_materno)"), 'like', '%' . $this->filtroClienteDni . '%');
             });
         }
         
@@ -126,6 +125,12 @@ class VerCitas extends Component
         
         if ($this->filtroTrabajador) {
             $query->where('id_trabajador_asignado', $this->filtroTrabajador);
+        }
+        
+        if ($this->filtroServicio) {
+            $query->whereHas('serviciosCita.servicio', function($q) {
+                $q->where('nombre_servicio', 'like', '%' . $this->filtroServicio . '%');
+            });
         }
     }
     
@@ -139,6 +144,11 @@ class VerCitas extends Component
         return Trabajador::with('persona')->get();
     }
     
+    public function getServiciosProperty()
+    {
+        return Servicio::orderBy('nombre_servicio')->get();
+    }
+    
     public function sortBy($field)
     {
         if ($this->sortField === $field) {
@@ -150,17 +160,22 @@ class VerCitas extends Component
         $this->sortField = $field;
     }
     
+    public function toggleFiltrosAvanzados()
+    {
+        $this->mostrarFiltrosAvanzados = !$this->mostrarFiltrosAvanzados;
+    }
+    
     public function limpiarFiltros()
     {
         $this->reset([
-            'filtroDni',
-            'filtroCliente',
+            'filtroClienteDni',
             'filtroMascota',
             'filtroTrabajador',
             'filtroEstado',
             'filtroFechaDesde',
             'filtroFechaHasta',
-            'filtroServicio'
+            'filtroServicio',
+            'mostrarFiltrosAvanzados'
         ]);
         
         $this->filtroFechaDesde = now()->subMonth()->format('Y-m-d');
@@ -189,13 +204,35 @@ class VerCitas extends Component
         $this->citaSeleccionada = null;
     }
     
+    // Solo permitir cambiar a Completada desde esta vista
     public function cambiarEstado($id, $nuevoEstado)
     {
         try {
+            // Verificar que solo se pueda cambiar a Completada
+            if ($nuevoEstado !== 'Completada') {
+                $this->dispatch('notify',
+                    title: 'Error',
+                    description: 'Solo se puede cambiar al estado Completada desde esta vista.',
+                    type: 'error'
+                );
+                return;
+            }
+            
             $estado = EstadoCita::where('nombre_estado_cita', $nuevoEstado)->first();
             
             if ($estado) {
                 $cita = Cita::find($id);
+                
+                // Verificar que la cita esté en estado "En progreso"
+                if ($cita->estadoCita->nombre_estado_cita !== 'En progreso') {
+                    $this->dispatch('notify',
+                        title: 'Error',
+                        description: 'Solo se pueden completar citas que estén en estado "En progreso".',
+                        type: 'error'
+                    );
+                    return;
+                }
+                
                 $cita->update([
                     'id_estado_cita' => $estado->id_estado_cita,
                     'fecha_actualizacion' => now()
@@ -205,9 +242,14 @@ class VerCitas extends Component
                 
                 $this->dispatch('notify', 
                     title: 'Éxito', 
-                    description: 'Estado de cita actualizado correctamente', 
+                    description: 'Cita completada correctamente', 
                     type: 'success'
                 );
+                
+                // Cerrar modal si está abierto
+                if ($this->showModalDetalle) {
+                    $this->closeModalDetalle();
+                }
             }
         } catch (\Exception $e) {
             $this->dispatch('notify',
@@ -218,24 +260,9 @@ class VerCitas extends Component
         }
     }
     
-    public function cancelarCita($id)
-    {
-        $this->cambiarEstado($id, 'Cancelada');
-    }
-    
     public function completarCita($id)
     {
         $this->cambiarEstado($id, 'Completada');
-    }
-    
-    public function enProgresoCita($id)
-    {
-        $this->cambiarEstado($id, 'En progreso');
-    }
-    
-    public function noAsistioCita($id)
-    {
-        $this->cambiarEstado($id, 'No asistio');
     }
     
     private function getColorEstado($estado)
@@ -288,17 +315,15 @@ class VerCitas extends Component
             $query->where('id_estado_cita', $this->filtroEstado);
         }
         
-        if ($this->filtroDni) {
+        // Filtro unificado de cliente (DNI o nombre)
+        if ($this->filtroClienteDni) {
             $query->whereHas('cliente.persona', function($q) {
-                $q->where('numero_documento', 'like', '%' . $this->filtroDni . '%');
-            });
-        }
-        
-        if ($this->filtroCliente) {
-            $query->whereHas('cliente.persona', function($q) {
-                $q->where('nombre', 'like', '%' . $this->filtroCliente . '%')
-                  ->orWhere('apellido_paterno', 'like', '%' . $this->filtroCliente . '%')
-                  ->orWhere('apellido_materno', 'like', '%' . $this->filtroCliente . '%');
+                $q->where('numero_documento', 'like', '%' . $this->filtroClienteDni . '%')
+                  ->orWhere('nombre', 'like', '%' . $this->filtroClienteDni . '%')
+                  ->orWhere('apellido_paterno', 'like', '%' . $this->filtroClienteDni . '%')
+                  ->orWhere('apellido_materno', 'like', '%' . $this->filtroClienteDni . '%')
+                  ->orWhere(DB::raw("CONCAT(nombre, ' ', apellido_paterno)"), 'like', '%' . $this->filtroClienteDni . '%')
+                  ->orWhere(DB::raw("CONCAT(apellido_paterno, ' ', apellido_materno)"), 'like', '%' . $this->filtroClienteDni . '%');
             });
         }
         

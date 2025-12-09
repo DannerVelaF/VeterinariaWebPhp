@@ -4,36 +4,32 @@
     ['label' => 'Registro'],
 ]">
     <div class="grid grid-cols-5 gap-4 mb-4">
-        
+    
         <!-- Citas Pendientes -->
         <x-card>
             <div class="h-[100px] flex flex-col justify-between">
                 <div class="flex justify-between items-center">
                     <p>Citas pendientes</p>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                        class="lucide lucide-clock text-orange-500">
-                        <circle cx="12" cy="12" r="10"/>
-                        <polyline points="12 6 12 12 16 14"/>
-                    </svg>
+                    <span class="text-lg">⏰</span>
                 </div>
-                <p class="font-medium text-3xl">{{ $cantCitasPendientes }}</p>
+                <div>
+                    <p class="font-medium text-3xl">{{ $estadisticas['Pendiente']['total'] ?? 0 }}</p>
+                    <p class="text-sm opacity-75">{{ $estadisticas['Pendiente']['porcentaje'] ?? 0 }}%</p>
+                </div>
             </div>
         </x-card>
 
-        <!-- Citas Confirmadas -->
+        <!-- Citas En progreso (antes Confirmadas) -->
         <x-card>
             <div class="h-[100px] flex flex-col justify-between">
                 <div class="flex justify-between items-center">
-                    <p>Citas confirmadas</p>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                        stroke-linejoin="round" class="lucide lucide-check-circle text-blue-500">
-                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                        <polyline points="22 4 12 14.01 9 11.01"/>
-                    </svg>
+                    <p>Citas en progreso</p>
+                    <span class="text-lg">▶️</span>
                 </div>
-                <p class="font-medium text-3xl">{{ $cantCitasConfirmadas }}</p>
+                <div>
+                    <p class="font-medium text-3xl">{{ $estadisticas['En progreso']['total'] ?? 0 }}</p>
+                    <p class="text-sm opacity-75">{{ $estadisticas['En progreso']['porcentaje'] ?? 0 }}%</p>
+                </div>
             </div>
         </x-card>
 
@@ -42,15 +38,12 @@
             <div class="h-[100px] flex flex-col justify-between">
                 <div class="flex justify-between items-center">
                     <p>Citas canceladas</p>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                        stroke-linejoin="round" class="lucide lucide-x-circle text-red-500">
-                        <circle cx="12" cy="12" r="10"/>
-                        <path d="m15 9-6 6"/>
-                        <path d="m9 9 6 6"/>
-                    </svg>
+                    <span class="text-lg">❌</span>
                 </div>
-                <p class="font-medium text-3xl">{{ $cantCitasCanceladas }}</p>
+                <div>
+                    <p class="font-medium text-3xl">{{ $estadisticas['Cancelada']['total'] ?? 0 }}</p>
+                    <p class="text-sm opacity-75">{{ $estadisticas['Cancelada']['porcentaje'] ?? 0 }}%</p>
+                </div>
             </div>
         </x-card>
 
@@ -59,17 +52,12 @@
             <div class="h-[100px] flex flex-col justify-between">
                 <div class="flex justify-between items-center">
                     <p>Citas completadas</p>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                        stroke-linejoin="round" class="lucide lucide-calendar-check text-green-500">
-                        <path d="M8 2v4"/>
-                        <path d="M16 2v4"/>
-                        <rect width="18" height="18" x="3" y="4" rx="2"/>
-                        <path d="M3 10h18"/>
-                        <path d="m9 16 2 2 4-4"/>
-                    </svg>
+                    <span class="text-lg">✅</span>
                 </div>
-                <p class="font-medium text-3xl">{{ $cantCitasCompletadas }}</p>
+                <div>
+                    <p class="font-medium text-3xl">{{ $estadisticas['Completada']['total'] ?? 0 }}</p>
+                    <p class="text-sm opacity-75">{{ $estadisticas['Completada']['porcentaje'] ?? 0 }}%</p>
+                </div>
             </div>
         </x-card>
 
@@ -78,18 +66,15 @@
             <div class="h-[100px] flex flex-col justify-between">
                 <div class="flex justify-between items-center">
                     <p>Citas No asistió</p>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-user-x text-gray-500">
-                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-                    <circle cx="9" cy="7" r="4"/>
-                    <line x1="17" x2="22" y1="8" y2="13"/>
-                    <line x1="22" x2="17" y1="8" y2="13"/>
-                    </svg>
+                    <span class="text-lg">👤❌</span>
                 </div>
-                <p class="font-medium text-3xl">{{ $cantCitasNoAsistio }}</p>
+                <div>
+                    <p class="font-medium text-3xl">{{ $estadisticas['No asistio']['total'] ?? 0 }}</p>
+                    <p class="text-sm opacity-75">{{ $estadisticas['No asistio']['porcentaje'] ?? 0 }}%</p>
+                </div>
             </div>
         </x-card>
     </div>
-
     <x-card>
         @if (session()->has('success'))
             <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 4000)"

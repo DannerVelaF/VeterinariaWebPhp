@@ -22,6 +22,8 @@ final class CitaTable extends PowerGridComponent
     public string $tableName = 'cita-table';
     public string $primaryKey = 'id_cita';
     public string $sortField = 'id_cita';
+    
+    // CAMBIO: Corregir el nombre del evento
     public $listeners = ['citasUpdated' => '$refresh'];
 
     public function boot(): void
@@ -221,109 +223,87 @@ final class CitaTable extends PowerGridComponent
         ];
     }
 
-    #[\Livewire\Attributes\On('editar-cita')]
-    public function editarCita($rowId): void
+    // NUEVO: Método para manejar la edición de citas
+    public function editarCitaHandler($citaId): void
     {
-        $this->dispatch('editar-cita-event', $rowId);
+        $this->dispatch('editar-cita-event', $citaId);
     }
 
     #[\Livewire\Attributes\On('cambiar-estado-cita')]
-    public function cambiarEstadoCita($rowId, $nuevoEstado): void
+    public function cambiarEstadoCitaHandler($params): void
     {
-        $this->dispatch('cambiar-estado-cita-event', $rowId, $nuevoEstado);
+        $this->dispatch('cambiar-estado-cita-event', $params);
     }
+
 
     public function actions(Cita $row): array
     {
-        return [
-            // Botón EDITAR (en lugar de solo ver)
+        $actions = [
+            // CORRECCIÓN: Usar 'citaId' en lugar de 'rowId'
             Button::add('editar')
-                ->slot('<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="blue" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pencil">
-                        <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
-                        <path d="m15 5 4 4"/>
-                    </svg>')
+                ->slot('<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="blue" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>')
                 ->id()
                 ->class('pg-btn-white dark:bg-pg-primary-700 hover:bg-blue-50')
-                ->dispatch('editar-cita', ['rowId' => $row->id_cita])
+                ->dispatch('editar-cita-event', ['citaId' => $row->id_cita]) 
                 ->tooltip('Editar cita'),
+        ];
 
-            // Botón para cambiar a "En progreso"
-            Button::add('en-progreso')
-                ->slot('<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="blue" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-play">
-                        <polygon points="6 3 20 12 6 21 6 3"/>
-                    </svg>')
+        // Estado: Pendiente
+        if ($row->estadoCita->nombre_estado_cita === 'Pendiente') {
+            $actions[] = Button::add('en-progreso')
+                ->slot('<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="blue" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 3 20 12 6 21 6 3"/></svg>')
                 ->id()
                 ->class('pg-btn-white dark:bg-pg-primary-700 hover:bg-blue-50')
-                ->dispatch('cambiar-estado-cita', ['rowId' => $row->id_cita, 'nuevoEstado' => 'En progreso'])
-                ->tooltip('Marcar como En progreso'),
+                ->dispatch('cambiar-estado-cita-event', ['citaId' => $row->id_cita, 'nuevoEstado' => 'En progreso'])
+                ->tooltip('Marcar como En progreso');
 
-            // Botón para cambiar a "Completada"
-            Button::add('completar')
-                ->slot('<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="green" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check-circle">
-                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                        <polyline points="22 4 12 14.01 9 11.01"/>
-                    </svg>')
-                ->id()
-                ->class('pg-btn-white dark:bg-pg-primary-700 hover:bg-green-50')
-                ->dispatch('cambiar-estado-cita', ['rowId' => $row->id_cita, 'nuevoEstado' => 'Completada'])
-                ->tooltip('Marcar como Completada'),
-
-            // Botón para cambiar a "Cancelada"
-            Button::add('cancelar')
-                ->slot('<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="red" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-circle">
-                        <circle cx="12" cy="12" r="10"/>
-                        <path d="m15 9-6 6"/>
-                        <path d="m9 9 6 6"/>
-                    </svg>')
+            $actions[] = Button::add('cancelar')
+                ->slot('<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="red" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>')
                 ->id()
                 ->class('pg-btn-white dark:bg-pg-primary-700 hover:bg-red-50')
-                ->dispatch('cambiar-estado-cita', ['rowId' => $row->id_cita, 'nuevoEstado' => 'Cancelada'])
-                ->tooltip('Cancelar cita'),
+                ->dispatch('cambiar-estado-cita-event', ['citaId' => $row->id_cita, 'nuevoEstado' => 'Cancelada'])
+                ->tooltip('Cancelar cita');
 
-            // Botón para cambiar a "No asistio"
-            Button::add('no-asistio')
-                ->slot('<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="orange" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-user-x">
-                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-                        <circle cx="9" cy="7" r="4"/>
-                        <path d="m17 8 5 5"/>
-                        <path d="m22 8-5 5"/>
-                    </svg>')
+            $actions[] = Button::add('no-asistio')
+                ->slot('<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="orange" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="m17 8 5 5"/><path d="m22 8-5 5"/></svg>')
                 ->id()
                 ->class('pg-btn-white dark:bg-pg-primary-700 hover:bg-orange-50')
-                ->dispatch('cambiar-estado-cita', ['rowId' => $row->id_cita, 'nuevoEstado' => 'No asistio'])
-                ->tooltip('Marcar como No asistió'),
-        ];
-    }
+                ->dispatch('cambiar-estado-cita-event', ['citaId' => $row->id_cita, 'nuevoEstado' => 'No asistio'])
+                ->tooltip('Marcar como No asistió');
+        }
 
+        // Estado: En progreso
+        if ($row->estadoCita->nombre_estado_cita === 'En progreso') {
+            $actions[] = Button::add('cancelar')
+                ->slot('<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="red" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>')
+                ->id()
+                ->class('pg-btn-white dark:bg-pg-primary-700 hover:bg-red-50')
+                ->dispatch('cambiar-estado-cita-event', ['citaId' => $row->id_cita, 'nuevoEstado' => 'Cancelada'])
+                ->tooltip('Cancelar cita');
+
+            $actions[] = Button::add('no-asistio')
+                ->slot('<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="orange" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="m17 8 5 5"/><path d="m22 8-5 5"/></svg>')
+                ->id()
+                ->class('pg-btn-white dark:bg-pg-primary-700 hover:bg-orange-50')
+                ->dispatch('cambiar-estado-cita-event', ['citaId' => $row->id_cita, 'nuevoEstado' => 'No asistio'])
+                ->tooltip('Marcar como No asistió');
+        }
+
+        return $actions;
+    }
+    
     public function actionRules($row): array
     {
-        return [
-            // Ocultar botón "en progreso" si la cita no está Pendiente
-            Rule::button('en-progreso')
-                ->when(fn($row) => $row->estadoCita->nombre_estado_cita !== 'Pendiente')
-                ->hide(),
+        $rules = [];
 
-            // Ocultar botón "completar" si la cita no está "En progreso"
-            Rule::button('completar')
-                ->when(fn($row) => $row->estadoCita->nombre_estado_cita !== 'En progreso')
-                ->hide(),
+        // Ocultar botón editar si la cita está completada, cancelada o no asistió
+        $estadosFinales = ['Completada', 'Cancelada', 'No asistio'];
+        if (in_array($row->estadoCita->nombre_estado_cita, $estadosFinales)) {
+            $rules[] = Rule::button('editar')
+                ->when(fn($row) => true)
+                ->hide();
+        }
 
-            // Ocultar botones "cancelar" y "no-asistio" si la cita ya está en estado final
-            Rule::button('cancelar')
-                ->when(fn($row) => in_array($row->estadoCita->nombre_estado_cita, ['Completada', 'Cancelada', 'No asistio']))
-                ->hide(),
-
-            Rule::button('no-asistio')
-                ->when(fn($row) => in_array($row->estadoCita->nombre_estado_cita, ['Completada', 'Cancelada', 'No asistio']))
-                ->hide(),
-
-            // El botón editar no necesita regla, ya que siempre será visible
-            // Pero podrías agregar reglas adicionales si necesitas
-            // Por ejemplo, ocultar edición si la cita está completada
-            Rule::button('editar')
-                ->when(fn($row) => $row->estadoCita->nombre_estado_cita === 'Completada')
-                ->setAttribute('class', 'pg-btn-white dark:bg-pg-primary-700 opacity-50 cursor-not-allowed')
-                ->disable(),
-        ];
+        return $rules;
     }
 }
